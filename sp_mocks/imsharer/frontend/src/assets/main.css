@@ -1,0 +1,67 @@
+@import './base.css';
+
+@font-face {
+  font-family: 'Boldena';
+  src: url('./fonts/boldena-bold.ttf') format('truetype');
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid hsla(160, 100%, 37%, 0.2);
+  padding: 0.5rem 5rem;
+}
+
+header h1 {
+  font-family: 'Boldena', sans-serif;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+header input[type='button'] {
+  padding: 0.8rem 2rem;
+  border: none;
+  border-radius: 5px;
+  background-color: hsla(160, 100%, 37%, 1);
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: 0.4s;
+}
+
+.hidden {
+  display: none;
+}
+
+.loader, .notif {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: calc(100vw - 10rem);
+  height: calc(100vh - 10rem);
+}
+
+.loader p, .notif p {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.loader p::after {
+  content: '...';
+  animation: loading 1s infinite;
+}
+
+@keyframes loading {
+  0% {
+    content: '.';
+  }
+  33% {
+    content: '..';
+  }
+  66% {
+    content: '...';
+  }
+}
