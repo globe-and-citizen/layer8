@@ -86,6 +86,7 @@ const logoutUser = () => {
   SpToken.value = null;
   localStorage.removeItem("SP_TOKEN");
   localStorage.removeItem("_user");
+  localStorage.clear();
   isContinueAnonymously.value = false;
 };
 

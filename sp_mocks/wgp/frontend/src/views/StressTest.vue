@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar.vue";
 const BackendURL = "http://localhost:5001";
 import layer8_interceptor from 'layer8_interceptor'
 
-const BACKEND_URL =  import.meta.env.VITE_BACKEND_URL
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
 const requestsSent = ref(0);
 const totalTimeSpent = ref(0);
 const numberOfRequest = ref(0)
@@ -30,7 +30,7 @@ async function testWASMHandler() {
 async function getError(){
   try {
     console.log("Error Test")
-    await layer8_interceptor.fetch(BackendURL + "/error", {
+    await layer8_interceptor.fetch(BACKEND_URL + "/error", {
       method: "POST",
       headers: {
         "Content-Type": "Application/Json",
@@ -45,11 +45,11 @@ async function getError(){
 }
 
 let x = 0
-async function getNextPicture(){
-  let idx = x%2
+async function getNextPicture() {
+  let idx = x % 2
   const pictureURLs = [
-    'http://localhost:8000/media/boy.png',
-    'http://localhost:8000/media/girl.png',
+    BACKEND_URL + '/media/boy.png',
+    BACKEND_URL + '/media/girl.png'
   ]
   let url = await layer8_interceptor.static(pictureURLs[idx]);
   const element = document.getElementById("pictureBox");

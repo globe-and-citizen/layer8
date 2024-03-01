@@ -27,9 +27,6 @@ run_imsharer_backend:
 go_mod_tidy:
 	cd ./server && go mod tidy
 
-go_mod_tidy_all:
-	cd interceptor && go mod tidy && cd ../middleware && go mod tidy && cd ../server && go mod tidy
-
 go_test:
 	cd server && go test ./... -v -cover
 

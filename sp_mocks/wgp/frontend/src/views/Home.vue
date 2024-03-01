@@ -47,6 +47,7 @@ const getPoem = async () => {
 const logoutUser = () => {
   SpToken.value = null;
   localStorage.removeItem("SP_TOKEN");
+  localStorage.clear();
   router.push({ name: "loginRegister" });
 };
 
