@@ -4,6 +4,7 @@ import (
 	svc "globe-and-citizen/layer8/server/internals/service"
 	"html/template"
 	"net/http"
+	"os"
 )
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -32,8 +33,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		t.Execute(w, map[string]interface{}{
-			"HasNext": next != "",
-			"Next":    next,
+			"HasNext":  next != "",
+			"Next":     next,
+			"ProxyURL": os.Getenv("PROXY_URL"),
 		})
 		return
 	case "POST":
@@ -110,8 +112,9 @@ func Register(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		t.Execute(w, map[string]interface{}{
-			"HasNext": next != "",
-			"Next":    next,
+			"HasNext":  next != "",
+			"Next":     next,
+			"ProxyURL": os.Getenv("PROXY_URL"),
 		})
 		return
 	case "POST":
@@ -127,9 +130,10 @@ func Register(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			t.Execute(w, map[string]interface{}{
-				"HasNext": next != "",
-				"Next":    next,
-				"Error":   err.Error(),
+				"HasNext":  next != "",
+				"Next":     next,
+				"Error":    err.Error(),
+				"ProxyURL": os.Getenv("PROXY_URL"),
 			})
 			return
 		}
@@ -142,9 +146,10 @@ func Register(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			t.Execute(w, map[string]interface{}{
-				"HasNext": next != "",
-				"Next":    next,
-				"Error":   "could not get token",
+				"HasNext":  next != "",
+				"Next":     next,
+				"Error":    "could not get token",
+				"ProxyURL": os.Getenv("PROXY_URL"),
 			})
 			return
 		}

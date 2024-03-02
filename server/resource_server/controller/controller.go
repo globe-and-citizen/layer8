@@ -3,8 +3,9 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
-	"path/filepath"
+	"os"
 
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
@@ -21,10 +22,20 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 	utils.GetPwd()
 
-	var relativePathIndex = "assets-v1/templates/homeView.html"
-	indexPath := filepath.Join(utils.WorkingDirectory, relativePathIndex)
-	fmt.Println("indexPath: ", indexPath)
-	http.ServeFile(w, r, indexPath)
+	// var relativePathIndex = "assets-v1/templates/homeView.html"
+	// indexPath := filepath.Join(utils.WorkingDirectory, relativePathIndex)
+	// fmt.Println("indexPath: ", indexPath)
+	//http.ServeFile(w, r, indexPath)
+
+	// load the homeView page
+	t, err := template.ParseFiles("assets-v1/templates/homeView.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	t.Execute(w, map[string]interface{}{
+		"ProxyURL": os.Getenv("PROXY_URL"),
+	})
 
 }
 
@@ -38,10 +49,20 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 
 	utils.GetPwd()
 
-	var relativePathUser = "assets-v1/templates/userView.html"
-	userPath := filepath.Join(utils.WorkingDirectory, relativePathUser)
-	fmt.Println("userPath: ", userPath)
-	http.ServeFile(w, r, userPath)
+	// var relativePathUser = "assets-v1/templates/userView.html"
+	// userPath := filepath.Join(utils.WorkingDirectory, relativePathUser)
+	// fmt.Println("userPath: ", userPath)
+	// http.ServeFile(w, r, userPath)
+
+	// load the userView page
+	t, err := template.ParseFiles("assets-v1/templates/userView.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	t.Execute(w, map[string]interface{}{
+		"ProxyURL": os.Getenv("PROXY_URL"),
+	})
 }
 
 func ClientHandler(w http.ResponseWriter, r *http.Request) {
@@ -54,10 +75,20 @@ func ClientHandler(w http.ResponseWriter, r *http.Request) {
 
 	utils.GetPwd()
 
-	var relativePathUser = "assets-v1/templates/registerClient.html"
-	userPath := filepath.Join(utils.WorkingDirectory, relativePathUser)
-	fmt.Println("userPath: ", userPath)
-	http.ServeFile(w, r, userPath)
+	// var relativePathUser = "assets-v1/templates/registerClient.html"
+	// userPath := filepath.Join(utils.WorkingDirectory, relativePathUser)
+	// fmt.Println("userPath: ", userPath)
+	// http.ServeFile(w, r, userPath)
+
+	// load the registerClient page
+	t, err := template.ParseFiles("assets-v1/templates/registerClient.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	t.Execute(w, map[string]interface{}{
+		"ProxyURL": os.Getenv("PROXY_URL"),
+	})
 }
 
 func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {

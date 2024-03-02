@@ -1,7 +1,6 @@
 <script setup>
 import { ref } from "vue";
 import Navbar from "../components/Navbar.vue";
-const BackendURL = "http://localhost:5001";
 import layer8_interceptor from 'layer8_interceptor'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL

@@ -23,8 +23,7 @@
                 <input aria-required="true" type="submit" value="Login">
                 <small class="error">{{if .Error}}{{.Error}}{{end}}</small>
             </form>
-                <a href="http://localhost:5001/register">Don't have an account? Register</a>
-                <!-- <a href="https://layer8devproxy.net/register">Don't have an account? Register</a> -->
+                <a href="{{ .ProxyURL }}/register">Don't have an account? Register</a>
             <br>
         </div>
     </div>

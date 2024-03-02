@@ -105,7 +105,7 @@
     <script>
       // Clear the localStorage
       localStorage.clear();
-      
+
       const { createApp, computed, ref } = Vue;
       const { createRouter, createWebHistory } = VueRouter;
 
@@ -134,8 +134,8 @@
             alert("Please enter a username and password!");
             return;
           }
-          //await window.fetch("https://layer8devproxy.net/api/v1/register-user", {
-          await window.fetch("http://localhost:5001/api/v1/register-user", {
+
+          await window.fetch("{{ .ProxyURL }}/api/v1/register-user", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -164,8 +164,8 @@
             alert("Please enter a username and password!");
             return;
           }
-          //const respOne = await window.fetch("https://layer8devproxy.net/api/v1/login-precheck",
-          const respOne = await window.fetch("http://localhost:5001/api/v1/login-precheck",
+
+          const respOne = await window.fetch("{{ .ProxyURL }}/api/v1/login-precheck",
             {
               method: "POST",
               headers: {
@@ -178,8 +178,7 @@
           );
           const responseOne = await respOne.json();
 
-          //const respTwo = await window.fetch("https://layer8devproxy.net/api/v1/login-user",
-          const respTwo = await window.fetch("http://localhost:5001/api/v1/login-user",
+          const respTwo = await window.fetch("{{ .ProxyURL }}/api/v1/login-user",
             {
               method: "POST",
               headers: {

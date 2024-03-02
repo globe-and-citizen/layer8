@@ -121,12 +121,12 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\n\n*************")
 	fmt.Println(r.Method) // > GET  | > POST
 	fmt.Println(r.URL)    // (http://localhost:5000/api/v1 ) > /api/v1
-	fmt.Println("Scheme: ", r.Header.Get("X-Forwarded-Proto"))
+	fmt.Println("Protocol: ", r.Header.Get("X-Forwarded-Proto"))
 	fmt.Println("Host: ", r.Header.Get("X-Forwarded-Host"))
 
-	scheme := r.Header.Get("X-Forwarded-Proto")
+	protocol := r.Header.Get("X-Forwarded-Proto")
 	host := r.Header.Get("X-Forwarded-Host")
-	backendURL := fmt.Sprintf("%s://%s", scheme, host+r.URL.Path) // RAVI
+	backendURL := fmt.Sprintf("%s://%s", protocol, host+r.URL.Path) // RAVI
 
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {

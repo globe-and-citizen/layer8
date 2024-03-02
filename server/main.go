@@ -47,15 +47,17 @@ func main() {
 	jwtKey := flag.String("jwtKey", "secret", "Key to sign JWT tokens")
 	MpKey := flag.String("MpKey", "secret", "Key to sign mpJWT tokens")
 	UpKey := flag.String("UpKey", "secret", "Key to sign upJWT tokens")
+	ProxyURL := flag.String("ProxyURL", "http://localhost:5001", "URL to populate go HTML templates")
 
 	flag.Parse()
 
 	// Use flags for using in-memory repository, otherwise app will use database
-	if *port != 8080 && *jwtKey != "" && *MpKey != "" && *UpKey != "" {
+	if *port != 8080 && *jwtKey != "" && *MpKey != "" && *UpKey != "" && *ProxyURL != "" {
 		os.Setenv("SERVER_PORT", strconv.Itoa(*port))
 		os.Setenv("JWT_SECRET_KEY", *jwtKey)
 		os.Setenv("MP_123_SECRET_KEY", *MpKey)
 		os.Setenv("UP_999_SECRET_KEY", *UpKey)
+		os.Setenv("PROXY_URL", *ProxyURL)
 		repository := rsRepo.NewMemoryRepository()
 		repository.RegisterUser(dto.RegisterUserDTO{
 			Email:       "user@test.com",
