@@ -1,0 +1,18 @@
+{
+  "name": "image_gallery",
+  "version": "1.0.0",
+  "description": "Image sharing platform",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Layer8",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "layer8_middleware": "^0.0.17",
+    "nodemon": "^3.1.0"
+  }
+}

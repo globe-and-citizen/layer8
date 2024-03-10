@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Authentication Page</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-router@4"></script>
+  </head>
+  <body>
+    <div class="header">
+      <img
+        src="../assets-v1/images/L8Logo.png"
+        alt="Layer8"
+        width="500"
+        height="100"
+      />
+    </div>
+
+    <div id="app">
+      <div class="container" v-if="!isLoggedIn">
+        <div v-if="isRegister" class="form-container">
+          <h2>Register</h2>
+          <div class="input-group">
+            <input
+              v-model="registerEmail"
+              placeholder="Email"
+              class="input-button"
+            />
+          </div>
+          <div class="input-group">
+            <input
+              v-model="registerUsername"
+              placeholder="Username"
+              class="input-button"
+            />
+          </div>
+          <div class="input-group">
+            <input
+              v-model="registerFirstName"
+              placeholder="First Name"
+              class="input-button"
+            />
+          </div>
+          <div class="input-group">
+            <input
+              v-model="registerLastName"
+              placeholder="Last Name"
+              class="input-button"
+            />
+          </div>
+          <div class="input-group">
+            <input
+              v-model="registerDisplayName"
+              placeholder="Display Name"
+              class="input-button"
+            />
+          </div>
+          <div class="input-group">
+            <input
+              v-model="registerCountry"
+              placeholder="Country"
+              class="input-button"
+            />
+          </div>
+          <div class="input-group">
+            <input
+              v-model="registerPassword"
+              type="password"
+              placeholder="Password"
+              class="input-button"
+            />
+          </div>
+          <button class="btn-primary" @click="registerUser">Register</button>
+          <a class="text" @click="isRegister = false"
+            >Already registered? Login</a
+          >
+        </div>
+
+        <div v-if="!isRegister" class="form-container">
+          <h2>Login</h2>
+          <div class="input-group">
+            <input
+              v-model="loginUsername"
+              placeholder="Username"
+              class="input-button"
+            />
+          </div>
+          <div class="input-group">
+            <input
+              v-model="loginPassword"
+              type="password"
+              placeholder="Password"
+              class="input-button"
+            />
+          </div>
+          <button class="btn-primary-2" @click="loginUser">Login</button>
+          <a class="text" @click="isRegister = true"
+            >Don't have an account? Register</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Clear the localStorage
+      localStorage.clear();
+
+      const { createApp, computed, ref } = Vue;
+      const { createRouter, createWebHistory } = VueRouter;
+
+      const router = createRouter({
+        history: createWebHistory(),
+        routes: [],
+      });
+
+      const registerEmail = ref("");
+      const registerUsername = ref("");
+      const registerPassword = ref("");
+      const registerFirstName = ref("");
+      const registerLastName = ref("");
+      const registerDisplayName = ref("");
+      const registerCountry = ref("");
+      const loginUsername = ref("");
+      const loginPassword = ref("");
+      const isRegister = ref(false);
+      const token = ref(localStorage.getItem("token") || null);
+
+      const isLoggedIn = computed(() => token.value !== null);
+
+      const registerUser = async () => {
+        try {
+          if (registerUsername.value == "" || registerPassword.value == "") {
+            alert("Please enter a username and password!");
+            return;
+          }
+
+          await window.fetch("{{ .ProxyURL }}/api/v1/register-user", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: registerEmail.value,
+              username: registerUsername.value,
+              first_name: registerFirstName.value,
+              last_name: registerLastName.value,
+              password: registerPassword.value,
+              display_name: registerDisplayName.value,
+              country: registerCountry.value,
+            }),
+          });
+          alert("Registration successful!");
+          isRegister.value = true;
+        } catch (error) {
+          console.error(error);
+          alert("Registration failed!");
+        }
+      };
+
+      const loginUser = async () => {
+        try {
+          if (loginUsername.value == "" || loginPassword.value == "") {
+            alert("Please enter a username and password!");
+            return;
+          }
+
+          const respOne = await window.fetch("{{ .ProxyURL }}/api/v1/login-precheck",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                username: loginUsername.value,
+              }),
+            }
+          );
+          const responseOne = await respOne.json();
+
+          const respTwo = await window.fetch("{{ .ProxyURL }}/api/v1/login-user",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                username: loginUsername.value,
+                password: loginPassword.value,
+                salt: responseOne.salt,
+              }),
+            }
+          );
+          const responseTwo = await respTwo.json();
+          console.log(responseTwo);
+          if (responseTwo.token) {
+            token.value = responseTwo.token;
+            localStorage.setItem("token", responseTwo.token);
+            alert("Login successful!");
+            /* router.push("/user"); */
+            //window.location.href = "https://layer8devproxy.net/user";
+            window.location.href = "http://localhost:5001/user";
+          } else {
+            console.error("No token received.");
+          }
+        } catch (error) {
+          console.error(error);
+          alert("Login failed!");
+        }
+      };
+
+      const app = createApp({
+        setup() {
+          return {
+            registerUser,
+            loginUser,
+            isLoggedIn,
+            isRegister,
+            loginPassword,
+            registerEmail,
+            registerUsername,
+            registerFirstName,
+            registerLastName,
+            registerDisplayName,
+            registerCountry,
+            registerPassword,
+            loginUsername,
+            loginPassword,
+          };
+        },
+      });
+
+      app.use(router);
+      app.mount("#app");
+    </script>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-around;
+        background-color: rgb(255, 255, 255);
+        padding-top: 1%;
+      }
+
+      #app {
+        display: flex;
+        justify-content: center;
+        padding: 5%;
+        background-color: #ffffff;
+      }
+
+      .container {
+        display: flex;
+        justify-content: space-around;
+        background-color: rgb(255, 255, 255);
+        padding: 3rem;
+        border-radius: 1rem;
+        border-color: #000000;
+        border-style: solid;
+        border-width: 5px;
+      }
+
+      .form-container {
+        width: 100%;
+      }
+
+      .input-group {
+        margin-bottom: 1rem;
+      }
+
+      .input-button {
+        padding: 6px 15px;
+        border-radius: 5px;
+        border: #adadad;
+        border-style: solid;
+        border-width: 2px;
+        font-size: 13px;
+        font-family: monospace;
+      }
+
+      .btn-primary {
+        background-color: #3440ab;
+        color: white;
+        border: none;
+        padding: 8px 10px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-size: 1rem;
+        margin-left: 25%;
+        font-family: monospace;
+      }
+
+      .btn-primary-2 {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        padding: 8px 10px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-size: 1rem;
+        margin-left: 34%;
+        font-family: monospace;
+      }
+
+      .btn-primary:hover {
+        background-color: #190e96;
+        transition-duration: 0.5s;
+      }
+
+      .btn-primary-2:hover {
+        background-color: #45a049;
+        transition-duration: 0.5s;
+      }
+
+      .text {
+        display: block;
+        color: rgb(37, 37, 37);
+        font-size: 13px;
+        text-decoration: underline;
+        margin-top: 10px;
+        text-align: center;
+      }
+
+      .text:hover {
+        color: rgb(35, 108, 38);
+        transition-duration: 0.5s;
+        cursor: pointer;
+      }
+    </style>
+  </body>
+</html>
