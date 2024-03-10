@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Profile</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+  </head>
+  <body>
+    <div class="header">
+      <img
+        src="../assets-v1/images/L8Logo.png"
+        alt="Layer8"
+        width="500"
+        height="100"
+      />
+    </div>
+    <div id="app">
+      <div class="container">
+        <div class="form-container">
+          <h1>User Profile</h1>
+          <p class="box">Username: {{ user.username }}</p>
+          <hr class="line" />
+          <p class="box">First Name: {{ user.first_name }}</p>
+          <hr class="line" />
+          <p class="box">Last Name: {{ user.last_name }}</p>
+          <hr class="line" />
+          <p class="box">Email: {{ user.email }}</p>
+          <hr class="line" />
+          <p class="box">Country: {{ user.country }}</p>
+          <hr class="line" />
+          <p class="box">Display Name: {{ user.display_name }}</p>
+          <button class="btn-primary" @click="changeDisplayName">
+            Change Display Name
+          </button>
+          <hr class="line" />
+          <p class="box">Email Verified: {{ user.email_verified }}</p>
+          <button
+            class="btn-primary"
+            v-if="!user.email_verified"
+            @click="verifyEmail"
+          >
+            Verify Email
+          </button>
+          <hr class="line" />
+          <button class="btn-primary-2" @click="logoutUser">Logout</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { ref, onMounted, createApp } = Vue;
+
+      const token = ref(localStorage.getItem("token") || null);
+      const user = ref({
+        email: "",
+        username: "",
+        first_name: "",
+        last_name: "",
+        display_name: "",
+        country: "",
+        email_verified: false,
+      });
+
+      const getUserDetails = async () => {
+        try {
+          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/profile",
+          const resp = await window.fetch("{{ .ProxyURL }}/api/v1/profile",
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "Application/Json",
+                Authorization: `Bearer ${token.value}`,
+              },
+            }
+          );
+          const data = await resp.json();
+
+          user.value = data;
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      const logoutUser = () => {
+        token.value = null;
+        localStorage.removeItem("token");
+        /* router.push("/"); */
+        window.location.href = "{{ .ProxyURL }}/";
+      };
+
+      const verifyEmail = async () => {
+        try {
+          const resp = await window.fetch("{{ .ProxyURL }}/api/v1/verify-email", {
+              method: "POST",
+              headers: {
+                "Content-Type": "Application/Json",
+                Authorization: `Bearer ${token.value}`,
+              },
+            }
+          );
+          const data = await resp.json();
+          if (data.message === "OK!") {
+            alert("Email verified!");
+            user.value.email_verified = true;
+          } else {
+            alert("Email verification failed!");
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      const changeDisplayName = async () => {
+        try {
+          const newDisplayName = prompt("Enter new display name:");
+          if (newDisplayName == "") {
+            alert("Please enter a display name!");
+            return;
+          }
+          const resp = await window.fetch("{{ .ProxyURL }}/api/v1/change-display-name",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "Application/Json",
+                Authorization: `Bearer ${token.value}`,
+              },
+              body: JSON.stringify({
+                display_name: newDisplayName,
+              }),
+            }
+          );
+          const data = await resp.json();
+          if (data.message === "OK!") {
+            alert("Display name changed!");
+            user.value.display_name = newDisplayName;
+          } else {
+            alert("Display name change failed!");
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      const app = createApp({
+        setup() {
+          onMounted(() => {
+            getUserDetails();
+          });
+
+          return {
+            user,
+            changeDisplayName,
+            verifyEmail,
+            logoutUser,
+          };
+        },
+      });
+
+      app.mount("#app");
+    </script>
+
+    <style>
+      .box {
+        padding: 10px;
+        color: #000000;
+        font-size: 14px;
+        font-family: monospace;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-around;
+        background-color: rgb(255, 255, 255);
+        padding-top: 1%;
+      }
+
+      #app {
+        display: flex;
+        justify-content: center;
+        padding: 5%;
+        background-color: #ffffff;
+      }
+
+      .container {
+        display: flex;
+        justify-content: space-around;
+        background-color: rgb(255, 255, 255);
+        padding: 1rem 3rem;
+        border-radius: 1rem;
+        border-color: #000000;
+        border-style: solid;
+        border-width: 3px;
+      }
+
+      .form-container {
+        width: 100%;
+      }
+
+      .btn-primary {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        padding: 4px 7px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-size: 10px;
+        font-family: monospace;
+        margin-bottom: 4%;
+      }
+
+      .btn-primary:hover {
+        background-color: #45a049;
+        transition-duration: 0.5s;
+      }
+
+      .btn-primary-2 {
+        background-color: #1b54b1;
+        color: white;
+        border: none;
+        padding: 5px 5px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-size: 1rem;
+        margin-left: 34%;
+        font-family: monospace;
+      }
+
+      .line {
+        width: 100%;
+        color: black;
+        height: 3px;
+        background-color: black;
+      }
+    </style>
+  </body>
+</html>
