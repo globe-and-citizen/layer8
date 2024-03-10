@@ -9,6 +9,21 @@ Note: the tunnel is created everytime the page is reloaded. Therefore, Layer8 wo
 
 Currently the proof of concept only works with node.js in the backend and is tightly coupled to the express.js package. 
 
+# To Run
+1) Download and install Golang
+2) Navigate to your project frontend directory (or the sp_mock you want to run). Run `npm install layer8_interceptor` (v0.0.17 at the time of writting). 
+3) Naviate to your project backend directory (or the sp_mock you want to run). Run `npm install layer8_middleware` (v0.0.17 at the time of writting).
+4) From the layer8 home directory, run:
+    - `$cd ./server && go mod tidy`
+    - `cd server && go run main.go -port=5001 -jwtKey=secret -MpKey=secret -UpKey=secret -ProxyURL=http://localhost:5001`
+5) Clone `.env.dev` to `.env` in the `frontend` and `backend` directories of the sp_mock you are using.
+6) Run your frontend / backend. If using that provided:
+    - "We've Got Poems":
+        - `cd sp_mocks/wgp/frontend && npm i && npm run dev`
+        - `cd sp_mocks/wgp/backend && npm i && npm run dev`
+    - "Image sharer":
+        - `cd sp_mocks/imsharer/frontend && npm run dev`
+        - `cd sp_mocks/imsharer/backend && npm run dev`
 
 # To Use the E2E Encrypted Tunnel:
 ## Frontend Code
@@ -103,20 +118,3 @@ app.post("/route", async (req, res) => {
 
 ```
 Note: During routine usage, there are no special calls necessary to make use of Layer8. The res.json() & res.send() & res.end() have been overwritten by Layer8 and will be used automatically. 
-
-
-# To Run
-1) Download and install Golang
-2) Navigate to your project frontend directory (or the sp_mock you want to run). Run `npm install layer8_interceptor`. 
-3) Naviate to your project backend directory (or the sp_mock you want to run). Run `npm install layer8_middleware`.
-4) From the layer8 home directory, run:
-    - `$cd ./server && go mod tidy`
-    - `cd server && go run main.go -port=5001 -jwtKey=secret -MpKey=secret -UpKey=secret -ProxyURL=http://localhost:5001`
-5) If using the provided mocks, clone `.env.dev` to `.env` in the `frontend` and `backend` directories.
-6) Run your frontend / backend. If using that provided:
-    - "We've Got Poems":
-        - `cd sp_mocks/wgp/frontend && npm run dev`
-        - `cd sp_mocks/wgp/backend && npm run dev`
-    - "Image sharer":
-        - `cd sp_mocks/imsharer/frontend && npm run dev`
-        - `cd sp_mocks/imsharer/backend && npm run dev`
