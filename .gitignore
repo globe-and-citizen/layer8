@@ -34,7 +34,7 @@ sp_mocks/wgp/backend/pictures/dynamic/
 # vendor/
 
 # Go workspace file
-go.work
+go.work.sum
 
 
 #### #### #### #### 
