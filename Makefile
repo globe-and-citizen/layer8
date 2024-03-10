@@ -1,9 +1,9 @@
 ## NPM Install sp_mocks
 npm_install_wgp:
-	cd sp_mocks\wgp\frontend && npm install && npm i layer8_interceptor && cd ../backend && npm install && npm i layer8_middleware
+	cd sp_mocks/wgp/frontend && npm install && npm i layer8_interceptor && cd ../backend && npm install && npm i layer8_middleware
 
 npm_install_imsharer:
-	cd sp_mocks\imsharer\frontend && npm install && npm i layer8_interceptor && cd ../backend && npm install && npm i layer8_middleware
+	cd sp_mocks/imsharer/frontend && npm install && npm i layer8_interceptor && cd ../backend && npm install && npm i layer8_middleware
 
 npm_install_all:
 	make npm_install_wgp && make npm_install_imsharer
