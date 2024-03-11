@@ -8,6 +8,7 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    if: "contains(github.event.head_commit.message, 'push-image')"
 
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -50,11 +51,26 @@ jobs:
           aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
           aws configure set default.region $AWS_REGION
 
-      - name: Build and Push Docker Image to Lightsail
+      - name: Build and Push L8 Image to Lightsail
+        if: "contains(github.event.head_commit.message, 'layer8-image')"
         run: |
           docker build --tag layer8-server --file Dockerfile .
           docker images
           make push_layer8_server_image
+
+      - name: Build and Push Mock FE Image to Lightsail
+        if: "contains(github.event.head_commit.message, 'frontend-image')"
+        run: |
+          cd sp_mocks/wgp/frontend && docker build --tag sp_mocks_frontend --file Dockerfile .
+          docker images
+          cd ../../../ && make push_sp_mocks_frontend_image
+
+      - name: Build and Push Mock BE Image to Lightsail
+        if: "contains(github.event.head_commit.message, 'backend-image')"
+        run: |
+          cd sp_mocks/wgp/backend && docker build --tag sp_mocks_backend --file Dockerfile .
+          docker images
+          cd ../../../ && make push_sp_mocks_backend_image
 
       - name: Logout from Docker
         run: docker logout
