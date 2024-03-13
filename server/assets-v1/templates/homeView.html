@@ -135,7 +135,7 @@
             return;
           }
 
-          await window.fetch("{{ .ProxyURL }}/api/v1/register-user", {
+          await window.fetch("[[ .ProxyURL ]]/api/v1/register-user", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -165,7 +165,7 @@
             return;
           }
 
-          const respOne = await window.fetch("{{ .ProxyURL }}/api/v1/login-precheck",
+          const respOne = await window.fetch("[[ .ProxyURL ]]/api/v1/login-precheck",
             {
               method: "POST",
               headers: {
@@ -178,7 +178,7 @@
           );
           const responseOne = await respOne.json();
 
-          const respTwo = await window.fetch("{{ .ProxyURL }}/api/v1/login-user",
+          const respTwo = await window.fetch("[[ .ProxyURL ]]/api/v1/login-user",
             {
               method: "POST",
               headers: {

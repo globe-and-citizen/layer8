@@ -65,7 +65,7 @@
       const getUserDetails = async () => {
         try {
           //const resp = await window.fetch("https://layer8devproxy.net/api/v1/profile",
-          const resp = await window.fetch("{{ .ProxyURL }}/api/v1/profile",
+          const resp = await window.fetch("[[ .ProxyURL ]]/api/v1/profile",
             {
               method: "GET",
               headers: {
@@ -86,12 +86,12 @@
         token.value = null;
         localStorage.removeItem("token");
         /* router.push("/"); */
-        window.location.href = "{{ .ProxyURL }}/";
+        window.location.href = "[[ .ProxyURL ]]/";
       };
 
       const verifyEmail = async () => {
         try {
-          const resp = await window.fetch("{{ .ProxyURL }}/api/v1/verify-email", {
+          const resp = await window.fetch("[[ .ProxyURL ]]/api/v1/verify-email", {
               method: "POST",
               headers: {
                 "Content-Type": "Application/Json",
@@ -118,7 +118,7 @@
             alert("Please enter a display name!");
             return;
           }
-          const resp = await window.fetch("{{ .ProxyURL }}/api/v1/change-display-name",
+          const resp = await window.fetch("[[ .ProxyURL ]]/api/v1/change-display-name",
             {
               method: "POST",
               headers: {
