@@ -129,7 +129,6 @@ func CompleteLogin(req dto.LoginUserDTO, user models.User) (models.LoginUserResp
 }
 
 func CompleteClientLogin(req dto.LoginClientDTO, client models.Client) (models.LoginUserResponseOutput, error) {
-
 	JWT_SECRET_STR := os.Getenv("JWT_SECRET")
 	JWT_SECRET_BYTE := []byte(JWT_SECRET_STR)
 

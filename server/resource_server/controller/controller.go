@@ -3,9 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	// "html/template"
 	"net/http"
-	// "os"
 	"path/filepath"
 
 	"globe-and-citizen/layer8/server/resource_server/dto"
@@ -49,49 +47,6 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, path string) {
 	http.ServeFile(w, r, fullPath)
 }
 
-// func UserHandler(w http.ResponseWriter, r *http.Request) {
-
-// 	if r.Method != http.MethodGet {
-// 		w.WriteHeader(http.StatusMethodNotAllowed)
-// 		fmt.Fprintln(w, http.StatusText(http.StatusMethodNotAllowed))
-// 		return
-// 	}
-
-// 	utils.GetPwd()
-
-// 	var relativePathUser = "assets-v1/templates/userView.html"
-// 	userPath := filepath.Join(utils.WorkingDirectory, relativePathUser)
-// 	fmt.Println("userPath: ", userPath)
-// 	http.ServeFile(w, r, userPath)
-// }
-
-// func ClientHandler(w http.ResponseWriter, r *http.Request) {
-
-// 	if r.Method != http.MethodGet {
-// 		w.WriteHeader(http.StatusMethodNotAllowed)
-// 		fmt.Fprintln(w, http.StatusText(http.StatusMethodNotAllowed))
-// 		return
-// 	}
-
-// 	utils.GetPwd()
-
-// 	var relativePathUser = "assets-v1/templates/registerClient.html"
-// 	userPath := filepath.Join(utils.WorkingDirectory, relativePathUser)
-// 	fmt.Println("userPath: ", userPath)
-// 	http.ServeFile(w, r, userPath)
-
-// 	// load the registerClient page
-// 	// t, err := template.ParseFiles("assets-v1/templates/registerClient.html")
-// 	// if err != nil {
-// 	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-// 	// 	return
-// 	// }
-
-// 	// t.Execute(w, map[string]interface{}{
-// 	// 	"ProxyURL": os.Getenv("PROXY_URL"),
-// 	// })
-// }
-
 func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
 	newService := r.Context().Value("service").(interfaces.IService)
 	var req dto.LoginClientDTO
@@ -106,7 +61,6 @@ func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//fmt.Println("tokenResp: ", tokenResp)
 	if err := json.NewEncoder(w).Encode(tokenResp); err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
 		return
@@ -123,7 +77,6 @@ func ClientProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// RAVI
 	profileResp, err := newService.ProfileClient(userName)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile", err)
