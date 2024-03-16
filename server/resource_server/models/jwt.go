@@ -7,3 +7,9 @@ type Claims struct {
 	UserID   uint   `json:"user_id"`
 	jwt.RegisteredClaims
 }
+
+type ClientClaims struct {
+	UserName string `json:"username"`
+	UserID   string `json:"user_id"`
+	jwt.RegisteredClaims
+}
