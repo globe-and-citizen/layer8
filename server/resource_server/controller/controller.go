@@ -39,7 +39,7 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, path string) {
 		fmt.Println(w, http.StatusText(http.StatusMethodNotAllowed))
 		return
 	}
-	
+
 	utils.GetPwd()
 
 	fullPath := filepath.Join(utils.WorkingDirectory, path)

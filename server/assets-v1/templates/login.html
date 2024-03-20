@@ -16,15 +16,14 @@
         <div class="body">
             <h2 class="center">Login</h2>
             <br>
-            <form action="/login{{if .HasNext}}?next={{.Next}}{{end}}" method="POST">
+            <form action="/login[[if .HasNext]]?next=[[.Next]][[end]]" method="POST">
                 <input type="hidden" name="next" value="{{.Next}}">
                 <input aria-required="true" type="text" name="username" id="username" placeholder="Username" required>
                 <input aria-required="true" type="password" name="password" id="password" placeholder="Password" required>
                 <input aria-required="true" type="submit" value="Login">
-                <small class="error">{{if .Error}}{{.Error}}{{end}}</small>
+                <small class="error">[[if .Error]][[.Error]][[end]]</small>
             </form>
-                <a href="http://localhost:5001/register">Don't have an account? Register</a>
-                <!-- <a href="https://layer8devproxy.net/register">Don't have an account? Register</a> -->
+                <a href="[[ .ProxyURL ]]/register">Don't have an account? Register</a>
             <br>
         </div>
     </div>
