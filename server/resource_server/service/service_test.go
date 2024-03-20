@@ -276,6 +276,8 @@ func TestRegisterClient(t *testing.T) {
 	req := dto.RegisterClientDTO{
 		Name:        "testclient",
 		RedirectURI: "https://gcitizen.com/callback",
+		Username:    "test_user",
+		Password:    "12345",
 	}
 
 	// Call the RegisterClient method of the mock service

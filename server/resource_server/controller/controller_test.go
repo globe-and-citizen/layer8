@@ -140,10 +140,10 @@ func TestRegisterUserHandler(t *testing.T) {
 
 func TestRegisterClientHandler(t *testing.T) {
 	// Mock request body
-	requestBody := []byte(`{"name": "testclient", "redirect_uri": "https://gcitizen.com/callback"}`)
+	requestBody := []byte(`{"name": "testclient", "redirect_uri": "https://gcitizen.com/callback", "username": "test_user", "password": "12345"}`)
 
 	// Create a mock request
-	req, err := http.NewRequest("POST", "/register", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", "/api/v1/register-client", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
