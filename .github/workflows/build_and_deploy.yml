@@ -1,0 +1,76 @@
+name: Build and Deploy to Lightsail
+
+on:
+  push:
+    branches:
+      - "*"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    if: "contains(github.event.head_commit.message, 'push-image')"
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    steps:
+      - name: Debug Secrets
+        run: |
+          echo "AWS_REGION: $AWS_REGION"
+
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Set up Docker
+        run: |
+          sudo apt-get remove --purge containerd.io containerd
+          sudo apt-get update
+          sudo apt-get install docker.io
+          sudo usermod -aG docker $USER
+          newgrp docker
+
+      - name: Set up Lightsailctl extension
+        run: |
+          curl "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o "/usr/local/bin/lightsailctl"
+          sudo chmod +x /usr/local/bin/lightsailctl
+          export PATH=$PATH:/usr/local/bin/lightsailctl
+          lightsailctl --version
+
+      - name: Check version of Docker, AWS CLI and Lightsailctl
+        run: |
+          docker --version
+          aws --version
+          lightsailctl --version
+
+      - name: Configure AWS Credentials
+        run: |
+          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+          aws configure set default.region $AWS_REGION
+
+      - name: Build and Push L8 Image to Lightsail
+        if: "contains(github.event.head_commit.message, 'layer8-image')"
+        run: |
+          docker build --tag layer8-server --file Dockerfile .
+          docker images
+          aws lightsail push-container-image --region ca-central-1 --service-name aws-container-service-t1 --label layer8-server-${GITHUB_SHA::7} --image layer8-server:latest
+
+      - name: Build and Push Mock FE Image to Lightsail
+        if: "contains(github.event.head_commit.message, 'frontend-image')"
+        run: |
+          cd sp_mocks/wgp/frontend && docker build --tag sp_mocks_frontend --file Dockerfile .
+          docker images
+          aws lightsail push-container-image --region ca-central-1 --service-name container-service-2 --label frontendversion${GITHUB_SHA::7} --image sp_mocks_frontend:latest
+
+      - name: Build and Push Mock BE Image to Lightsail
+        if: "contains(github.event.head_commit.message, 'backend-image')"
+        run: |
+          cd sp_mocks/wgp/backend && docker build --tag sp_mocks_backend --file Dockerfile .
+          docker images
+          aws lightsail push-container-image --region ca-central-1 --service-name container-service-3 --label backendversion${GITHUB_SHA::7} --image sp_mocks_backend:latest
+
+      - name: Logout from Docker
+        run: docker logout
