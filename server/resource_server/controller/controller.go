@@ -3,9 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"net/http"
-	"os"
 	"path/filepath"
 
 	"globe-and-citizen/layer8/server/resource_server/dto"
@@ -14,73 +12,81 @@ import (
 )
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintln(w, http.StatusText(http.StatusMethodNotAllowed))
-		return
-	}
-
-	utils.GetPwd()
-
-	// var relativePathIndex = "assets-v1/templates/homeView.html"
-	// indexPath := filepath.Join(utils.WorkingDirectory, relativePathIndex)
-	// fmt.Println("indexPath: ", indexPath)
-	// http.ServeFile(w, r, indexPath)
-
-	// load the homeView page
-	t, err := template.ParseFiles("assets-v1/templates/homeView.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	t.Execute(w, map[string]interface{}{
-		"ProxyURL": os.Getenv("PROXY_URL"),
-	})
-
+	ServeFileHandler(w, r, "assets-v1/templates/public/welcome.html")
 }
-
+func LoginUserPage(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/login.html")
+}
+func RegisterUserPage(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/register.html")
+}
+func ClientProfilePage(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/profile.html")
+}
 func UserHandler(w http.ResponseWriter, r *http.Request) {
-
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintln(w, http.StatusText(http.StatusMethodNotAllowed))
-		return
-	}
-
-	utils.GetPwd()
-
-	var relativePathUser = "assets-v1/templates/userView.html"
-	userPath := filepath.Join(utils.WorkingDirectory, relativePathUser)
-	fmt.Println("userPath: ", userPath)
-	http.ServeFile(w, r, userPath)
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/profile.html")
+}
+func ClientHandler(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/register.html")
+}
+func LoginClientPage(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/login.html")
 }
 
-func ClientHandler(w http.ResponseWriter, r *http.Request) {
-
+func ServeFileHandler(w http.ResponseWriter, r *http.Request, path string) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintln(w, http.StatusText(http.StatusMethodNotAllowed))
+		fmt.Println(w, http.StatusText(http.StatusMethodNotAllowed))
+		return
+	}
+	
+	utils.GetPwd()
+
+	fullPath := filepath.Join(utils.WorkingDirectory, path)
+	fmt.Println("fullPath", fullPath)
+	http.ServeFile(w, r, fullPath)
+}
+
+func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
+	newService := r.Context().Value("service").(interfaces.IService)
+	var req dto.LoginClientDTO
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
 		return
 	}
 
-	utils.GetPwd()
+	tokenResp, err := newService.LoginClient(req)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
+		return
+	}
 
-	var relativePathUser = "assets-v1/templates/registerClient.html"
-	userPath := filepath.Join(utils.WorkingDirectory, relativePathUser)
-	fmt.Println("userPath: ", userPath)
-	http.ServeFile(w, r, userPath)
+	if err := json.NewEncoder(w).Encode(tokenResp); err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
+		return
+	}
+}
 
-	// load the registerClient page
-	// t, err := template.ParseFiles("assets-v1/templates/registerClient.html")
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
+func ClientProfileHandler(w http.ResponseWriter, r *http.Request) {
+	newService := r.Context().Value("service").(interfaces.IService)
+	tokenString := r.Header.Get("Authorization")
+	tokenString = tokenString[7:]
+	userName, err := utils.ValidateClientToken(tokenString)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile", err)
+		return
+	}
 
-	// t.Execute(w, map[string]interface{}{
-	// 	"ProxyURL": os.Getenv("PROXY_URL"),
-	// })
+	profileResp, err := newService.ProfileClient(userName)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile", err)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(profileResp); err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile", err)
+		return
+	}
 }
 
 func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {

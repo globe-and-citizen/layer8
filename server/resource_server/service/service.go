@@ -68,6 +68,21 @@ func (s *service) LoginPreCheckUser(req dto.LoginPrecheckDTO) (models.LoginPrech
 	return loginPrecheckResp, nil
 }
 
+func (s *service) LoginPreCheckClient(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error) {
+	if err := validator.New().Struct(req); err != nil {
+		return models.LoginPrecheckResponseOutput{}, err
+	}
+	username, salt, err := s.repository.LoginPreCheckClient(req)
+	if err != nil {
+		return models.LoginPrecheckResponseOutput{}, err
+	}
+	loginPrecheckResp := models.LoginPrecheckResponseOutput{
+		Username: username,
+		Salt:     salt,
+	}
+	return loginPrecheckResp, nil
+}
+
 func (s *service) LoginUser(req dto.LoginUserDTO) (models.LoginUserResponseOutput, error) {
 	if err := validator.New().Struct(req); err != nil {
 		return models.LoginUserResponseOutput{}, err
@@ -77,6 +92,22 @@ func (s *service) LoginUser(req dto.LoginUserDTO) (models.LoginUserResponseOutpu
 		return models.LoginUserResponseOutput{}, err
 	}
 	tokenResp, err := utils.CompleteLogin(req, user)
+	if err != nil {
+		return models.LoginUserResponseOutput{}, err
+	}
+	return tokenResp, nil
+}
+
+func (s *service) LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseOutput, error) {
+	if err := validator.New().Struct(req); err != nil {
+		return models.LoginUserResponseOutput{}, err
+	}
+	client, err := s.repository.LoginClient(req)
+	if err != nil {
+		return models.LoginUserResponseOutput{}, err
+	}
+
+	tokenResp, err := utils.CompleteClientLogin(req, client)
 	if err != nil {
 		return models.LoginUserResponseOutput{}, err
 	}
@@ -105,6 +136,20 @@ func (s *service) ProfileUser(userID uint) (models.ProfileResponseOutput, error)
 		}
 	}
 	return profileResp, nil
+}
+
+func (s *service) ProfileClient(userName string) (models.ClientResponseOutput, error) {
+	clientData, err := s.repository.ProfileClient(userName)
+	if err != nil {
+		return models.ClientResponseOutput{}, err
+	}
+	clientModel := models.ClientResponseOutput{
+		ID:          clientData.ID,
+		Secret:      clientData.Secret,
+		Name:        clientData.Username,
+		RedirectURI: clientData.RedirectURI,
+	}
+	return clientModel, nil
 }
 
 func (s *service) VerifyEmail(userID uint) error {

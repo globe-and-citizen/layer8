@@ -79,6 +79,21 @@ func (ms *MockService) GetClientData(clientName string) (models.ClientResponseOu
 	}, nil
 }
 
+func (ms *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseOutput, error) {
+	// Mock implementation for testing purposes.
+	return models.LoginUserResponseOutput{}, nil
+}
+
+func (ms *MockService) LoginPreCheckClient(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error) {
+	// Mock implementation for testing purposes.
+	return models.LoginPrecheckResponseOutput{}, nil
+}
+
+func (ms *MockService) ProfileClient(userID string) (models.ClientResponseOutput, error) {
+	// Mock implementation for testing purposes.
+	return models.ClientResponseOutput{}, nil
+}
+
 func TestRegisterUserHandler(t *testing.T) {
 	// Mock request body
 	requestBody := []byte(`{
@@ -125,10 +140,10 @@ func TestRegisterUserHandler(t *testing.T) {
 
 func TestRegisterClientHandler(t *testing.T) {
 	// Mock request body
-	requestBody := []byte(`{"name": "testclient", "redirect_uri": "https://gcitizen.com/callback"}`)
+	requestBody := []byte(`{"name": "testclient", "redirect_uri": "https://gcitizen.com/callback", "username": "test_user", "password": "12345"}`)
 
 	// Create a mock request
-	req, err := http.NewRequest("POST", "/register", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", "/api/v1/register-client", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}

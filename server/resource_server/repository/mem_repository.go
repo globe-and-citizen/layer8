@@ -26,7 +26,7 @@ func NewMemoryRepository() interfaces.IRepository {
 
 func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO) error {
 	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
-	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
+	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt) // what if two user's use the same password?
 	userID := fmt.Sprintf("%d", len(r.storage))
 	r.storage[req.Password] = map[string]string{
 		"user_id":        userID,
@@ -50,12 +50,17 @@ func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO) error {
 }
 
 func (r *MemoryRepository) RegisterClient(req dto.RegisterClientDTO) error {
+	if _, ok := r.storage[req.Username]; ok {
+		return fmt.Errorf("Client username already registered.")
+	}
 	clientUUID := utils.GenerateUUID()
 	clientSecret := utils.GenerateSecret(utils.SecretSize)
-	r.storage[req.Name] = map[string]string{
+	r.storage[req.Username] = map[string]string{
 		"id":           clientUUID,
 		"secret":       clientSecret,
 		"redirect_uri": req.RedirectURI,
+		"username":     req.Username,
+		"password":     req.Password,
 	}
 	return nil
 }
@@ -104,6 +109,26 @@ func (r *MemoryRepository) LoginUser(req dto.LoginUserDTO) (models.User, error) 
 	return user, nil
 }
 
+func (r *MemoryRepository) LoginClient(req dto.LoginClientDTO) (models.Client, error) {
+	if _, ok := r.storage[req.Username]; !ok {
+		return models.Client{}, fmt.Errorf("user not found")
+	}
+
+	if r.storage[req.Username]["password"] != req.Password {
+		return models.Client{}, fmt.Errorf("invalid password")
+	}
+
+	client := models.Client{
+		ID:          r.storage[req.Username]["id"],
+		Secret:      r.storage[req.Username]["secret"],
+		RedirectURI: r.storage[req.Username]["redirect_uri"],
+		Username:    r.storage[req.Username]["username"],
+	}
+
+	fmt.Println("client: ", client)
+	return client, nil
+}
+
 func (r *MemoryRepository) ProfileUser(userID uint) (models.User, []models.UserMetadata, error) {
 	if _, ok := r.storage[fmt.Sprintf("%d", userID)]; !ok {
 		return models.User{}, []models.UserMetadata{}, fmt.Errorf("user not found")
@@ -135,6 +160,20 @@ func (r *MemoryRepository) ProfileUser(userID uint) (models.User, []models.UserM
 	return user, userMetadata, nil
 }
 
+func (r *MemoryRepository) ProfileClient(username string) (models.Client, error) {
+	if _, ok := r.storage[username]; !ok {
+		return models.Client{}, fmt.Errorf("user not found")
+	}
+
+	client := models.Client{
+		ID:          r.storage[username]["id"],
+		Secret:      r.storage[username]["secret"],
+		RedirectURI: r.storage[username]["redirect_uri"],
+		Username:    username,
+	}
+	return client, nil
+}
+
 func (r *MemoryRepository) VerifyEmail(userID uint) error {
 	if _, ok := r.storage[fmt.Sprintf("%d", userID)]; !ok {
 		return fmt.Errorf("user not found")
@@ -160,6 +199,11 @@ func (r *MemoryRepository) LoginUserPrecheck(username string) (string, error) {
 		return "", fmt.Errorf("user not found")
 	}
 	return r.storage[username]["salt"], nil
+}
+
+func (r *MemoryRepository) LoginPreCheckClient(req dto.LoginPrecheckDTO) (string, string, error) {
+
+	return "r.storage[username]['salt']", "second string...", nil
 }
 
 func (r *MemoryRepository) GetUser(username string) (*serverModels.User, error) {

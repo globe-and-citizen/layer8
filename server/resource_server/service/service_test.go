@@ -120,6 +120,18 @@ func (m *mockRepository) GetTTL(key string) ([]byte, error) {
 	return []byte{}, nil
 }
 
+func (m *mockRepository) LoginClient(req dto.LoginClientDTO) (models.Client, error) {
+	return models.Client{}, nil
+}
+
+func (m *mockRepository) LoginPreCheckClient(req dto.LoginPrecheckDTO) (string, string, error) {
+	return "", "", nil
+}
+
+func (m *mockRepository) ProfileClient(userID string) (models.Client, error) {
+	return models.Client{}, nil
+}
+
 func TestRegisterUser(t *testing.T) {
 	// Create a new mock repository
 	mockRepo := new(mockRepository)
@@ -264,6 +276,8 @@ func TestRegisterClient(t *testing.T) {
 	req := dto.RegisterClientDTO{
 		Name:        "testclient",
 		RedirectURI: "https://gcitizen.com/callback",
+		Username:    "test_user",
+		Password:    "12345",
 	}
 
 	// Call the RegisterClient method of the mock service

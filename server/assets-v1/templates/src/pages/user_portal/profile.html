@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="/assets-v1/templates/assets/styles/output.css"
+    />
+    <link
+      rel="stylesheet"
+      href="/assets-v1/templates/assets/styles/base.css"
+    />
+    <title>Authentication Page</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+  </head>
+  <body class="relative">
+    <div id="app">
+      <div @click="showSidebar(false)" v-show="isUserPortalSidebar" class="absolute block md:hidden lg:hidden top-0 left-0 h-dvh w-full bg-opacity-50 backdrop-blur-lg text-black">
+        <div class="w-[70%] h-dvh md:col-span-1 bg-white rounded-r-2xl p-3">
+          <div class="h-dvh block md:hidden lg:hidden">
+            <span class="flex justify-end cursor-pointer" @click="showSidebar(false)">&#x2715;</span>
+            <div class="bg-white px-2 py-4">
+              <img
+                src="../assets-v1/images/L8Logo.png"
+                alt="Layer8"
+                width="250"
+                height="535"
+                class="mb-8"
+              />
+              <div>
+                <div
+                  class="flex space-x-2.5 items-center justify-center py-2 cursor-pointer mb-2 rounded-md bg-[#4F80E1]"
+                >
+                  <img src="/assets-v1/templates/assets/images/icons/dashboard-logo.svg" alt="">
+                  <span class="font-medium text-white text-base">Dashboard</span>
+                </div>
+                <div
+                  @click="logoutUser"
+                  class="flex space-x-2.5 items-center justify-center py-2 cursor-pointer mb-2"
+                >
+                  <img src="/assets-v1/templates/assets/images/icons/logout-icons-user-portal.svg" alt="">
+                  <span class="font-medium text-black text-base">Log out</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid md:grid-cols-9 lg:grid-cols-9">
+        <div class="hidden md:block lg:block col-span-2 border-r border-[#E6E6E6] h-dvh">
+          <div class="bg-white px-3 md:px-5 lg:px-7 py-4 md:py-7 lg:py-9">
+            <img
+              src="../assets-v1/images/L8Logo.png"
+              alt="Layer8"
+              width="250"
+              height="535"
+              class="md:mb-8 lg:mb-12"
+            />
+            <div>
+              <div
+                class="flex space-x-2.5 items-center md:pl-4 lg:pl-7 py-2.5 cursor-pointer md:mb-3 lg:mb-5 rounded-md bg-[#4F80E1]"
+              >
+                <img src="/assets-v1/templates/assets/images/icons/dashboard-logo.svg" alt="">
+                <span class="font-medium text-white text-base">Dashboard</span>
+              </div>
+              <div
+                @click="logoutUser"
+                class="flex space-x-2.5 items-center md:pl-4 lg:pl-7 py-3 cursor-pointer md:mb-3 lg:mb-5"
+              >
+                <img src="/assets-v1/templates/assets/images/icons/logout-icons-user-portal.svg" alt="">
+                <span class="font-medium text-black text-base">Log out</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="md:col-span-7 lg:col-span-7">
+          <div class="bg-white py-2 md:py-5 mx-4 md:mx-10 flex justify-between md:justify-end items-center">
+            <div class="block md:hidden lg:hidden cursor-pointer" @click="showSidebar(true)">
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 6C2 5.44772 2.44772 5 3 5H21C21.5523 5 22 5.44772 22 6C22 6.55228 21.5523 7 21 7H3C2.44772 7 2 6.55228 2 6Z" fill="currentColor" /><path d="M2 12.0322C2 11.4799 2.44772 11.0322 3 11.0322H21C21.5523 11.0322 22 11.4799 22 12.0322C22 12.5845 21.5523 13.0322 21 13.0322H3C2.44772 13.0322 2 12.5845 2 12.0322Z" fill="currentColor" /><path d="M3 17.0645C2.44772 17.0645 2 17.5122 2 18.0645C2 18.6167 2.44772 19.0645 3 19.0645H21C21.5523 19.0645 22 18.6167 22 18.0645C22 17.5122 21.5523 17.0645 21 17.0645H3Z" fill="currentColor" /></svg>
+            </div>
+            <div class="flex space-x-4 items-center">
+              <div>
+                <div class="font-bold text-sm text-black text-end block">
+                  {{ user.first_name }} {{ user.last_name }}
+                </div>
+                <div class="font-bold text-xs text-[#8F8F8F] text-end">
+                  {{ user.username }}
+                </div>
+              </div>
+              <img
+                src="/assets-v1/templates/assets/images/user_image.png"
+              />
+            </div>
+          </div>
+          <div class="bg-[#F6F8FF] p-4 md:p-6 lg:p-10">
+            <div class="hidden md:block lg:block">
+              <div class="flex flex-col md:flex-row md:justify-between items-center mb-3 md:mb-5">
+                <div>
+                  <div class="font-bold text-2xl md:text-2xl lg:text-3xl text-black mb text-center md:text-start">
+                    Settings
+                  </div>
+                  <div class="font-normal text-base text-black mb-4 text-start">
+                    Manage your account settings
+                  </div>
+                </div>
+                <div class="flex space-x-5">
+                  <button
+                    @click="changeDisplayName"
+                    class="w-[128px] bg-white border-2 border-[#4F80E1] rounded-lg py-1 md:py-2 lg:py-3 font-medium text-[#4F80E1] hover:text-white hover:bg-[#4F80E1] hover:border-none"
+                  >
+                    Save change
+                  </button>
+                  <button
+                    class="w-[128px] bg-white border-2 border-[#4F80E1] rounded-lg py-1 md:py-2 lg:py-3 font-medium text-[#4F80E1] hover:text-white hover:bg-[#4F80E1] hover:border-none"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl border-none p-4 md:p-8 lg:p-12">
+              <div class="pb-3 mb-5 border-b border-[#D9D9D9]">
+                <div class="font-bold text-xl md:text-3xl text-black mb-3 text-start">
+                  General Information
+                </div>
+                <div class="font-normal text-sm md:text-xs text-black text-start">
+                  Lorem ipsum dolor sit amet consectetur.
+                </div>
+              </div>
+              <div class="flex space-x-2 md:space-x-5 items-center mb-4 md:mb-8">
+                <img
+                  class="w-12 md:w-16 h-12 md:h-16"
+                  src="/assets-v1/templates/assets/images/user_image.svg"
+                />
+                <div>
+                  <div class="font-bold text-sm text-black text-start block">
+                    {{ user.first_name }} {{ user.last_name }}
+                  </div>
+                  <div class="font-bold text-[10px] text-[#8F8F8F] text-start">
+                    {{ user.username }}
+                  </div>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 md:gap-x-8 lg:gap-x-12 gap-y-3 md:gap-y-6 mb-6">
+                <div>
+                  <label class="font-normal text-black text-sm text-start mb-2 block">Username</label>
+                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" readonly :value="user.username" />
+                </div>
+                <div>
+                  <label class="font-normal text-black text-sm text-start mb-2 block">First Name</label>
+                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" readonly :value="user.first_name" />
+                </div>
+                <div>
+                  <label class="font-normal text-black text-sm text-start mb-2 block">Last Name</label>
+                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" readonly :value="user.last_name" />
+                </div>
+                <div>
+                  <label class="font-normal text-black text-sm text-start mb-2 block">Country</label>
+                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" readonly :value="user.country" />
+                </div>
+                <div>
+                  <label class="font-normal text-black text-sm text-start mb-2 block">Email</label>
+                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" readonly :value="user.email" />
+                </div>
+                <div>
+                  <label class="font-normal text-black text-sm text-start mb-2 block">Display Name</label>
+                  <input class="border border-[#BDC3CA] rounded-lg px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" type="text" v-model="newDisplayName" />
+                </div>
+                <div class="md:col-span-2 self-center text-base md:text-xl">Email is <span v-if="!user.email_verified">not</span> verified.</div>
+                <button
+                  v-if="!user.email_verified"
+                  @click="verifyEmail"
+                  class="w-full bg-white border-2 border-[#4F80E1] rounded-lg py-2 md:py-3 lg:py-4 font-medium text-[#4F80E1] hover:text-white hover:bg-[#4F80E1] hover:border-none"
+                >
+                  Verify Email
+                </button>
+              </div>
+              <div class="block md:hidden lg:hidden">
+                <div class="flex justify-between items-center">
+                  <button
+                    @click="changeDisplayName"
+                    class="w-full bg-white border-2 border-[#4F80E1] rounded-lg py-2 font-medium text-[#4F80E1] hover:text-white hover:bg-[#4F80E1] hover:border-none"
+                  >
+                    Save change
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { ref, onMounted, createApp } = Vue;
+
+      const token = ref(localStorage.getItem("token") || null);
+      const user = ref({
+        email: "",
+        username: "",
+        first_name: "",
+        last_name: "",
+        display_name: "",
+        country: "",
+        email_verified: false,
+      });
+      const newDisplayName = ref("")
+      const isUserPortalSidebar = ref(false)
+
+      const getUserDetails = async () => {
+        try {
+          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/profile",
+          const resp = await window.fetch(
+            "http://localhost:5001/api/v1/profile",
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "Application/Json",
+                Authorization: `Bearer ${token.value}`,
+              },
+            }
+          );
+          const data = await resp.json();
+          user.value = data;
+          newDisplayName.value = data.display_name
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      const logoutUser = () => {
+        token.value = null;
+        localStorage.removeItem("token");
+        //window.location.href = "https://layer8devproxy.net/";
+        window.location.href = "http://localhost:5001/";
+      };
+
+      const verifyEmail = async () => {
+        try {
+          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/verify-email",
+          const resp = await window.fetch(
+            "http://localhost:5001/api/v1/verify-email",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "Application/Json",
+                Authorization: `Bearer ${token.value}`,
+              },
+            }
+          );
+          const data = await resp.json();
+          if (data.message === "OK!") {
+            alert("Email verified!");
+            user.value.email_verified = true;
+          } else {
+            alert("Email verification failed!");
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      const changeDisplayName = async () => {
+        try {
+          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/change-display-name",
+          const resp = await window.fetch(
+            "http://localhost:5001/api/v1/change-display-name",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "Application/Json",
+                Authorization: `Bearer ${token.value}`,
+              },
+              body: JSON.stringify({
+                display_name: newDisplayName.value,
+              }),
+            }
+          );
+          const data = await resp.json();
+          if (data.message === "OK!") {
+            alert("Display name changed!");
+            user.value.display_name = newDisplayName.value;
+          } else {
+            alert("Display name change failed!");
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      const showSidebar = (value) => {
+        isUserPortalSidebar.value = value
+        document.body.style.overflow = value ? "hidden" : "auto";
+      }
+
+      const app = createApp({
+        setup() {
+          onMounted(() => {
+            getUserDetails();
+          });
+
+          return {
+            user,
+            changeDisplayName,
+            verifyEmail,
+            logoutUser,
+            newDisplayName,
+            showSidebar,
+            isUserPortalSidebar
+          };
+        },
+      });
+
+      app.mount("#app");
+    </script>
+  </body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="/assets-v1/templates/assets/styles/output.css"
+    />
+    <link
+      rel="stylesheet"
+      href="/assets-v1/templates/assets/styles/base.css"
+    />
+    <link rel="icon" href="/favicon.ico" />
+    <title>Welcome | Layer8</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-router@4"></script>
+  </head>
+  <body>
+    <div id="app">
+      <div class="welcome-container">
+        <div class="flex flex-col lg:flex-row space-x-0 lg:space-x-7 justify-center h-dvh">
+          <div class="self-center mb-4">
+            <h1
+              class="text-center lg:text-start md:text-center md:mb-12 mb-4 md:text-[42px] text-3xl font-bold text-[#333333]"
+            >
+              Welcome page!
+            </h1>
+            <p class="text-center lg:text-start md:text-center font-normal text-sm text-[#333333] md:mb-11 mb-4">
+              Explore the incredible features and benefits our platform has to
+              offer. From user-friendly interfaces to advanced tools, we're
+              dedicated to making your experience extraordinary. To get started,
+              please choose the appropriate login option below.
+            </p>
+            <div class="flex space-x-7 justify-center lg:justify-start md:justify-center">
+              <button
+                @click="loginAsAUser"
+                class="animate-bounce border border-black bg-white md:px-10 px-2 md:py-4 py-2 text-[211F54] font-normal text-sm hover:bg-black hover:text-white"
+              >
+                Login as a User
+              </button>
+              <button
+                @click="loginAsAClient"
+                class="animate-bounce border border-black bg-white md:px-10 px-2 md:py-4 py-2 text-[211F54] font-normal text-sm hover:bg-black hover:text-white"
+              >
+                Login as a Client
+              </button>
+            </div>
+          </div>
+          <img
+            class="animate-wiggle w-[264px] lg:w-[564px] md:w-[364px] h-[254px] md:h-[364px] lg:h-[564px] self-center"
+            src="/assets-v1/templates/assets/images/team-working.png"
+          />
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { createApp } = Vue;
+
+      const loginAsAUser = async () => {
+        //window.location.href = "https://layer8devproxy.net/user-login-page";
+        window.location.href = "http://localhost:5001/user-login-page";
+      };
+
+      const loginAsAClient = async () => {
+        //window.location.href = "https://layer8devproxy.net/client-login-page";
+        window.location.href = "http://localhost:5001/client-login-page";
+      };
+
+      const app = createApp({
+        setup() {
+          return {
+            loginAsAUser,
+            loginAsAClient,
+          };
+        },
+      });
+
+      app.mount("#app");
+    </script>
+  </body>
+</html>
