@@ -126,7 +126,7 @@
             alert("Please enter a name and redirect url!");
             return;
           }
-          await window.fetch("[[ .ProxyURL ]]/api/v1/register-client", {
+          await window.fetch("{{ .ProxyURL }}/api/v1/register-client", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -146,7 +146,7 @@
       };
       const getClientData = async (clientName) => {
         try {
-          const resp = await window.fetch("[[ .ProxyURL ]]/api/v1/getClient", {
+          const resp = await window.fetch("{{ .ProxyURL }}/api/v1/getClient", {
               method: "GET",
               headers: {
                 "Content-Type": "Application/Json",

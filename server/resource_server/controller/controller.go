@@ -2,8 +2,11 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
+	"html/template"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
@@ -11,33 +14,73 @@ import (
 )
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	if !utils.IsMethodValid(w, r, http.MethodGet) {
+
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Fprintln(w, http.StatusText(http.StatusMethodNotAllowed))
 		return
 	}
 
-	utils.ParseHTML(w, "homeView.html", map[string]interface{}{
+	utils.GetPwd()
+
+	// var relativePathIndex = "assets-v1/templates/homeView.html"
+	// indexPath := filepath.Join(utils.WorkingDirectory, relativePathIndex)
+	// fmt.Println("indexPath: ", indexPath)
+	// http.ServeFile(w, r, indexPath)
+
+	// load the homeView page
+	t, err := template.ParseFiles("assets-v1/templates/homeView.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	t.Execute(w, map[string]interface{}{
 		"ProxyURL": os.Getenv("PROXY_URL"),
 	})
+
 }
 
 func UserHandler(w http.ResponseWriter, r *http.Request) {
-	if !utils.IsMethodValid(w, r, http.MethodGet) {
+
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Fprintln(w, http.StatusText(http.StatusMethodNotAllowed))
 		return
 	}
 
-	utils.ParseHTML(w, "userView.html", map[string]interface{}{
-		"ProxyURL": os.Getenv("PROXY_URL"),
-	})
+	utils.GetPwd()
+
+	var relativePathUser = "assets-v1/templates/userView.html"
+	userPath := filepath.Join(utils.WorkingDirectory, relativePathUser)
+	fmt.Println("userPath: ", userPath)
+	http.ServeFile(w, r, userPath)
 }
 
 func ClientHandler(w http.ResponseWriter, r *http.Request) {
-	if !utils.IsMethodValid(w, r, http.MethodGet) {
+
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Fprintln(w, http.StatusText(http.StatusMethodNotAllowed))
 		return
 	}
 
-	utils.ParseHTML(w, "registerClient.html", map[string]interface{}{
-		"ProxyURL": os.Getenv("PROXY_URL"),
-	})
+	utils.GetPwd()
+
+	var relativePathUser = "assets-v1/templates/registerClient.html"
+	userPath := filepath.Join(utils.WorkingDirectory, relativePathUser)
+	fmt.Println("userPath: ", userPath)
+	http.ServeFile(w, r, userPath)
+
+	// load the registerClient page
+	// t, err := template.ParseFiles("assets-v1/templates/registerClient.html")
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+
+	// t.Execute(w, map[string]interface{}{
+	// 	"ProxyURL": os.Getenv("PROXY_URL"),
+	// })
 }
 
 func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {

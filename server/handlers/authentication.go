@@ -2,7 +2,7 @@ package handlers
 
 import (
 	svc "globe-and-citizen/layer8/server/internals/service"
-	"globe-and-citizen/layer8/server/resource_server/utils"
+	"html/template"
 	"net/http"
 	"os"
 )
@@ -26,13 +26,17 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		utils.ParseHTML(w, "login.html",
-			map[string]interface{}{
-				"HasNext":  next != "",
-				"Next":     next,
-				"ProxyURL": os.Getenv("PROXY_URL"),
-			},
-		)
+		// load the login page
+		t, err := template.ParseFiles("assets-v1/templates/login.html")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		t.Execute(w, map[string]interface{}{
+			"HasNext":  next != "",
+			"Next":     next,
+			"ProxyURL": os.Getenv("PROXY_URL"),
+		})
 		return
 	case "POST":
 		next := r.URL.Query().Get("next")
@@ -41,25 +45,31 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		// login the user
 		rUser, err := service.LoginUser(username, password)
 		if err != nil {
-			utils.ParseHTML(w, "login.html",
-				map[string]interface{}{
-					"HasNext": next != "",
-					"Next":    next,
-					"Error":   err.Error(),
-				},
-			)
+			t, errT := template.ParseFiles("assets-v1/templates/login.html")
+			if errT != nil {
+				http.Error(w, errT.Error(), http.StatusInternalServerError)
+				return
+			}
+			t.Execute(w, map[string]interface{}{
+				"HasNext": next != "",
+				"Next":    next,
+				"Error":   err.Error(),
+			})
 			return
 		}
 		// set the token cookie
 		token, ok := rUser["token"].(string)
 		if !ok {
-			utils.ParseHTML(w, "login.html",
-				map[string]interface{}{
-					"HasNext": next != "",
-					"Next":    next,
-					"Error":   "could not get token",
-				},
-			)
+			t, err := template.ParseFiles("assets-v1/templates/login.html")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			t.Execute(w, map[string]interface{}{
+				"HasNext": next != "",
+				"Next":    next,
+				"Error":   "could not get token",
+			})
 			return
 		}
 		http.SetCookie(w, &http.Cookie{
@@ -95,13 +105,17 @@ func Register(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		utils.ParseHTML(w, "registerClient.html",
-			map[string]interface{}{
-				"HasNext":  next != "",
-				"Next":     next,
-				"ProxyURL": os.Getenv("PROXY_URL"),
-			},
-		)
+		// load the login page
+		t, err := template.ParseFiles("assets-v1/templates/registerClient.html")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		t.Execute(w, map[string]interface{}{
+			"HasNext":  next != "",
+			"Next":     next,
+			"ProxyURL": os.Getenv("PROXY_URL"),
+		})
 		return
 	case "POST":
 		next := r.URL.Query().Get("next")
@@ -110,31 +124,35 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		// login the user
 		rUser, err := service.LoginUser(username, password)
 		if err != nil {
-			utils.ParseHTML(w, "registerClient.html",
-				map[string]interface{}{
-					"HasNext":  next != "",
-					"Next":     next,
-					"Error":    err.Error(),
-					"ProxyURL": os.Getenv("PROXY_URL"),
-				},
-			)
+			t, errT := template.ParseFiles("assets-v1/templates/registerClient.html")
+			if errT != nil {
+				http.Error(w, errT.Error(), http.StatusInternalServerError)
+				return
+			}
+			t.Execute(w, map[string]interface{}{
+				"HasNext":  next != "",
+				"Next":     next,
+				"Error":    err.Error(),
+				"ProxyURL": os.Getenv("PROXY_URL"),
+			})
 			return
 		}
-
 		// set the token cookie
 		token, ok := rUser["token"].(string)
 		if !ok {
-			utils.ParseHTML(w, "registerClient.html",
-				map[string]interface{}{
-					"HasNext":  next != "",
-					"Next":     next,
-					"Error":    "could not get token",
-					"ProxyURL": os.Getenv("PROXY_URL"),
-				},
-			)
+			t, err := template.ParseFiles("assets-v1/templates/registerClient.html")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			t.Execute(w, map[string]interface{}{
+				"HasNext":  next != "",
+				"Next":     next,
+				"Error":    "could not get token",
+				"ProxyURL": os.Getenv("PROXY_URL"),
+			})
 			return
 		}
-
 		http.SetCookie(w, &http.Cookie{
 			Name:  "token",
 			Value: token,
