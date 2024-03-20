@@ -120,6 +120,18 @@ func (m *mockRepository) GetTTL(key string) ([]byte, error) {
 	return []byte{}, nil
 }
 
+func (m *mockRepository) LoginClient(req dto.LoginClientDTO) (models.Client, error) {
+	return models.Client{}, nil
+}
+
+func (m *mockRepository) LoginPreCheckClient(req dto.LoginPrecheckDTO) (string, string, error) {
+	return "", "", nil
+}
+
+func (m *mockRepository) ProfileClient(userID string) (models.Client, error) {
+	return models.Client{}, nil
+}
+
 func TestRegisterUser(t *testing.T) {
 	// Create a new mock repository
 	mockRepo := new(mockRepository)
