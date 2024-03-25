@@ -107,9 +107,8 @@
             alert("Please enter a username and password!");
             return;
           }
-          //const respOne = await window.fetch("https://layer8devproxy.net/api/v1/login-precheck",
           const respOne = await window.fetch(
-            "https://layer8devproxy.net/v1/login-precheck",
+            "https://layer8devproxy.net/api/v1/login-precheck",
             {
               method: "POST",
               headers: {
@@ -122,7 +121,6 @@
           );
           const responseOne = await respOne.json();
           console.log(responseOne.salt);
-          //const respTwo = await window.fetch("https://layer8devproxy.net/api/v1/login-user",
           const respTwo = await window.fetch(
             "https://layer8devproxy.net/api/v1/login-user",
             {
@@ -144,7 +142,6 @@
             localStorage.setItem("token", responseTwo.token);
             alert("Login successful!");
             /* router.push("/user"); */
-            //window.location.href = "https://layer8devproxy.net/user";
             window.location.href = "https://layer8devproxy.net/user";
           } else {
             console.error("No token received.");

@@ -210,7 +210,6 @@
 
       const getUserDetails = async () => {
         try {
-          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/profile",
           const resp = await window.fetch(
             "https://layer8devproxy.net/api/v1/profile",
             {
@@ -232,13 +231,11 @@
       const logoutUser = () => {
         token.value = null;
         localStorage.removeItem("token");
-        //window.location.href = "https://layer8devproxy.net/";
         window.location.href = "https://layer8devproxy.net/";
       };
 
       const verifyEmail = async () => {
         try {
-          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/verify-email",
           const resp = await window.fetch(
             "https://layer8devproxy.net/api/v1/verify-email",
             {
@@ -263,7 +260,6 @@
 
       const changeDisplayName = async () => {
         try {
-          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/change-display-name",
           const resp = await window.fetch(
             "https://layer8devproxy.net/api/v1/change-display-name",
             {
