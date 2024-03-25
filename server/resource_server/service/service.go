@@ -29,7 +29,6 @@ func (s *service) RegisterUser(req dto.RegisterUserDTO) error {
 		return err
 	}
 	return s.repository.RegisterUser(req)
-
 }
 
 func (s *service) RegisterClient(req dto.RegisterClientDTO) error {

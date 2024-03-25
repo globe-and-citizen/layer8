@@ -89,10 +89,10 @@ func (ms *MockService) LoginPreCheckClient(req dto.LoginPrecheckDTO) (models.Log
 	return models.LoginPrecheckResponseOutput{}, nil
 }
 
-// func (ms *MockService) ProfileClient(userID string) (models.ClientResponseOutput, error) {
-// 	// Mock implementation for testing purposes.
-// 	return models.ClientResponseOutput{}, nil
-// }
+func (ms *MockService) ProfileClient(userID string) (models.ClientResponseOutput, error) {
+	// Mock implementation for testing purposes.
+	return models.ClientResponseOutput{}, nil
+}
 
 func TestRegisterUserHandler(t *testing.T) {
 	// Mock request body
@@ -420,7 +420,7 @@ func TestUpdateDisplayNameHandler(t *testing.T) {
 	assert.Equal(t, "Display name updated successfully", response.Data.(string))
 }
 
-// Javokhir started testing
+// Javokhir started the testing
 func (m *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseOutput, error) {
 	// Mock implementation for LoginClient method
 	return models.LoginUserResponseOutput{
@@ -465,59 +465,9 @@ func TestLoginClientHandler(t *testing.T) {
 	assert.Equal(t, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw", tokenResp.Token)
 }
 
-//	func (m *MockService) ProfileClient(username string) (models.LoginUserResponseOutput, error) {
-//		// Mock implementation for ProfileClient method
-//		return map[string]string{
-//			"username": username,
-//			"email":    "test@example.com",
-//		}, nil
-//	}
-func (m *MockService) ProfileClient(name string) (models.ClientResponseOutput, error) {
-	// Mock implementation for ProfileClient method
-	return models.ClientResponseOutput{
-		ID:          "0",
-		Secret:      "",
-		Name:        "testuser",
-		RedirectURI: "https://gcitizen.com/callback",
-	}, nil
-}
-
-// func TestClientProfileHandler(t *testing.T) {
-// 	// Prepare a mock service
-// 	mockSvc := &MockService{}
-
-// 	// Prepare a request with a mock token in the authorization header
-// 	req := httptest.NewRequest("GET", "/api/v1/client-profile", nil)
-// 	req.Header.Set("Authorization", "Bearer mocktoken123")
-
-// 	// Set the mock service in the request context
-// 	req = req.WithContext(context.WithValue(req.Context(), "service", mockSvc))
-
-// 	// Create a response recorder to capture the handler's response
-// 	w := httptest.NewRecorder()
-
-// 	// Call the handler function
-// 	Ctl.ClientProfileHandler(w, req)
-
-// 	// Check the response status code
-// 	assert.Equal(t, http.StatusOK, w.Code)
-
-// 	// Decode the response body
-// 	var profile models.ClientResponseOutput
-// 	err := json.NewDecoder(w.Body).Decode(&profile)
-// 	if err != nil {
-// 		t.Fatalf("failed to decode response body: %v", err)
-// 	}
-
-// 	// Validate the response
-// 	assert.Equal(t, "testuser", profile.Name)
-// 	assert.Equal(t, "https://gcitizen.com/callback", profile.RedirectURI)
-// }
-
 func setMockServiceInContext(req *http.Request) *http.Request {
 	mockSvc := &MockService{}
 	ctx := context.WithValue(req.Context(), "service", mockSvc)
 	return req.WithContext(ctx)
 }
-
-//Javokhir finished testing
+// Javokhir finished the testing
