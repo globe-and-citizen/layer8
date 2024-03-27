@@ -19,15 +19,19 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\n\n*************")
 	fmt.Println(r.Method) // > GET  | > POST
 	fmt.Println(r.URL)    // (http://localhost:5000/api/v1 ) > /api/v1
-
-	backend := r.URL.Query().Get("backend")
-	if backend == "" {
+	params := r.URL.Query()
+	protocol := r.Header.Get("X-Forwarded-Proto")
+	var backend string
+	if _, ok := params["backend"]; !ok {
 		res := utils.BuildErrorResponse("Failed to get User. Malformed query string.", "", utils.EmptyObj{})
 		if err := json.NewEncoder(w).Encode(res); err != nil {
 			log.Printf("Error sending response: %v", err)
 		}
-
 		return
+	} else {
+		backend = params["backend"][0]
+		backend = protocol + backend
+		fmt.Println("User agent is attempting to initialize this backend SP: ", backend)
 	}
 
 	mpJWT, err := utilities.GenerateStandardToken(os.Getenv("MP_123_SECRET_KEY"))

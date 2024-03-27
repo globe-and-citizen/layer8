@@ -210,9 +210,8 @@
 
       const getUserDetails = async () => {
         try {
-          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/profile",
           const resp = await window.fetch(
-            "http://localhost:5001/api/v1/profile",
+            "https://layer8devproxy.net/api/v1/profile",
             {
               method: "GET",
               headers: {
@@ -232,15 +231,13 @@
       const logoutUser = () => {
         token.value = null;
         localStorage.removeItem("token");
-        //window.location.href = "https://layer8devproxy.net/";
-        window.location.href = "http://localhost:5001/";
+        window.location.href = "https://layer8devproxy.net/";
       };
 
       const verifyEmail = async () => {
         try {
-          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/verify-email",
           const resp = await window.fetch(
-            "http://localhost:5001/api/v1/verify-email",
+            "https://layer8devproxy.net/api/v1/verify-email",
             {
               method: "POST",
               headers: {
@@ -263,9 +260,8 @@
 
       const changeDisplayName = async () => {
         try {
-          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/change-display-name",
           const resp = await window.fetch(
-            "http://localhost:5001/api/v1/change-display-name",
+            "https://layer8devproxy.net/api/v1/change-display-name",
             {
               method: "POST",
               headers: {

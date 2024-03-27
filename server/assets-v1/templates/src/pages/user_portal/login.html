@@ -60,7 +60,7 @@
             </button>
             <a
               class="text-sm text-[#414141] font-normal text-center block cursor-pointer"
-              href="http://localhost:5001/user-register-page"
+              href="https://layer8devproxy.net/user-register-page"
               >Don't have an account? <span class="font-bold">Register</span></a
             >
           </div>
@@ -107,9 +107,8 @@
             alert("Please enter a username and password!");
             return;
           }
-          //const respOne = await window.fetch("https://layer8devproxy.net/api/v1/login-precheck",
           const respOne = await window.fetch(
-            "http://localhost:5001/api/v1/login-precheck",
+            "https://layer8devproxy.net/api/v1/login-precheck",
             {
               method: "POST",
               headers: {
@@ -122,9 +121,8 @@
           );
           const responseOne = await respOne.json();
           console.log(responseOne.salt);
-          //const respTwo = await window.fetch("https://layer8devproxy.net/api/v1/login-user",
           const respTwo = await window.fetch(
-            "http://localhost:5001/api/v1/login-user",
+            "https://layer8devproxy.net/api/v1/login-user",
             {
               method: "POST",
               headers: {
@@ -144,8 +142,7 @@
             localStorage.setItem("token", responseTwo.token);
             alert("Login successful!");
             /* router.push("/user"); */
-            //window.location.href = "https://layer8devproxy.net/user";
-            window.location.href = "http://localhost:5001/user";
+            window.location.href = "https://layer8devproxy.net/user";
           } else {
             console.error("No token received.");
           }

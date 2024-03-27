@@ -28,7 +28,8 @@ func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO) error {
 	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
 	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt) // what if two user's use the same password?
 	userID := fmt.Sprintf("%d", len(r.storage))
-	r.storage[req.Password] = map[string]string{
+	key := fmt.Sprintf("%s:%s", req.Username, req.Password)
+	r.storage[key] = map[string]string{
 		"user_id":        userID,
 		"email":          req.Email,
 		"username":       req.Username,
@@ -41,10 +42,10 @@ func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO) error {
 	}
 	r.storage[req.Username] = map[string]string{
 		"salt":     rmSalt,
-		"password": req.Password,
+		"password": key,
 	}
 	r.storage[userID] = map[string]string{
-		"password": req.Password,
+		"password": key,
 	}
 	return nil
 }
@@ -86,25 +87,26 @@ func (r *MemoryRepository) LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, 
 }
 
 func (r *MemoryRepository) LoginUser(req dto.LoginUserDTO) (models.User, error) {
-	if _, ok := r.storage[req.Password]; !ok {
+	key := fmt.Sprintf("%s:%s", req.Username, req.Password)
+	if _, ok := r.storage[key]; !ok {
 		return models.User{}, fmt.Errorf("user not found")
 	}
-	if r.storage[req.Password]["username"] != req.Username {
+	if r.storage[key]["username"] != req.Username {
 		return models.User{}, fmt.Errorf("invalid username")
 	}
-	UserID := r.storage[req.Password]["user_id"]
+	UserID := r.storage[key]["user_id"]
 	userIdUint, err := strconv.ParseUint(UserID, 10, 32)
 	if err != nil {
 		return models.User{}, err
 	}
 	user := models.User{
 		ID:        uint(userIdUint),
-		Email:     r.storage[req.Password]["email"],
-		Username:  r.storage[req.Password]["username"],
-		Password:  r.storage[req.Password]["password"],
-		FirstName: r.storage[req.Password]["first_name"],
-		LastName:  r.storage[req.Password]["last_name"],
-		Salt:      r.storage[req.Username]["salt"],
+		Email:     r.storage[key]["email"],
+		Username:  r.storage[key]["username"],
+		Password:  r.storage[key]["password"],
+		FirstName: r.storage[key]["first_name"],
+		LastName:  r.storage[key]["last_name"],
+		Salt:      r.storage[key]["salt"],
 	}
 	return user, nil
 }
