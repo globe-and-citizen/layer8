@@ -118,3 +118,26 @@ app.post("/route", async (req, res) => {
 
 ```
 Note: During routine usage, there are no special calls necessary to make use of Layer8. The res.json() & res.send() & res.end() have been overwritten by Layer8 and will be used automatically. 
+
+
+## Setup Metrics Collector
+
+### Prerequisite
+- Docker up and running
+- Docker compose
+
+### Setup
+
+1. Start InfluxDB v2 as a Docker container by running the following command:
+```
+docker compose -f docker-compose-influx.yml up 
+```
+2. Open the InfluxDB dashboard via a browser using the defined credentials in docker-compose-influx.yml on port 8086.
+3. Create an access token in the InfluxDB UI (https://docs.influxdata.com/influxdb/cloud/admin/tokens/create-token/).
+4. Edit the `INFLUXDB_URL` and `INFLUXDB_TOKEN` values in the docker-compose-telegraf.yml file based on the created token.
+5. Start Telegraf by running the following command:
+```
+docker compose -f docker-compose-telegraf.yml up 
+```
+6. After Telegraf is up and running, any metrics collected by the OpenTelemetry SDK could be sent via the gRPC protocol to port 4317.
+7. For our case, set `OTEL_EXPORTER_OTLP_ENDPOINT` to localhost:4317.

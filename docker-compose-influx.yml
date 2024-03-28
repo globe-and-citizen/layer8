@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  influxdb2:
+    image: influxdb:2
+    container_name: influxdb2
+    ports:
+      - 8086:8086
+    volumes:
+      - influxdb2-data:/var/lib/influxdb2
+      - influxdb2-config:/etc/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=influxdbadmin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=somethingthatyoudontknow
+      - DOCKER_INFLUXDB_INIT_ORG=layer8
+      - DOCKER_INFLUXDB_INIT_BUCKET=admin
+volumes:
+  influxdb2-data:
+  influxdb2-config:

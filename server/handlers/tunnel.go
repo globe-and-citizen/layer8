@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,33 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/utils"
 
 	utilities "github.com/globe-and-citizen/layer8-utils"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+)
+
+var (
+	meter = otel.GetMeterProvider().Meter("layer8")
+
+	TotalByteTransferredMetrics, _ = meter.Int64Counter(
+		"total_byte_transferred",
+		metric.WithDescription("The total number of bytes transferred"),
+	)
+
+	TotalRequestMetrics, _ = meter.Int64Counter(
+		"total_request",
+		metric.WithDescription("The total number of requests"),
+	)
+
+	TotalSuccessMetrics, _ = meter.Int64Counter(
+		"total_success",
+		metric.WithDescription("The total number of successful requests"),
+	)
+
+	TotalTunnelInitiated, _ = meter.Int64Counter(
+		"total_tunnel_initiated",
+		metric.WithDescription("The total number of tunnel initiated"),
+	)
 )
 
 // Tunnel forwards the request to the service provider's backend
@@ -112,6 +140,11 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(datatoSend)
 
+	TotalTunnelInitiated.Add(r.Context(), 1,
+		metric.WithAttributes(
+			attribute.String("backend", backend),
+		),
+	)
 }
 
 func Tunnel(w http.ResponseWriter, r *http.Request) {
@@ -197,11 +230,28 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("Copied", n, "bytes from response body to client")
 	fmt.Println("w.Headers 2: ", w.Header())
+
+	TotalRequestMetrics.Add(r.Context(), 1,
+		metric.WithAttributes(
+			attribute.String("backend", host),
+		),
+	)
+
+	TotalSuccessMetrics.Add(r.Context(), 1,
+		metric.WithAttributes(
+			attribute.String("backend", host),
+		),
+	)
+
+	TotalByteTransferredMetrics.Add(r.Context(), int64(binary.Size(bodyBytes)+binary.Size(w.Header())),
+		metric.WithAttributes(
+			attribute.String("backend", host),
+		),
+	)
 }
 
 func TestError(w http.ResponseWriter, r *http.Request) {
 	err := fmt.Errorf("this is a test error")
 	fmt.Println("Test error endpoint:", err.Error())
 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	return
 }
