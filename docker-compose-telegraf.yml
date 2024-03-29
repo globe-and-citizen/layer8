@@ -9,8 +9,8 @@ services:
       - 4317:4317
     restart: always
     environment:
-      - INFLUXDB_URL=http://host.docker.internal:8086
-      - INFLUXDB_TOKEN=w58r-LpM-fCcyvfDC9XDtGATn-Yyz0WJUpMuJqVQ73SS6k4czPCOsvSq3uKGTP1kTXEYc9ehQ6-o9beoXADlIg==
+      - INFLUXDB_URL=${INFLUXDB_URL}
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
