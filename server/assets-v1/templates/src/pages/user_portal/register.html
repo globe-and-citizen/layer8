@@ -13,6 +13,7 @@
     />
     <title>Authentication Page</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+    <script src="/assets-v1/templates/env.js"></script>
   </head>
   <body>
     <div id="app">
@@ -100,7 +101,7 @@
             </button>
             <a
               class="text-sm text-[#414141] font-normal text-center block cursor-pointer"
-              href="http://localhost:5001/user-login-page"
+              :href="backend_url + '/user-login-page'"
               >Already have an account? <span class="font-bold">Login</span></a
             >
           </div>
@@ -142,6 +143,7 @@
       const registerLastName = ref("");
       const registerDisplayName = ref("");
       const registerCountry = ref("");
+      const backend_url = ref(window.env.BACKEND_URL);
 
       const registerUser = async () => {
         try {
@@ -150,7 +152,7 @@
             return;
           }
           //await window.fetch("https://layer8devproxy.net/api/v1/register-user", {
-          await window.fetch("http://localhost:5001/api/v1/register-user", {
+          await window.fetch(`${backend_url.value}/api/v1/register-user`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -166,7 +168,7 @@
             }),
           });
           alert("Registration successful!");
-          window.location.href = "http://localhost:5001/user-login-page";
+          window.location.href = `${backend_url.value}/user-login-page`;
         } catch (error) {
           console.error(error);
           alert("Registration failed!");
@@ -184,6 +186,7 @@
             registerDisplayName,
             registerCountry,
             registerPassword,
+            backend_url
           };
         },
       });

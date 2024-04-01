@@ -13,6 +13,7 @@
     />
     <title>Authentication Page</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+    <script src="/assets-v1/templates/env.js"></script>
   </head>
   <body class="bg-[#E5E5E5] h-dvh relative">
     <div id="app">
@@ -133,12 +134,13 @@
       });
       const isCopied = ref("")
       const sidebarShow = ref(false)
+      const backend_url = ref(window.env.BACKEND_URL);
 
       const getUserDetails = async () => {
         try {
           //const resp = await window.fetch("https://layer8devproxy.net/api/v1/profile",
           const resp = await window.fetch(
-            "http://localhost:5001/api/v1/client-profile",
+            `${backend_url.value}/api/v1/client-profile`,
             {
               method: "GET",
               headers: {
@@ -174,7 +176,7 @@
       const logoutUser = () => {
         token.value = null;
         localStorage.removeItem("clientToken");
-        window.location.href = "http://localhost:5001/";
+        window.location.href = `${backend_url.value}/`;
       };
 
       const showSidebar = (value) => {
@@ -194,7 +196,8 @@
             copyToClipboard,
             isCopied,
             sidebarShow,
-            showSidebar
+            showSidebar,
+            backend_url
           };
         },
       });
