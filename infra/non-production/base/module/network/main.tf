@@ -45,7 +45,7 @@ resource "aws_eip" "nat" {
 }
 
 resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.vpc
+  vpc_id = aws_vpc.vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
@@ -64,12 +64,7 @@ resource "aws_route_table_association" "public" {
 }
 
 resource "aws_route_table" "private" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat.id
-  }
+  vpc_id = aws_vpc.vpc.id
 
   tags = {
     Name = "${terraform.workspace}-private-route"
@@ -79,12 +74,12 @@ resource "aws_route_table" "private" {
 module "fck-nat" {
   source = "RaJiska/fck-nat/aws"
 
-  name                 = "nat-instance"
-  vpc_id               = aws_vpc.vpc.id
-  subnet_id            = aws_subnet.private.id
+  name      = "nat-instance"
+  vpc_id    = aws_vpc.vpc.id
+  subnet_id = aws_subnet.private[0].id
 
   update_route_table = true
-  route_table_id = aws_route_table.private.id
+  route_table_id     = aws_route_table.private.id
 }
 
 

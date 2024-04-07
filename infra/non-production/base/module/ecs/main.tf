@@ -1,8 +1,8 @@
 resource "aws_ecs_cluster" "cluster" {
-  name = "layer8-development"
+  name = var.cluster_name
 }
 
-data "aws_ssm_parameteraws_ecs_cluster" "ecs_node_ami" {
+data "aws_ssm_parameter" "ecs_node_ami" {
   name = "/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id"
 }
 
@@ -23,8 +23,8 @@ resource "aws_launch_template" "launch-template" {
 
 resource "aws_autoscaling_group" "asg" {
   name                = "${aws_ecs_cluster.cluster.name}-asg"
-  min_size            = 1
-  max_size            = 3
+  min_size            = 0
+  max_size            = 10
   capacity_rebalance  = "true"
   vpc_zone_identifier = var.subnets[*].id
 
@@ -44,11 +44,11 @@ resource "aws_autoscaling_group" "asg" {
       }
 
       override {
-        instance_type = "t4g.micro"
+        instance_type = "t3.micro"
       }
 
       override {
-        instance_type = "t3.micro"
+        instance_type = "t2.micro"
       }
     }
   }
@@ -62,7 +62,7 @@ resource "aws_autoscaling_group" "asg" {
 
 
 resource "aws_ecs_capacity_provider" "capacity_provider" {
-  name = "marinetechs-development-capacity-provider"
+  name = "${aws_ecs_cluster.cluster.name}-capacity-provider"
   auto_scaling_group_provider {
     auto_scaling_group_arn         = aws_autoscaling_group.asg.arn
     managed_termination_protection = "DISABLED"
@@ -76,7 +76,7 @@ resource "aws_ecs_capacity_provider" "capacity_provider" {
 }
 
 resource "aws_ecs_cluster_capacity_providers" "main" {
-  cluster_name       = aws_ecs_cluster.marinetechs-development.name
+  cluster_name       = aws_ecs_cluster.cluster.name
   capacity_providers = [aws_ecs_capacity_provider.capacity_provider.name]
 
   default_capacity_provider_strategy {
@@ -91,24 +91,8 @@ resource "aws_security_group" "ecs_node_sg" {
   vpc_id = var.vpc_id
 
   ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr_block]
-    description = "vpc cidr"
-  }
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr_block]
-    description = "vpc cidr"
-  }
-
-  ingress {
-    from_port   = 9000
-    to_port     = 9000
+    from_port   = 0
+    to_port     = 65535
     protocol    = "tcp"
     cidr_blocks = [var.vpc_cidr_block]
     description = "vpc cidr"

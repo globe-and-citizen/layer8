@@ -1,6 +1,6 @@
 output "cluster_id" {
-  description = "ECS Cluster Name"
-  value       = aws_ecs_cluster.layer8.id
+  description = "ECS Cluster ID"
+  value       = aws_ecs_cluster.cluster.id
 }
 
 output "capacity_provider_name" {
