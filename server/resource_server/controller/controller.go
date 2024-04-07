@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path/filepath"
+	// "path/filepath"
 	"html/template"
 	"os"
 
@@ -49,13 +49,16 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, path string) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	t.Execute(w, map[string]interface{}{
+	err = t.Execute(w, map[string]interface{}{
 		"ProxyURL": os.Getenv("PROXY_URL"),
 	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	fullPath := filepath.Join(utils.WorkingDirectory, path)
-	fmt.Println("fullPath", fullPath)
-	http.ServeFile(w, r, fullPath)
+	// fullPath := filepath.Join(utils.WorkingDirectory, path)
+	// http.ServeFile(w, r, fullPath)
 }
 
 func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
