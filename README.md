@@ -118,3 +118,6 @@ app.post("/route", async (req, res) => {
 
 ```
 Note: During routine usage, there are no special calls necessary to make use of Layer8. The res.json() & res.send() & res.end() have been overwritten by Layer8 and will be used automatically. 
+
+## Warnings and Gotcha's
+1) using express.json() in your server app is unnecessary. The layer8_middleware automatically parses the incoming request.
