@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - devops/ci-cd-ec2
 
 jobs:
   build-layer8-server:
