@@ -8,15 +8,15 @@ on:
 
 jobs:
   build-layer8-server:
-  runs-on: ubuntu-latest
-  steps:
-  - uses: actions/checkout@v2
-  - uses: docker://ghcr.io/kciter/aws-ecr-action:latest
-    with:
-      access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-      region: ${{ secrets.AWS_REGION }}
-      repo: layer8
-      tag: latest,${{ github.sha }}
-      dockerfile: server/Dockerfile
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: docker://ghcr.io/kciter/aws-ecr-action:latest
+      with:
+        access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+        region: ${{ vars.AWS_REGION }}
+        repo: layer8
+        tag: latest,${{ github.sha }}
+        dockerfile: server/Dockerfile
