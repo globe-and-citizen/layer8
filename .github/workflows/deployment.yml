@@ -7,19 +7,19 @@ on:
       - devops/ci-cd-ec2
 
 jobs:
-  build-layer8-server:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - uses: docker://ghcr.io/kciter/aws-ecr-action:latest
-      with:
-        access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-        region: ${{ vars.AWS_REGION }}
-        repo: layer8
-        tag: latest,${{ github.sha }}
-        dockerfile: server/Dockerfile
+  # build-layer8-server:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #   - uses: docker://ghcr.io/kciter/aws-ecr-action:latest
+  #     with:
+  #       access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #       account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+  #       region: ${{ vars.AWS_REGION }}
+  #       repo: layer8
+  #       tag: latest,${{ github.sha }}
+  #       dockerfile: server/Dockerfile
   tfm-network:
     runs-on: ubuntu-latest
     defaults:
