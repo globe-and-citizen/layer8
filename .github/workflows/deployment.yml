@@ -4,12 +4,13 @@ on:
   push:
     branches:
       - main
+      - devops/ci-cd-ec2
 
 jobs:
   build-layer8-server:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - uses: docker://ghcr.io/kciter/aws-ecr-action:latest
       with:
         access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -19,3 +20,30 @@ jobs:
         repo: layer8
         tag: latest,${{ github.sha }}
         dockerfile: server/Dockerfile
+  tfm-network:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./infra/non-production/base
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      - name: Terraform fmt
+        id: fmt
+        run: terraform fmt -check
+        continue-on-error: true
+        
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+        
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+        
