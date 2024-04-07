@@ -13,7 +13,6 @@
     />
     <title>Authentication Page</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
-    <script src="/assets-v1/templates/env.js"></script>
   </head>
   <body class="relative">
     <div id="app">
@@ -208,13 +207,11 @@
       });
       const newDisplayName = ref("")
       const isUserPortalSidebar = ref(false)
-      const backend_url = ref(window.env.BACKEND_URL);
 
       const getUserDetails = async () => {
         try {
-          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/profile",
           const resp = await window.fetch(
-            `${backend_url.value}/api/v1/profile`,
+            "{{ .ProxyURL }}/api/v1/profile",
             {
               method: "GET",
               headers: {
@@ -234,15 +231,13 @@
       const logoutUser = () => {
         token.value = null;
         localStorage.removeItem("token");
-        //window.location.href = "https://layer8devproxy.net/";
-        window.location.href = `${backend_url.value}/`;
+        window.location.href = "{{ .ProxyURL }}/";
       };
 
       const verifyEmail = async () => {
         try {
-          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/verify-email",
           const resp = await window.fetch(
-            `${backend_url.value}/api/v1/verify-email`,
+            "{{ .ProxyURL }}/api/v1/verify-email",
             {
               method: "POST",
               headers: {
@@ -265,9 +260,8 @@
 
       const changeDisplayName = async () => {
         try {
-          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/change-display-name",
           const resp = await window.fetch(
-            `${backend_url.value}/api/v1/change-display-name`,
+            "{{ .ProxyURL }}/api/v1/change-display-name",
             {
               method: "POST",
               headers: {
@@ -309,8 +303,7 @@
             logoutUser,
             newDisplayName,
             showSidebar,
-            isUserPortalSidebar,
-            backend_url
+            isUserPortalSidebar
           };
         },
       });

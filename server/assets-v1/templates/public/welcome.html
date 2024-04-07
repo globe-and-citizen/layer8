@@ -15,8 +15,6 @@
     <link rel="icon" href="/favicon.ico" />
     <title>Welcome | Layer8</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue-router@4"></script>
-    <script src="/assets-v1/templates/env.js"></script>
   </head>
   <body>
     <div id="app">
@@ -61,13 +59,11 @@
       const { createApp } = Vue;
 
       const loginAsAUser = async () => {
-        //window.location.href = "https://layer8devproxy.net/user-login-page";
-        window.location.href = `${window.env.BACKEND_URL}/user-login-page`;
+        window.location.href = "{{ .ProxyURL }}/user-login-page";
       };
 
       const loginAsAClient = async () => {
-        //window.location.href = "https://layer8devproxy.net/client-login-page";
-        window.location.href = `${window.env.BACKEND_URL}/client-login-page`;
+        window.location.href = "{{ .ProxyURL }}/client-login-page";
       };
 
       const app = createApp({

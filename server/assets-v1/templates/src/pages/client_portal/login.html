@@ -13,7 +13,6 @@
     />
     <title>Register | Layer8</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
-    <script src="/assets-v1/templates/env.js"></script>
   </head>
   <body>
     <div id="app">
@@ -72,7 +71,7 @@
                 </button>
                 <a
                   class="animate-slideFromLeft text-sm text-[#414141] font-normal text-start block cursor-pointer"
-                  href="[[ .ProxyURL ]]/client-register-page"
+                  href="{{ .ProxyURL }}/client-register-page"
                 >
                   Don't have an account? <span class="font-bold">Register</span>
                 </a>
@@ -104,7 +103,6 @@
         name: "",
         redirect_uri: "",
       });
-      const backend_url = ref(window.env.BACKEND_URL);
 
       const registerClient = async () => {
         try {
@@ -112,8 +110,7 @@
             alert("Please enter a name and redirect url!");
             return;
           }
-          //await window.fetch("https://layer8devproxy.net/api/v1/register-client", {
-          await window.fetch(`${backend_url.value}/api/v1/register-client`, {
+          await window.fetch("{{ .ProxyURL }}/api/v1/register-client", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -133,8 +130,7 @@
       };
       const getClientData = async (clientName) => {
         try {
-          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/register-client",{
-          const resp = await window.fetch(`${backend_url.value}/api/v1/getClient`,{
+          const resp = await window.fetch("{{ .ProxyURL }}/api/v1/getClient",{
               method: "GET",
               headers: {
                 "Content-Type": "Application/Json",
@@ -155,7 +151,7 @@
             alert("Please enter a username and password!");
             return;
           }
-          const respTwo = await window.fetch(`${backend_url.value}/api/v1/login-client`,{
+          const respTwo = await window.fetch("{{ .ProxyURL }}/apii/v1/login-client",{
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -171,8 +167,7 @@
           if (responseTwo.token) {
             localStorage.setItem("clientToken", responseTwo.token);
             alert("Login successful!");
-            //window.location.href = "https://layer8devproxy.net/client-profile";
-            window.location.href = `${backend_url.value}/client-profile`;
+            window.location.href = "{{ .ProxyURL }}/client-profile";
           }
         } catch (error) {
           console.error(error);
@@ -192,7 +187,6 @@
             isUsernameFocused,
             isPasswordFocused,
             loginClient,
-            backend_url
           };
         },
       });

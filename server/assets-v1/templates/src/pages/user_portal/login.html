@@ -13,7 +13,6 @@
     />
     <title>Authentication Page</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
-    <script src="/assets-v1/templates/env.js"></script>
   </head>
   <body>
     <div id="app">
@@ -61,7 +60,7 @@
             </button>
             <a
               class="text-sm text-[#414141] font-normal text-center block cursor-pointer"
-              :href="backend_url + '/user-register-page'"
+              href="{{ .ProxyURL }}/user-register-page"
               >Don't have an account? <span class="font-bold">Register</span></a
             >
           </div>
@@ -101,7 +100,6 @@
       const token = ref(localStorage.getItem("token") || null);
 
       const isLoggedIn = computed(() => token.value !== null);
-      const backend_url = ref(window.env.BACKEND_URL);
 
       const loginUser = async () => {
         try {
@@ -109,9 +107,8 @@
             alert("Please enter a username and password!");
             return;
           }
-          //const respOne = await window.fetch("https://layer8devproxy.net/api/v1/login-precheck",
           const respOne = await window.fetch(
-            `${backend_url.value}/api/v1/login-precheck`,
+            "{{ .ProxyURL }}/api/v1/login-precheck",
             {
               method: "POST",
               headers: {
@@ -124,9 +121,8 @@
           );
           const responseOne = await respOne.json();
           console.log(responseOne.salt);
-          //const respTwo = await window.fetch("https://layer8devproxy.net/api/v1/login-user",
           const respTwo = await window.fetch(
-            `${backend_url.value}/api/v1/login-user`,
+            "{{ .ProxyURL }}/api/v1/login-user",
             {
               method: "POST",
               headers: {
@@ -145,8 +141,7 @@
             token.value = responseTwo.token;
             localStorage.setItem("token", responseTwo.token);
             alert("Login successful!");
-            //window.location.href = "https://layer8devproxy.net/user";
-            window.location.href = `${backend_url.value}/user`;
+            window.location.href = "{{ .ProxyURL }}/user";
           } else {
             console.error("No token received.");
           }
@@ -163,8 +158,7 @@
             isLoggedIn,
             loginPassword,
             loginUsername,
-            loginPassword,
-            backend_url
+            loginPassword
           };
         },
       });
