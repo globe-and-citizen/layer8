@@ -12,15 +12,15 @@ provider "aws" {
 }
 
 module "network" {
-  source = "../module/network"
+  source = "./module/network"
 }
 
 module "iam" {
-  source = "../module/iam"
+  source = "./module/iam"
 }
 
 module "ecs" {
-  source          = "../module/ecs"
+  source          = "./module/ecs"
   cluster_name    = "layer8-non-production"
   vpc_cidr_block  = module.network.vpc_cidr_block
   vpc_id          = module.network.vpc_id
