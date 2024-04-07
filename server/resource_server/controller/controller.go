@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"html/template"
+	"os"
 
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
@@ -41,6 +43,15 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, path string) {
 	}
 	
 	utils.GetPwd()
+
+	t, err := template.ParseFiles(path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	t.Execute(w, map[string]interface{}{
+		"ProxyURL": os.Getenv("PROXY_URL"),
+	})
 
 	fullPath := filepath.Join(utils.WorkingDirectory, path)
 	fmt.Println("fullPath", fullPath)
