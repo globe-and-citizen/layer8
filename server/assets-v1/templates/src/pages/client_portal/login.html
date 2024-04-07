@@ -151,7 +151,7 @@
             alert("Please enter a username and password!");
             return;
           }
-          const respTwo = await window.fetch("{{ .ProxyURL }}/apii/v1/login-client",{
+          const respTwo = await window.fetch("{{ .ProxyURL }}/api/v1/login-client",{
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

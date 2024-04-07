@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	// "path/filepath"
+	"path/filepath"
 	"html/template"
 	"os"
 
@@ -41,24 +41,24 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, path string) {
 		fmt.Println(w, http.StatusText(http.StatusMethodNotAllowed))
 		return
 	}
-	
-	utils.GetPwd()
 
-	t, err := template.ParseFiles(path)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	err = t.Execute(w, map[string]interface{}{
+	fullPath := filepath.Join(utils.WorkingDirectory, path)
+
+	data := map[string]interface{}{
 		"ProxyURL": os.Getenv("PROXY_URL"),
-	})
+	}
+
+	t, err := template.ParseFiles(fullPath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// fullPath := filepath.Join(utils.WorkingDirectory, path)
-	// http.ServeFile(w, r, fullPath)
+	err = t.Execute(w, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
