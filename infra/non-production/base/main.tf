@@ -31,3 +31,7 @@ module "ecs" {
 module "ecr" {
   source = "./module/ecr"
 }
+
+module "s3" {
+  source = "./module/s3"
+}

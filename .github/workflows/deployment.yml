@@ -18,12 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
         with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-      - name: Terraform fmt
-        id: fmt
-        run: terraform fmt -check
-        continue-on-error: true
-        
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}        
       - name: Terraform Init
         id: init
         run: terraform init
@@ -67,13 +62,27 @@ jobs:
       cloudflare_tunnel_token: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
       ecr_image_tag: ${{ github.sha }}
       ecr_repository_url: ${{ needs.deploy-network.outputs.ecr_url }}
-      s3_arn_env_file: "testing"
+      s3_arn_env_file: "s3://ecsenv/layer8/nonproduction/.env"
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./infra/non-production/service
     steps:
       - uses: actions/checkout@v4
+
+      - name: Generate env file
+        id: gen_env_file
+        run: echo ${{ secrets.NON_PRODUCTION_APP_ENV }} > .env
+
+      - uses: keithweaver/aws-s3-github-action@v1.0.0
+        with:
+          command: cp
+          source: ./env
+          destination: ${{ env.s3_arn_env_file }}
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_region: ${{ vars.AWS_REGION }}
+
       - uses: hashicorp/setup-terraform@v3
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}

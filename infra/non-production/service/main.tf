@@ -102,9 +102,9 @@ resource "aws_ecs_task_definition" "app" {
       mountPoints       = [],
       portMappings      = [],
       environment       = [],
-      environmentFiles = [],
-      systemControls = [],
-      volumesFrom    = [],
+      environmentFiles  = [],
+      systemControls    = [],
+      volumesFrom       = [],
       logConfiguration = {
         logDriver = "awsfirelens",
         options = {

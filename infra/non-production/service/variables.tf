@@ -1,5 +1,5 @@
 variable "aws_region" {
-  default = "ap-southeast-1"  
+  default = "ap-southeast-1"
 }
 
 variable "ecr_repository_url" {
@@ -19,5 +19,5 @@ variable "loki_url" {
 }
 
 variable "cloudflare_tunnel_token" {
-    description = "Cloudflare tunnel token"
+  description = "Cloudflare tunnel token"
 }
