@@ -46,15 +46,25 @@ jobs:
     # needs: [deploy-network]
     steps:
     - uses: actions/checkout@v4
-    - uses: docker://ghcr.io/kciter/aws-ecr-action:latest
+    - uses: aws-actions/configure-aws-credentials@v4.0.2
       with:
-        access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-        region: ${{ vars.AWS_REGION }}
-        repo: layer8
-        tag: latest,${{ github.sha }}
-        dockerfile: server/Dockerfile
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ vars.AWS_REGION }}
+    
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push the image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: "layer8"
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f /server/Dockerfile .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
   # deploy-layer8-server:
   #   needs: [deploy-network, build-layer8-server]
   #   env:
