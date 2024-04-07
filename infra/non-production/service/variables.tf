@@ -1,29 +1,5 @@
-variable "vpc_id" {
-  description = "The VPC ID"
-}
-
-variable "cluster_id" {
-  description = "The ECS cluster ID"
-}
-
-variable "subnets" {
-  description = "The list of subnets"
-
-}
-variable "node_security_group_id" {
-  description = "The security group ID for the ECS cluster"
-}
-
-variable "capacity_provider_name" {
-  description = "ECS capacity provider name"
-}
-
-variable "task_execution_role_arn" {
-  description = "The ARN of the task execution role that the Amazon ECS container agent and the Docker daemon can assume"
-}
-
-variable "task_role_arn" {
-  description = "The ARN of IAM role that allows your Amazon ECS container task to make calls to other AWS services"
+variable "aws_region" {
+  default = "ap-southeast-1"  
 }
 
 variable "ecr_repository_url" {

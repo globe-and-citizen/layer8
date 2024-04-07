@@ -27,3 +27,7 @@ module "ecs" {
   subnets         = module.network.private_subnets
   iam_profile_arn = module.iam.iam_profile_arn
 }
+
+module "ecr" {
+  source = "./module/ecr"
+}

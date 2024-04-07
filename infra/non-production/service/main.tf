@@ -7,10 +7,25 @@ terraform {
   }
 }
 
+provider "aws" {
+  region = var.aws_region
+}
+
+data "terraform_remote_state" "network" {
+  backend = "remote"
+
+  config = {
+    organization = "globe-and-citizen"
+    workspaces = {
+      name = "network-non-production"
+    }
+  }
+}
+
 resource "aws_ecs_task_definition" "app" {
   family                   = "layer8-server"
-  task_role_arn            = var.task_role_arn
-  execution_role_arn       = var.task_execution_role_arn
+  task_role_arn            = data.terraform_remote_state.network.outputs.task_role_arn
+  execution_role_arn       = data.terraform_remote_state.network.outputs.task_execution_role_arn
   network_mode             = "awsvpc"
   requires_compatibilities = ["EC2"]
   skip_destroy             = true
