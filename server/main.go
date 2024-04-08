@@ -23,10 +23,6 @@ import (
 	svc "globe-and-citizen/layer8/server/resource_server/service" // there are two services
 
 	oauthSvc "globe-and-citizen/layer8/server/internals/service" // there are two services
-
-	oauthRepo "globe-and-citizen/layer8/server/internals/repository"
-
-	"github.com/joho/godotenv"
 )
 
 // go:embed dist
@@ -73,12 +69,6 @@ func main() {
 		service := svc.NewService(repository)
 		fmt.Println("Running app with in-memory repository")
 		Server(*port, service, repository) // Run server
-	}
-
-	// If the above code block runs, this section is never reached.
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
 	}
 
 	// If the user has set a database user or password, init the database

@@ -3,7 +3,7 @@ resource "aws_ecs_cluster" "cluster" {
 }
 
 data "aws_ssm_parameter" "ecs_node_ami" {
-  name = "/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id"
+  name = "/aws/service/ecs/optimized-ami/amazon-linux-2023/recommended/image_id"
 }
 
 resource "aws_launch_template" "launch-template" {
@@ -23,7 +23,7 @@ resource "aws_launch_template" "launch-template" {
 
 resource "aws_autoscaling_group" "asg" {
   name                = "${aws_ecs_cluster.cluster.name}-asg"
-  min_size            = 0
+  min_size            = 1
   max_size            = 10
   capacity_rebalance  = "true"
   vpc_zone_identifier = var.subnets[*].id

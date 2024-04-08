@@ -39,7 +39,7 @@ resource "aws_ecs_task_definition" "app" {
       memoryReservation = 512,
       mountPoints       = [],
       portMappings = [
-        { containerPort = 5001, hostPort = 80, protocol = "tcp" },
+        { containerPort = 5001, hostPort = 5001, protocol = "tcp" },
       ],
       environment = [],
       environmentFiles = [
@@ -48,50 +48,15 @@ resource "aws_ecs_task_definition" "app" {
       systemControls = [],
       volumesFrom    = [],
       logConfiguration = {
-        logDriver = "awsfirelens",
-        options = {
-          "LabelKeys" : "container_name,ecs_task_definition,source,ecs_cluster",
-          "Labels" : "{job=\"firelens\"}",
-          "LineFormat" : "key_value",
-          "Name" : "grafana-loki",
-          "RemoveKeys" : "container_id,ecs_task_arn",
-          "Url" : var.loki_url
-        }
-      },
-      user = "0"
-    },
-    {
-      logConfiguration = {
         logDriver = "awslogs",
         options = {
           "awslogs-create-group" : "true",
           "awslogs-group" : "/ecs/ecs-aws-firelens-sidecar-container",
-          "awslogs-region" : "ap-southeast-1",
+          "awslogs-region" : "ap-southeast-2",
           "awslogs-stream-prefix" : "firelens"
         },
       },
-      name              = "log-router"
-      essential         = true
-      image             = "grafana/fluent-bit-plugin-loki:2.9.1",
-      cpu               = 0,
-      memoryReservation = 128,
-      mountPoints       = [],
-      portMappings      = [],
-      environment = [
-        {
-          name  = "LOKI_URL"
-          value = var.loki_url
-        }
-      ],
-      firelensConfiguration = {
-        options = {
-          enable-ecs-log-metadata = "true",
-        },
-        type = "fluentbit"
-      },
-      systemControls = [],
-      volumesFrom    = [],
-      user           = "0"
+      user = "0"
     },
     {
       name              = "cloudflared-tunnel",
@@ -106,15 +71,13 @@ resource "aws_ecs_task_definition" "app" {
       systemControls    = [],
       volumesFrom       = [],
       logConfiguration = {
-        logDriver = "awsfirelens",
+        logDriver = "awslogs",
         options = {
-          "LabelKeys" : "container_name,ecs_task_definition,source,ecs_cluster",
-          "Labels" : "{job=\"firelens\"}",
-          "LineFormat" : "key_value",
-          "Name" : "grafana-loki",
-          "RemoveKeys" : "container_id,ecs_task_arn",
-          "Url" : var.loki_url
-        }
+          "awslogs-create-group" : "true",
+          "awslogs-group" : "/ecs/ecs-aws-firelens-sidecar-container",
+          "awslogs-region" : "ap-southeast-2",
+          "awslogs-stream-prefix" : "firelens"
+        },
       },
       user = "0",
       command = [

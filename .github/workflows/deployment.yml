@@ -7,115 +7,111 @@ on:
       - devops/ci-cd-ec2
 
 jobs:
-  # deploy-network:
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       working-directory: ./infra/non-production/base
-  #   outputs:
-  #     ecr_url: ${{ steps.get_ecr_url.outputs.ecr_url }}
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: hashicorp/setup-terraform@v3
-  #       with:
-  #         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}        
-  #     - name: Terraform Init
-  #       id: init
-  #       run: terraform init
+  deploy-network:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./infra/non-production/base
+    outputs:
+      ecr_repository_url: ${{ steps.get_ecr_url.outputs.ecr_repository_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}        
+      - name: Terraform Init
+        id: init
+        run: terraform init
         
-  #     - name: Terraform Validate
-  #       id: validate
-  #       run: terraform validate
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
         
-  #     - name: Terraform Plan
-  #       id: plan
-  #       run: terraform plan
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan
 
-  #     - name: Terraform Apply
-  #       id: apply
-  #       run: terraform apply
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply
         
-  #     - name: Get ECR URL from Terraform output
-  #       id: get_ecr_url
-  #       run: |
-  #         # Run Terraform command to get the ECR URL
-  #         ecr_url=$(terraform output -raw ecr_url)
-  #         echo "ecr_url=$ecr_repository_url" >> $GITHUB_OUTPUT
+      - name: Get ECR URL from Terraform output
+        id: get_ecr_url
+        run: |
+          # Run Terraform command to get the ECR URL
+          ecr_repository_url=$(terraform output -raw ecr_repository_url)
+          echo "ecr_repository_url=$ecr_repository_url" >> $GITHUB_OUTPUT
   build-layer8-server:
     runs-on: ubuntu-latest
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-      AWS_DEFAULT_OUTPUT: json
-    # needs: [deploy-network]
+    needs: [deploy-network]
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
+      - uses: actions/checkout@v4
+      - uses: kciter/aws-ecr-action@v3
+        with:
+          access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          repo: layer8
+          region: ap-southeast-2
+          tags: latest,${{ github.sha }}
+          create_repo: true
+  deploy-layer8-server:
+    needs: [build-layer8-server]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./infra/non-production/service
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Build, tag, and push the image to Amazon ECR
-      id: build-image
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: "layer8"
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f /server/Dockerfile .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-  # deploy-layer8-server:
-  #   needs: [deploy-network, build-layer8-server]
-  #   env:
-  #     loki_url: ${{ secrets.LOKI_URL }}
-  #     cloudflare_tunnel_token: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
-  #     ecr_image_tag: ${{ github.sha }}
-  #     ecr_repository_url: ${{ needs.deploy-network.outputs.ecr_url }}
-  #     s3_arn_env_file: "s3://ecsenv/layer8/nonproduction/.env"
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       working-directory: ./infra/non-production/service
-  #   steps:
-  #     - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-  #     - name: Generate env file
-  #       id: gen_env_file
-  #       run: echo ${{ secrets.NON_PRODUCTION_APP_ENV }} > .env
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
 
-  #     - uses: keithweaver/aws-s3-github-action@v1.0.0
-  #       with:
-  #         command: cp
-  #         source: ./env
-  #         destination: ${{ env.s3_arn_env_file }}
-  #         aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws_region: ${{ vars.AWS_REGION }}
+      - name: Populate Application Environment Variables to S3
+        id: populateappenv
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-southeast-2
+        run: |
+          echo -e "${{ secrets.NON_PRODUCTION_APP_ENV }}" >> app.env
+          aws s3 cp app.env s3://awsecsenv/layer8/nonproduction/app.env
+      
+      - name: Add Terraform Environment Variables
+        id: addtfenv
+        run: |
+          echo -e "$TFVARS_STRING" >> terraform.tfvars
+        env:
+          TFVARS_STRING: |
+            loki_url = "${{ secrets.LOKI_URL }}"
+            cloudflare_tunnel_token = "${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}"
+            ecr_image_tag = "${{ github.sha }}"
+            s3_arn_env_file = "arn:aws:s3:::awsecsenv/layer8/nonproduction/app.env"
+            ecr_repository_url = "463846699570.dkr.ecr.ap-southeast-2.amazonaws.com/layer8"
 
-  #     - uses: hashicorp/setup-terraform@v3
-  #       with:
-  #         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-
-  #     - name: Terraform fmt
-  #       id: fmt
-  #       run: terraform fmt -check
-  #       continue-on-error: true
+      - name: Terraform fmt
+        id: fmt
+        run: terraform fmt -check
+        continue-on-error: true
         
-  #     - name: Terraform Init
-  #       id: init
-  #       run: terraform init
+      - name: Terraform Init
+        id: init
+        run: terraform init
         
-  #     - name: Terraform Validate
-  #       id: validate
-  #       run: terraform validate
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
         
-  #     - name: Terraform Plan
-  #       id: plan
-  #       run: terraform plan
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan
 
-  #     - name: Terraform Apply
-  #       id: apply
-  #       run: terraform apply
-  
-        
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply
