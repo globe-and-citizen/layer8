@@ -23,6 +23,8 @@ import (
 	svc "globe-and-citizen/layer8/server/resource_server/service" // there are two services
 
 	oauthSvc "globe-and-citizen/layer8/server/internals/service" // there are two services
+
+	oauthRepo "globe-and-citizen/layer8/server/internals/repository"
 )
 
 // go:embed dist
