@@ -20,6 +20,7 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.Method) // > GET  | > POST
 	fmt.Println(r.URL)    // (http://localhost:5000/api/v1 ) > /api/v1
 	params := r.URL.Query()
+	protocol := r.Header.Get("X-Forwarded-Proto")
 	var backend string
 	if _, ok := params["backend"]; !ok {
 		res := utils.BuildErrorResponse("Failed to get User. Malformed query string.", "", utils.EmptyObj{})
@@ -29,6 +30,7 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		backend = params["backend"][0]
+		backend = protocol + backend
 		fmt.Println("User agent is attempting to initialize this backend SP: ", backend)
 	}
 
@@ -52,17 +54,12 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// add headers
-	for k, v := range r.Header {
-		req.Header[k] = v
-	}
-
-	req.Header["x-tunnel"] = []string{"true"}
-	req.Header["mp-jwt"] = []string{mpJWT}
+	req.Header = r.Header
+	req.Header.Add("x-tunnel", "true")
+	req.Header.Add("mp-jwt", mpJWT)
 
 	// send the request
 	res, err := http.DefaultClient.Do(req)
-
 	if err != nil {
 		fmt.Println("Error sending request:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
