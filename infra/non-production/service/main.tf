@@ -22,7 +22,7 @@ data "terraform_remote_state" "network" {
   }
 }
 
-resource "aws_ecs_task_definition" "app" {
+resource "aws_ecs_task_definition" "task_definition" {
   family                   = "layer8-server"
   task_role_arn            = data.terraform_remote_state.network.outputs.task_role_arn
   execution_role_arn       = data.terraform_remote_state.network.outputs.task_execution_role_arn
@@ -94,3 +94,46 @@ resource "aws_ecs_task_definition" "app" {
     Name = "layer8-server"
   }
 }
+
+resource "aws_ecs_service" "service" {
+  name            = "layer8-server"
+  cluster         = data.terraform_remote_state.network.outputs.ecs_cluster_id
+  task_definition = aws_ecs_task_definition.task_definition.arn
+  desired_count   = 1
+
+  deployment_circuit_breaker {
+    enable   = "true"
+    rollback = "false"
+  }
+
+
+  network_configuration {
+    assign_public_ip = false
+    security_groups  = [data.terraform_remote_state.network.outputs.node_security_group_id]
+    subnets          = data.terraform_remote_state.network.outputs.private_subnets[*].id
+  }
+
+  capacity_provider_strategy {
+    capacity_provider = data.terraform_remote_state.network.outputs.capacity_provider_name
+    base              = 1
+    weight            = 100
+  }
+
+  ordered_placement_strategy {
+    type  = "spread"
+    field = "attribute:ecs.availability-zone"
+  }
+
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
+
+  force_new_deployment = true
+
+  triggers = {
+    redeployment = plantimestamp()
+  }
+
+  depends_on = [aws_ecs_task_definition.task_definition]
+}
+
