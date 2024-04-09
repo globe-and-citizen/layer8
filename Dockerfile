@@ -25,9 +25,9 @@ COPY --from=builder /build/main /layer8-app
 
 COPY --from=builder /build/.env /layer8-app
 
-COPY --from=builder /build/assets-v1 /layer8-app
+COPY --from=builder /build/assets-v1 /layer8-app/assets-v1
 
-COPY --from=builder /build/certificates /layer8-app
+COPY --from=builder /build/certificates /layer8-app/certificates
 
 EXPOSE 5001
 
