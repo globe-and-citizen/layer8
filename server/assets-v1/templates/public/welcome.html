@@ -59,11 +59,11 @@
       const { createApp } = Vue;
 
       const loginAsAUser = async () => {
-        window.location.href = "{{ .ProxyURL }}/user-login-page";
+        window.location.href = "/user-login-page";
       };
 
       const loginAsAClient = async () => {
-        window.location.href = "{{ .ProxyURL }}/client-login-page";
+        window.location.href = "/client-login-page";
       };
 
       const app = createApp({
