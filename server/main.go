@@ -135,6 +135,11 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 			staticFS, _ := fs.Sub(StaticFiles, "dist")
 			httpFS := http.FileServer(http.FS(staticFS))
 
+			if r.Header.Get("X-Forwarded-Proto") != "" {
+				handlers.Tunnel(w, r)
+				return
+			}
+
 			switch path := r.URL.Path; {
 
 			// Authorization Server endpoints
@@ -185,11 +190,9 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 				handlers.InitTunnel(w, r)
 			case path == "/error":
 				handlers.TestError(w, r)
-			// TODO: For later, to be discussed more
-			// case path == "/tunnel":
-			// 	handlers.Tunnel(w, r)
-			default:
-				handlers.Tunnel(w, r)
+				// TODO: For later, to be discussed more
+				// case path == "/tunnel":
+				// 	handlers.Tunnel(w, r)
 			}
 		}),
 	}
