@@ -2,7 +2,7 @@ terraform {
   backend "remote" {
     organization = "globe-and-citizen"
     workspaces {
-      name = "network-non-production"
+      name = "network-development"
     }
   }
 }
@@ -21,7 +21,7 @@ module "iam" {
 
 module "ecs" {
   source          = "./module/ecs"
-  cluster_name    = "layer8-non-production"
+  cluster_name    = "layer8-development"
   vpc_cidr_block  = module.network.vpc_cidr_block
   vpc_id          = module.network.vpc_id
   subnets         = module.network.private_subnets

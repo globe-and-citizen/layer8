@@ -66,9 +66,9 @@ resource "aws_route_table_association" "public" {
 module "fck-nat" {
   source = "RaJiska/fck-nat/aws"
 
-  name      = "nat-instance"
-  vpc_id    = aws_vpc.vpc.id
-  subnet_id = aws_subnet.public[0].id
+  name               = "nat-instance"
+  vpc_id             = aws_vpc.vpc.id
+  subnet_id          = aws_subnet.public[0].id
   eip_allocation_ids = [aws_eip.nat.allocation_id]
 
   update_route_table = true

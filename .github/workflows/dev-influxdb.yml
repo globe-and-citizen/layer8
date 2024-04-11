@@ -1,0 +1,38 @@
+name: Deploy InfluxDB to Development Environment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-influxdb:
+    runs-on: ubuntu-latest
+    environment: "development"
+    defaults:
+      run:
+        working-directory: ./infra/development/influxdb
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      
+      - name: Add Terraform Environment Variables
+        id: addtfenv
+        run: |
+          echo -e "$TFVARS_STRING" >> terraform.tfvars
+        env:
+          TFVARS_STRING: |
+            cloudflare_tunnel_token = "${{ secrets.INFLUXDB_CLOUDFLARE_TUNNEL_TOKEN }}"
+      
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply

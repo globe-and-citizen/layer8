@@ -2,7 +2,7 @@ terraform {
   backend "remote" {
     organization = "globe-and-citizen"
     workspaces {
-      name = "layer8-server-non-production"
+      name = "layer8-influxdb-development"
     }
   }
 }
@@ -17,13 +17,13 @@ data "terraform_remote_state" "network" {
   config = {
     organization = "globe-and-citizen"
     workspaces = {
-      name = "network-non-production"
+      name = "network-development"
     }
   }
 }
 
 resource "aws_ecs_task_definition" "task_definition" {
-  family                   = "layer8-server"
+  family                   = "influxdb2"
   task_role_arn            = data.terraform_remote_state.network.outputs.task_role_arn
   execution_role_arn       = data.terraform_remote_state.network.outputs.task_execution_role_arn
   network_mode             = "awsvpc"
@@ -32,28 +32,51 @@ resource "aws_ecs_task_definition" "task_definition" {
 
   container_definitions = jsonencode([
     {
-      name              = "layer8-server",
+      name              = "influxdb2",
+      image             = "influxdb:2",
       essential         = true,
-      image             = "${var.ecr_repository_url}:${var.ecr_image_tag}",
       cpu               = 0,
       memoryReservation = 512,
-      mountPoints       = [],
       portMappings = [
-        { containerPort = 5001, hostPort = 5001, protocol = "tcp" },
+        {
+          containerPort = 8086,
+          hostPort      = 8086,
+          protocol      = "tcp",
+        }
       ],
-      environment = [],
-      environmentFiles = [
-        { type = "s3", value = var.s3_arn_env_file }
+      mountPoints = [
       ],
-      systemControls = [],
-      volumesFrom    = [],
+      environment = [
+        {
+          name  = "DOCKER_INFLUXDB_INIT_MODE",
+          value = "setup",
+        },
+        {
+          name  = "DOCKER_INFLUXDB_INIT_USERNAME",
+          value = "influxdbadmin",
+        },
+        {
+          name  = "DOCKER_INFLUXDB_INIT_PASSWORD",
+          value = "somethingthatyoudontknow",
+        },
+        {
+          name  = "DOCKER_INFLUXDB_INIT_ORG",
+          value = "layer8",
+        },
+        {
+          name  = "DOCKER_INFLUXDB_INIT_BUCKET",
+          value = "layer8",
+        },
+      ]
+      environmentFiles = [],
+      systemControls   = [],
+      volumesFrom      = [],
       logConfiguration = {
         logDriver = "awslogs",
         options = {
           "awslogs-create-group" : "true",
-          "awslogs-group" : "/ecs/ecs-aws-firelens-sidecar-container",
-          "awslogs-region" : "ap-southeast-2",
-          "awslogs-stream-prefix" : "firelens"
+          "awslogs-group" : "ecs/${aws_ecs_cluster.cluster.name}",
+          "awslogs-region" : "${var.aws_region}",
         },
       },
       user = "0"
@@ -64,7 +87,11 @@ resource "aws_ecs_task_definition" "task_definition" {
       image             = "cloudflare/cloudflared:latest",
       cpu               = 0,
       memoryReservation = 128,
-      mountPoints       = [],
+      mountPoints       = [
+        {
+          
+        }
+      ],
       portMappings      = [],
       environment       = [],
       environmentFiles  = [],
@@ -74,9 +101,8 @@ resource "aws_ecs_task_definition" "task_definition" {
         logDriver = "awslogs",
         options = {
           "awslogs-create-group" : "true",
-          "awslogs-group" : "/ecs/ecs-aws-firelens-sidecar-container",
-          "awslogs-region" : "ap-southeast-2",
-          "awslogs-stream-prefix" : "firelens"
+          "awslogs-group" : "ecs/${aws_ecs_cluster.cluster.name}",
+          "awslogs-region" : "${var.aws_region}",
         },
       },
       user = "0",
@@ -91,30 +117,31 @@ resource "aws_ecs_task_definition" "task_definition" {
   ])
 
   tags = {
-    Name = "layer8-server"
+    Name = "influxdb2"
   }
 }
 
 resource "aws_ecs_service" "service" {
-  name            = "layer8-server"
+  name            = "influxdb2"
   cluster         = data.terraform_remote_state.network.outputs.ecs_cluster_id
   task_definition = aws_ecs_task_definition.task_definition.arn
   desired_count   = 1
+  deployment_maximum_percent = 100
+  deployment_minimum_healthy_percent = 0
 
   deployment_circuit_breaker {
     enable   = "true"
     rollback = "false"
   }
 
-
   network_configuration {
     assign_public_ip = false
     security_groups  = [data.terraform_remote_state.network.outputs.node_security_group_id]
-    subnets          = data.terraform_remote_state.network.outputs.private_subnets[*].id
+    subnets          = [data.terraform_remote_state.network.outputs.private_subnets[0].id]
   }
 
   capacity_provider_strategy {
-    capacity_provider = data.terraform_remote_state.network.outputs.capacity_provider_name
+    capacity_provider = data.terraform_remote_state.network.outputs.db_spot_capacity_provider_name
     base              = 1
     weight            = 100
   }

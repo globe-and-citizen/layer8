@@ -1,5 +1,5 @@
 variable "aws_region" {
-  default = "ap-southeast-1"
+  default = "ap-southeast-2"
 }
 
 variable "ecr_repository_url" {
@@ -12,10 +12,6 @@ variable "ecr_image_tag" {
 
 variable "s3_arn_env_file" {
   description = "The ARN of the S3 bucket for the environment file"
-}
-
-variable "loki_url" {
-  description = "The URL of the Loki server"
 }
 
 variable "cloudflare_tunnel_token" {

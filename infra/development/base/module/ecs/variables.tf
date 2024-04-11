@@ -8,7 +8,6 @@ variable "vpc_id" {
 
 variable "vpc_cidr_block" {
   description = "CIDR block of the VPC for the ECS cluster"
-
 }
 
 variable "subnets" {
