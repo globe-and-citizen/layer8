@@ -21,7 +21,7 @@ resource "aws_ecs_cluster_capacity_providers" "capacity_provider_mapping" {
 }
 
 resource "aws_cloudwatch_log_group" "log_group" {
-  name = "ecs/${aws_ecs_cluster.cluster.name}"
+  name = "ecs/development"
 }
 
 resource "aws_security_group" "ecs_node_sg" {

@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./infra/development/service
+        working-directory: infra/development/layer8
     steps:
       - uses: actions/checkout@v4
 
@@ -60,7 +60,9 @@ jobs:
             cloudflare_tunnel_token = "${{ secrets.LAYER8_CLOUDFLARE_TUNNEL_TOKEN }}"
             ecr_image_tag = "${{ github.sha }}"
             s3_arn_env_file = "arn:aws:s3:::${{ vars.S3_APP_ENV_LOCATION }}"
-            ecr_repository_url = ${{ vars.ECR_REPOSITORY_URL }}
+            ecr_repository_url = "${{ vars.ECR_REPOSITORY_URL }}"
+            influxdb_url = "${{ secrets.INFLUXDB_URL }}"
+            influxdb_token = "${{ secrets.INFLUXDB_TOKEN }}"
       
       - name: Terraform Init
         id: init

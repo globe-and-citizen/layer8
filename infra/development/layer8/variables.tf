@@ -17,3 +17,11 @@ variable "s3_arn_env_file" {
 variable "cloudflare_tunnel_token" {
   description = "Cloudflare tunnel token"
 }
+
+variable "influxdb_url" {
+  description = "InfluxDB URL"
+}
+
+variable "influxdb_token" {
+  description = "InfluxDB Token"
+}

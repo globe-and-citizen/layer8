@@ -51,8 +51,9 @@ resource "aws_ecs_task_definition" "task_definition" {
         logDriver = "awslogs",
         options = {
           "awslogs-create-group" : "true",
-          "awslogs-group" : "ecs/${aws_ecs_cluster.cluster.name}",
+          "awslogs-group" : "ecs/development",
           "awslogs-region" : "${var.aws_region}",
+          "awslogs-stream-prefix": "layer8server"
         },
       },
       user = "0"
@@ -73,8 +74,9 @@ resource "aws_ecs_task_definition" "task_definition" {
         logDriver = "awslogs",
         options = {
           "awslogs-create-group" : "true",
-          "awslogs-group" : "ecs/${aws_ecs_cluster.cluster.name}",
+          "awslogs-group" : "ecs/development",
           "awslogs-region" : "${var.aws_region}",
+          "awslogs-stream-prefix": "layer8server"
         },
       },
       user = "0",
@@ -85,6 +87,47 @@ resource "aws_ecs_task_definition" "task_definition" {
         "--token",
         "${var.cloudflare_tunnel_token}"
       ]
+    },
+    {
+      name              = "telegraf",
+      essential         = true,
+      image             = "hannmuhammadd/telegraf-opentelemetry-influxdb",
+      cpu               = 0,
+      memoryReservation = 128,
+      mountPoints       = [],
+      portMappings      = [],
+      environment       = [
+        {
+          name  = "INFLUXDB_URL",
+          value = "${var.influxdb_url}",
+        },
+        {
+          name  = "INFLUXDB_TOKEN",
+          value = "${var.influxdb_token}",
+        },
+        {
+          name  = "INFLUXDB_ORGANIZATION",
+          value = "layer8",
+        },
+        {
+          name  = "INFLUXDB_BUCKET_NAME",
+          value = "layer8",
+        }
+      ],
+      environmentFiles  = [],
+      systemControls    = [],
+      volumesFrom       = [],
+      logConfiguration = {
+        logDriver = "awslogs",
+        options = {
+          "awslogs-create-group" : "true",
+          "awslogs-group" : "ecs/development",
+          "awslogs-region" : "${var.aws_region}",
+          "awslogs-stream-prefix": "layer8server"
+        },
+      },
+      user = "0",
+      command = []
     }
   ])
 

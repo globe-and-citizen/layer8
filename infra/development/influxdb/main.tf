@@ -75,8 +75,9 @@ resource "aws_ecs_task_definition" "task_definition" {
         logDriver = "awslogs",
         options = {
           "awslogs-create-group" : "true",
-          "awslogs-group" : "ecs/${aws_ecs_cluster.cluster.name}",
+          "awslogs-group" : "ecs/development",
           "awslogs-region" : "${var.aws_region}",
+          "awslogs-stream-prefix": "influxdb2"
         },
       },
       user = "0"
@@ -87,11 +88,7 @@ resource "aws_ecs_task_definition" "task_definition" {
       image             = "cloudflare/cloudflared:latest",
       cpu               = 0,
       memoryReservation = 128,
-      mountPoints       = [
-        {
-          
-        }
-      ],
+      mountPoints       = [],
       portMappings      = [],
       environment       = [],
       environmentFiles  = [],
@@ -101,8 +98,9 @@ resource "aws_ecs_task_definition" "task_definition" {
         logDriver = "awslogs",
         options = {
           "awslogs-create-group" : "true",
-          "awslogs-group" : "ecs/${aws_ecs_cluster.cluster.name}",
+          "awslogs-group" : "ecs/development",
           "awslogs-region" : "${var.aws_region}",
+          "awslogs-stream-prefix": "cloudflare-tunnel"
         },
       },
       user = "0",
