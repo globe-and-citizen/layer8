@@ -27,6 +27,8 @@ COPY --from=builder /build/assets-v1 /layer8-app/assets-v1
 
 COPY --from=builder /build/certificates /layer8-app/certificates
 
+COPY --from=builder /build/.env /layer8-app
+
 EXPOSE 5001
 
 RUN chmod +x ./main
