@@ -3,7 +3,6 @@ package handlers
 import (
 	svc "globe-and-citizen/layer8/server/internals/service"
 	"globe-and-citizen/layer8/server/resource_server/utils"
-	"html/template"
 	"net/http"
 	"os"
 )
@@ -27,7 +26,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		utils.ParseHTML(w, "login.html",
+		utils.ParseHTML(w, "assets-v1/templates/login.html",
 			map[string]interface{}{
 				"HasNext":  next != "",
 				"Next":     next,
@@ -42,31 +41,25 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		// login the user
 		rUser, err := service.LoginUser(username, password)
 		if err != nil {
-			t, errT := template.ParseFiles("assets-v1/templates/login.html")
-			if errT != nil {
-				http.Error(w, errT.Error(), http.StatusInternalServerError)
-				return
-			}
-			t.Execute(w, map[string]interface{}{
-				"HasNext": next != "",
-				"Next":    next,
-				"Error":   err.Error(),
-			})
+			utils.ParseHTML(w, "assets-v1/templates/login.html",
+				map[string]interface{}{
+					"HasNext": next != "",
+					"Next":    next,
+					"Error":   err.Error(),
+				},
+			)
 			return
 		}
 		// set the token cookie
 		token, ok := rUser["token"].(string)
 		if !ok {
-			t, err := template.ParseFiles("assets-v1/templates/login.html")
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			t.Execute(w, map[string]interface{}{
-				"HasNext": next != "",
-				"Next":    next,
-				"Error":   "could not get token",
-			})
+			utils.ParseHTML(w, "assets-v1/templates/login.html",
+				map[string]interface{}{
+					"HasNext": next != "",
+					"Next":    next,
+					"Error":   "could not get token",
+				},
+			)
 			return
 		}
 		http.SetCookie(w, &http.Cookie{
@@ -102,7 +95,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		utils.ParseHTML(w, "registerClient.html",
+		utils.ParseHTML(w, "assets-v1/templates/registerClient.html",
 			map[string]interface{}{
 				"HasNext":  next != "",
 				"Next":     next,
@@ -117,7 +110,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		// login the user
 		rUser, err := service.LoginUser(username, password)
 		if err != nil {
-			utils.ParseHTML(w, "registerClient.html",
+			utils.ParseHTML(w, "assets-v1/templates/registerClient.html",
 				map[string]interface{}{
 					"HasNext":  next != "",
 					"Next":     next,
@@ -131,7 +124,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		// set the token cookie
 		token, ok := rUser["token"].(string)
 		if !ok {
-			utils.ParseHTML(w, "registerClient.html",
+			utils.ParseHTML(w, "assets-v1/templates/registerClient.html",
 				map[string]interface{}{
 					"HasNext":  next != "",
 					"Next":     next,

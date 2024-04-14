@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path/filepath"
 
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
@@ -40,11 +39,7 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, path string) {
 		return
 	}
 
-	utils.GetPwd()
-
-	fullPath := filepath.Join(utils.WorkingDirectory, path)
-	fmt.Println("fullPath", fullPath)
-	http.ServeFile(w, r, fullPath)
+	utils.ParseHTML(w, path, nil)
 }
 
 func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
