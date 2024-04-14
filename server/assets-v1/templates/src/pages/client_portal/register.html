@@ -152,7 +152,7 @@
             alert("Please enter all fields!");
             return;
           }
-          await window.fetch("{{ .ProxyURL }}/api/v1/register-client", {
+          await window.fetch("[[ .ProxyURL ]]/api/v1/register-client", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -165,7 +165,7 @@
             }),
           });
           alert("Registration successful!");
-          window.location.href = "{{ .ProxyURL }}/client-login-page";
+          window.location.href = "[[ .ProxyURL ]]/client-login-page";
         } catch (error) {
           console.error(error);
           alert("Registration failed!");

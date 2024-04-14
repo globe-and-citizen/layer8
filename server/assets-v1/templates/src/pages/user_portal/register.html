@@ -149,7 +149,7 @@
             alert("Please enter a username and password!");
             return;
           }
-          await window.fetch("{{ .ProxyURL }}/api/v1/register-user", {
+          await window.fetch("[[ .ProxyURL ]]/api/v1/register-user", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -165,7 +165,7 @@
             }),
           });
           alert("Registration successful!");
-          window.location.href = "{{ .ProxyURL }}/user-login-page";
+          window.location.href = "[[ .ProxyURL ]]/user-login-page";
         } catch (error) {
           console.error(error);
           alert("Registration failed!");

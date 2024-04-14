@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path/filepath"
-	"html/template"
 	"os"
 
 	"globe-and-citizen/layer8/server/resource_server/dto"
@@ -35,30 +33,16 @@ func LoginClientPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/login.html")
 }
 
-func ServeFileHandler(w http.ResponseWriter, r *http.Request, path string) {
+func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Println(w, http.StatusText(http.StatusMethodNotAllowed))
 		return
 	}
 
-	fullPath := filepath.Join(utils.WorkingDirectory, path)
-
-	data := map[string]interface{}{
+	utils.ParseHTML(w, filePath, map[string]interface{}{
 		"ProxyURL": os.Getenv("PROXY_URL"),
-	}
-
-	t, err := template.ParseFiles(fullPath)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err = t.Execute(w, data)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	})
 }
 
 func LoginClientHandler(w http.ResponseWriter, r *http.Request) {

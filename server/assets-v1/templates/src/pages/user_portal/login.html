@@ -108,7 +108,7 @@
             return;
           }
           const respOne = await window.fetch(
-            "{{ .ProxyURL }}/api/v1/login-precheck",
+            "[[ .ProxyURL ]]/api/v1/login-precheck",
             {
               method: "POST",
               headers: {
@@ -122,7 +122,7 @@
           const responseOne = await respOne.json();
           console.log(responseOne.salt);
           const respTwo = await window.fetch(
-            "{{ .ProxyURL }}/api/v1/login-user",
+            "[[ .ProxyURL ]]/api/v1/login-user",
             {
               method: "POST",
               headers: {
@@ -141,7 +141,7 @@
             token.value = responseTwo.token;
             localStorage.setItem("token", responseTwo.token);
             alert("Login successful!");
-            window.location.href = "{{ .ProxyURL }}/user";
+            window.location.href = "[[ .ProxyURL ]]/user";
           } else {
             console.error("No token received.");
           }
