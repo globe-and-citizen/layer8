@@ -211,7 +211,7 @@
       const getUserDetails = async () => {
         try {
           const resp = await window.fetch(
-            "https://layer8devproxy.net/api/v1/profile",
+            "[[ .ProxyURL ]]/api/v1/profile",
             {
               method: "GET",
               headers: {
@@ -231,13 +231,13 @@
       const logoutUser = () => {
         token.value = null;
         localStorage.removeItem("token");
-        window.location.href = "https://layer8devproxy.net/";
+        window.location.href = "[[ .ProxyURL ]]/";
       };
 
       const verifyEmail = async () => {
         try {
           const resp = await window.fetch(
-            "https://layer8devproxy.net/api/v1/verify-email",
+            "[[ .ProxyURL ]]/api/v1/verify-email",
             {
               method: "POST",
               headers: {
@@ -261,7 +261,7 @@
       const changeDisplayName = async () => {
         try {
           const resp = await window.fetch(
-            "https://layer8devproxy.net/api/v1/change-display-name",
+            "[[ .ProxyURL ]]/api/v1/change-display-name",
             {
               method: "POST",
               headers: {

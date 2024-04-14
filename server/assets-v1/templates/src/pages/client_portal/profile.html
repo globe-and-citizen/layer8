@@ -136,9 +136,8 @@
 
       const getUserDetails = async () => {
         try {
-          //const resp = await window.fetch("https://layer8devproxy.net/api/v1/profile",
           const resp = await window.fetch(
-            "https://layer8devproxy.net/api/v1/client-profile",
+            "[[ .ProxyURL ]]/api/v1/client-profile",
             {
               method: "GET",
               headers: {
@@ -174,7 +173,7 @@
       const logoutUser = () => {
         token.value = null;
         localStorage.removeItem("clientToken");
-        window.location.href = "https://layer8devproxy.net/";
+        window.location.href = "[[ .ProxyURL ]]/";
       };
 
       const showSidebar = (value) => {
@@ -194,7 +193,7 @@
             copyToClipboard,
             isCopied,
             sidebarShow,
-            showSidebar
+            showSidebar,
           };
         },
       });

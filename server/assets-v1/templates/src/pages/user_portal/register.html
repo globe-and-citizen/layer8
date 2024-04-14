@@ -100,7 +100,7 @@
             </button>
             <a
               class="text-sm text-[#414141] font-normal text-center block cursor-pointer"
-              href="https://layer8devproxy.net/user-login-page"
+              href="/user-login-page"
               >Already have an account? <span class="font-bold">Login</span></a
             >
           </div>
@@ -149,7 +149,7 @@
             alert("Please enter a username and password!");
             return;
           }
-          await window.fetch("https://layer8devproxy.net/api/v1/register-user", {
+          await window.fetch("[[ .ProxyURL ]]/api/v1/register-user", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -165,7 +165,7 @@
             }),
           });
           alert("Registration successful!");
-          window.location.href = "https://layer8devproxy.net/user-login-page";
+          window.location.href = "[[ .ProxyURL ]]/user-login-page";
         } catch (error) {
           console.error(error);
           alert("Registration failed!");
@@ -182,7 +182,7 @@
             registerLastName,
             registerDisplayName,
             registerCountry,
-            registerPassword,
+            registerPassword
           };
         },
       });

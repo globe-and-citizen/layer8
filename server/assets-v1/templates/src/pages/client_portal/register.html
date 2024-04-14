@@ -108,7 +108,7 @@
                 </button>
                 <a
                   class="text-sm text-[#414141] font-normal text-start block cursor-pointer"
-                  href="https://layer8devproxy.net/client-login-page"
+                  href="/client-login-page"
                 >
                   Already have an account? <span class="font-bold">Login</span>
                 </a>
@@ -152,8 +152,7 @@
             alert("Please enter all fields!");
             return;
           }
-          //await window.fetch("https://layer8devproxy.net/api/v1/register-client", {
-          await window.fetch("https://layer8devproxy.net/api/v1/register-client", {
+          await window.fetch("[[ .ProxyURL ]]/api/v1/register-client", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -166,7 +165,7 @@
             }),
           });
           alert("Registration successful!");
-          window.location.href = "https://layer8devproxy.net/client-login-page";
+          window.location.href = "[[ .ProxyURL ]]/client-login-page";
         } catch (error) {
           console.error(error);
           alert("Registration failed!");

@@ -15,7 +15,6 @@
     <link rel="icon" href="/favicon.ico" />
     <title>Welcome | Layer8</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue-router@4"></script>
   </head>
   <body>
     <div id="app">
@@ -49,7 +48,7 @@
             </div>
           </div>
           <img
-            class="animate-wiggle w-[264px] lg:w-[564px] md:w-[364px] h-[254px] md:h-[364px] lg:h-[564px] self-center"
+            class="w-[264px] lg:w-[564px] md:w-[364px] h-[254px] md:h-[364px] lg:h-[564px] self-center"
             src="/assets-v1/templates/assets/images/team-working.png"
           />
         </div>
@@ -60,11 +59,11 @@
       const { createApp } = Vue;
 
       const loginAsAUser = async () => {
-        window.location.href = "https://layer8devproxy.net/user-login-page";
+        window.location.href = "/user-login-page";
       };
 
       const loginAsAClient = async () => {
-        window.location.href = "https://layer8devproxy.net/client-login-page";
+        window.location.href = "/client-login-page";
       };
 
       const app = createApp({

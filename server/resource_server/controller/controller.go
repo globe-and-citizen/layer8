@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path/filepath"
+	"os"
 
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
@@ -33,18 +33,16 @@ func LoginClientPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/login.html")
 }
 
-func ServeFileHandler(w http.ResponseWriter, r *http.Request, path string) {
+func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Println(w, http.StatusText(http.StatusMethodNotAllowed))
 		return
 	}
 
-	utils.GetPwd()
-
-	fullPath := filepath.Join(utils.WorkingDirectory, path)
-	fmt.Println("fullPath", fullPath)
-	http.ServeFile(w, r, fullPath)
+	utils.ParseHTML(w, filePath, map[string]interface{}{
+		"ProxyURL": os.Getenv("PROXY_URL"),
+	})
 }
 
 func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
