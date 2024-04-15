@@ -27,7 +27,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		utils.ParseHTML(w, "assets-v1/templates/login.html",
+		utils.ParseHTML(w, "assets-v1/templates/src/pages/oauth_portal/login.html",
 			map[string]interface{}{
 				"HasNext":  next != "",
 				"Next":     next,
@@ -42,7 +42,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		// login the user
 		rUser, err := service.LoginUser(username, password)
 		if err != nil {
-			t, errT := template.ParseFiles("assets-v1/templates/login.html")
+			t, errT := template.ParseFiles("assets-v1/templates/src/pages/oauth_portal/login.html")
 			if errT != nil {
 				http.Error(w, errT.Error(), http.StatusInternalServerError)
 				return
@@ -57,7 +57,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		// set the token cookie
 		token, ok := rUser["token"].(string)
 		if !ok {
-			t, err := template.ParseFiles("assets-v1/templates/login.html")
+			t, err := template.ParseFiles("assets-v1/templates/src/pages/oauth_portal/login.html")
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
