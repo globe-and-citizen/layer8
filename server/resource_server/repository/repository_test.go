@@ -208,83 +208,83 @@ func TestUpdateDisplayName(t *testing.T) {
 
 // Javokhir started the testing
 func TestLoginClient(t *testing.T) {
-    // Create a new mock DB and a GORM database connection
-    mockDB, mock, err := sqlmock.New()
-    if err != nil {
-        t.Fatal("Failed to create mock DB:", err)
-    }
-    defer mockDB.Close()
+	// Create a new mock DB and a GORM database connection
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal("Failed to create mock DB:", err)
+	}
+	defer mockDB.Close()
 
-    db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{})
-    if err != nil {
-        t.Fatal("Failed to connect to mock DB:", err)
-    }
+	db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{})
+	if err != nil {
+		t.Fatal("Failed to connect to mock DB:", err)
+	}
 
-    // Create the client repository with the mock database connection
-    repo := NewRepository(db)
+	// Create the client repository with the mock database connection
+	repo := NewRepository(db)
 
-    // Define a test client username
-    testUsername := "testuser"
+	// Define a test client username
+	testUsername := "testuser"
 
-    // Expect a query to be executed and return a row
-    mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "clients" WHERE username = $1 ORDER BY "clients"."id" LIMIT 1`)).WithArgs(testUsername).WillReturnRows(sqlmock.NewRows([]string{"id", "secret", "username", "password"}).AddRow("notanid", "testsecret", "testuser", "testpassword"))
+	// Expect a query to be executed and return a row
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "clients" WHERE username = $1 ORDER BY "clients"."id" LIMIT 1`)).WithArgs(testUsername).WillReturnRows(sqlmock.NewRows([]string{"id", "secret", "username", "password"}).AddRow("notanid", "testsecret", "testuser", "testpassword"))
 
-    // Call the LoginClient method
-    client, err := repo.LoginClient(dto.LoginClientDTO{Username: testUsername, Password: "testpassword"})
-    if err != nil {
-        t.Fatalf("Error while logging in client: %v", err)
-    }
+	// Call the LoginClient method
+	client, err := repo.LoginClient(dto.LoginClientDTO{Username: testUsername, Password: "testpassword"})
+	if err != nil {
+		t.Fatalf("Error while logging in client: %v", err)
+	}
 
-    // Check if the returned client is correct
-    if client.Username != testUsername {
-        t.Errorf("Expected username: %s, got: %s", testUsername, client.Username)
-    }
+	// Check if the returned client is correct
+	if client.Username != testUsername {
+		t.Errorf("Expected username: %s, got: %s", testUsername, client.Username)
+	}
 
-    // Check if the expectations were met
-    if err := mock.ExpectationsWereMet(); err != nil {
-        t.Errorf("There were unfulfilled expectations: %s", err)
-    }
+	// Check if the expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
 }
 
 func TestProfileClient(t *testing.T) {
-    // Create a new mock DB and a GORM database connection
-    mockDB, mock, err := sqlmock.New()
-    if err != nil {
-        t.Fatal("Failed to create mock DB:", err)
-    }
-    defer mockDB.Close()
+	// Create a new mock DB and a GORM database connection
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal("Failed to create mock DB:", err)
+	}
+	defer mockDB.Close()
 
-    db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{})
-    if err != nil {
-        t.Fatal("Failed to connect to mock DB:", err)
-    }
+	db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{})
+	if err != nil {
+		t.Fatal("Failed to connect to mock DB:", err)
+	}
 
-    // Create the client repository with the mock database connection
-    repo := NewRepository(db)
+	// Create the client repository with the mock database connection
+	repo := NewRepository(db)
 
-    // Define a test user ID
-    testUserID := "testuser"
+	// Define a test user ID
+	testUserID := "testuser"
 
-    // Expect a query to be executed and return a row
-    mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "clients" WHERE name = $1 ORDER BY "clients"."id" LIMIT 1`)).WithArgs(testUserID).WillReturnRows(sqlmock.NewRows([]string{"id", "secret", "name", "redirect_uri"}).AddRow("notanid", "testsecret", "testuser", "https://gcitizen.com/callback"))
+	// Expect a query to be executed and return a row
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "clients" WHERE username = $1 ORDER BY "clients"."id" LIMIT 1`)).WithArgs(testUserID).WillReturnRows(sqlmock.NewRows([]string{"id", "secret", "name", "redirect_uri"}).AddRow("notanid", "testsecret", "testuser", "https://gcitizen.com/callback"))
 
-    // Call the ProfileClient method
-    client, err := repo.ProfileClient(testUserID)
+	// Call the ProfileClient method
+	client, err := repo.ProfileClient(testUserID)
 
-    // Check for errors
-    if err != nil {
-        t.Fatalf("Error while retrieving client profile: %v", err)
-    }
+	// Check for errors
+	if err != nil {
+		t.Fatalf("Error while retrieving client profile: %v", err)
+	}
 
-    // Check if the returned client is correct
-    if client.Name != testUserID {
-        t.Errorf("Expected user ID: %s, got: %s", testUserID, client.Name)
-    }
+	// Check if the returned client is correct
+	if client.Name != testUserID {
+		t.Errorf("Expected user ID: %s, got: %s", testUserID, client.Name)
+	}
 
-    // Check if the expectations were met
-    if err := mock.ExpectationsWereMet(); err != nil {
-        t.Errorf("There were unfulfilled expectations: %s", err)
-    }
+	// Check if the expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
 }
 
 // Javokhir finished the testing
