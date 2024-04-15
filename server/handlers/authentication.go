@@ -27,7 +27,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		utils.ParseHTML(w, "login.html",
+		utils.ParseHTML(w, "assets-v1/templates/login.html",
 			map[string]interface{}{
 				"HasNext":  next != "",
 				"Next":     next,
