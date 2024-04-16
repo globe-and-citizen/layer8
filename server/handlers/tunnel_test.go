@@ -168,7 +168,7 @@ func Test_TunnelAPI_OK_BadRequest(t *testing.T) {
 
 	Tunnel(responseRecorder, reqToInitTunnel)
 
-	assert.Equal(t, http.StatusOK, responseRecorder.Code)
+	assert.Equal(t, http.StatusBadRequest, responseRecorder.Code)
 	assert.Equal(t, "trace-id-mock", responseRecorder.Header().Get("trace-id"))
 	assert.Equal(t, `{"error": "invalid value"}`, responseRecorder.Body.String())
 }
