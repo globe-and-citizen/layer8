@@ -6,10 +6,6 @@ output "ecs_cluster_id" {
   value = module.ecs.cluster_id
 }
 
-output "db_spot_capacity_provider_name" {
-  value = module.ecs.db_spot_capacity_provider_name
-}
-
 output "service_spot_capacity_provider_name" {
   value = module.ecs.service_spot_capacity_provider_name
 }

@@ -9,8 +9,7 @@ data "aws_ssm_parameter" "ecs_node_ami" {
 resource "aws_ecs_cluster_capacity_providers" "capacity_provider_mapping" {
   cluster_name       = aws_ecs_cluster.cluster.name
   capacity_providers = [
-    aws_ecs_capacity_provider.service_spot_capacity_provider.name,
-    aws_ecs_capacity_provider.db_spot_capacity_provider.name,
+    aws_ecs_capacity_provider.service_spot_capacity_provider.name
   ]
 
   default_capacity_provider_strategy {

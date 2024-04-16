@@ -135,11 +135,11 @@ resource "aws_ecs_service" "service" {
   network_configuration {
     assign_public_ip = false
     security_groups  = [data.terraform_remote_state.network.outputs.node_security_group_id]
-    subnets          = [data.terraform_remote_state.network.outputs.private_subnets[0].id]
+    subnets          = data.terraform_remote_state.network.outputs.private_subnets[*].id
   }
 
   capacity_provider_strategy {
-    capacity_provider = data.terraform_remote_state.network.outputs.db_spot_capacity_provider_name
+    capacity_provider = data.terraform_remote_state.network.outputs.service_spot_capacity_provider_name
     base              = 1
     weight            = 100
   }

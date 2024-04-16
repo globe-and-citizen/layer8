@@ -1,7 +1,7 @@
 resource "aws_launch_template" "service_spot_launch_template" {
   name          = "${aws_ecs_cluster.cluster.name}-service-spot-launch-template"
   image_id      = data.aws_ssm_parameter.ecs_node_ami.value
-  instance_type = "t3.micro"
+  instance_type = "t3.medium"
 
   iam_instance_profile { arn = var.iam_profile_arn }
   monitoring { enabled = false }
@@ -36,11 +36,11 @@ resource "aws_autoscaling_group" "service_spot_asg" {
       }
 
       override {
-        instance_type = "t3.micro"
+        instance_type = "t3.medium"
       }
 
       override {
-        instance_type = "t2.micro"
+        instance_type = "t3a.medium"
       }
     }
   }
