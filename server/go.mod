@@ -5,7 +5,7 @@ go 1.21.4
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/globe-and-citizen/layer8-utils v0.0.0-20240116170643-192c8eb65295
+	github.com/globe-and-citizen/layer8-utils v0.0.0-20240415124731-111a19cce948
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.5.0

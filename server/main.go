@@ -24,7 +24,7 @@ import (
 
 	oauthSvc "globe-and-citizen/layer8/server/internals/service" // there are two services
 
-	// oauthRepo "globe-and-citizen/layer8/server/internals/repository"
+	oauthRepo "globe-and-citizen/layer8/server/internals/repository"
 
 	"github.com/joho/godotenv"
 )
@@ -107,11 +107,11 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 	// CHOOSE TO USE POSTRGRES OR IN_MEMORY IMPLEMENTATION BY COMMENTING / UNCOMMENTING
 
 	// ** USE LOCAL POSTGRES DB **
-	// oauthRepository := oauthRepo.NewOauthRepository(config.DB)
-	// oauthService := &oauthSvc.Service{Repo: oauthRepository}
+	oauthRepository := oauthRepo.NewOauthRepository(config.DB)
+	oauthService := &oauthSvc.Service{Repo: oauthRepository}
 
 	// ** USE THE IN MEMORY IMPLEMENTATION **
-	oauthService := &oauthSvc.Service{Repo: memoryRepository}
+	// oauthService := &oauthSvc.Service{Repo: memoryRepository}
 
 	_, err := oauthService.AddTestClient()
 	if err != nil {
@@ -158,7 +158,7 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 			case strings.HasPrefix(path, "/assets-v1"):
 				http.StripPrefix("/assets-v1", http.FileServer(http.Dir("./assets-v1"))).ServeHTTP(w, r)
 
-				// Resource Server endpoints
+			// Resource Server endpoints
 			case path == "/":
 				Ctl.IndexHandler(w, r)
 			case path == "/user":

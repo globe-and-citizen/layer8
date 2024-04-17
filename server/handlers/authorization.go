@@ -21,6 +21,13 @@ import (
 func Authorize(w http.ResponseWriter, r *http.Request) {
 	service := r.Context().Value("Oauthservice").(*svc.Service)
 
+	var headerMap = make(map[string]string)
+	headerMap["Sec-Ch-Ua-Platform"] = r.Header.Get("Sec-Ch-Ua-Platform")
+	headerMap["Sec-Fetch-Site"] = r.Header.Get("Sec-Fetch-Site")
+	headerMap["Referer"] = r.Header.Get("Referer")
+	headerMap["Sec-Ch-Ua"] = r.Header.Get("Sec-Ch-Ua")
+	headerMap["User-Agent"] = r.Header.Get("User-Agent")
+
 	switch r.Method {
 	case "GET":
 		var (
@@ -159,13 +166,17 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 			scopes += "," + constants.READ_USER_COUNTRY_SCOPE
 		}
 
+		if r.FormValue("share_top_five_metadata") == "true" {
+			scopes += "," + constants.READ_USER_TOP_FIVE_METADATA
+		}
+
 		// fmt.Println("scopes after user decision: ", scopes)
 		// generate authorization url
 		authURL, err := service.GenerateAuthorizationURL(&oauth2.Config{
 			ClientID:    client.ID,
 			RedirectURL: client.RedirectURI,
 			Scopes:      strings.Split(scopes, ","),
-		}, int64(user.ID))
+		}, int64(user.ID), headerMap)
 		if err != nil {
 			log.Println("Server error: ", err)
 			if returnResult {

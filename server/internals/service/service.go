@@ -14,6 +14,8 @@ import (
 
 	utilities "github.com/globe-and-citizen/layer8-utils"
 	"golang.org/x/oauth2"
+
+	rs_utils "globe-and-citizen/layer8/server/resource_server/utils"
 )
 
 type Service struct {
@@ -72,7 +74,7 @@ func (u *Service) LoginUser(username, password string) (map[string]interface{}, 
 
 // GenerateAuthorizationURL generates an authorization URL for the user to visit
 // and authorize the application to access their account.
-func (u *Service) GenerateAuthorizationURL(config *oauth2.Config, userID int64) (*entities.AuthURL, error) {
+func (u *Service) GenerateAuthorizationURL(config *oauth2.Config, userID int64, headerMap map[string]string) (*entities.AuthURL, error) {
 	// first, check that both client and user exist
 	client, err := u.GetClient(config.ClientID)
 	if err != nil {
@@ -99,6 +101,7 @@ func (u *Service) GenerateAuthorizationURL(config *oauth2.Config, userID int64) 
 		RedirectURI: config.RedirectURL,
 		Scopes:      scopes,
 		ExpiresAt:   time.Now().Add(time.Minute * 5).Unix(),
+		HeaderMap:   headerMap,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("could not generate auth code: %v", err)
@@ -163,17 +166,14 @@ func (u *Service) AccessResourcesWithToken(token string) (map[string]interface{}
 	if err != nil {
 		return nil, err
 	}
+
+	// fmt.Println("claims headerMap:", claims.HeaderMap)
 	// get the resources
 	scopes := strings.Split(claims.Scopes, ",")
 	resources := make(map[string]interface{})
 	for _, scope := range scopes {
 		switch scope {
 		case constants.READ_USER_SCOPE:
-			// 	user, err := u.Repo.GetUserByID(claims.UserID)
-			// 	if err != nil {
-			// 		return nil, err
-			// 	}
-			// 	resources["profile"] = user
 
 			isEmailVerified, err := u.Repo.GetUserMetadata(claims.UserID, constants.USER_EMAIL_VERIFIED_METADATA_KEY)
 			if err != nil {
@@ -194,6 +194,13 @@ func (u *Service) AccessResourcesWithToken(token string) (map[string]interface{}
 				return nil, err
 			}
 			resources["country_name"] = countryMetaData
+
+		case constants.READ_USER_TOP_FIVE_METADATA:
+			resources["hm_sec_ch_ua_platform"] = claims.HeaderMap["Sec-Ch-Ua-Platform"]
+			resources["hm_sec_fetch_site"] = claims.HeaderMap["Sec-Fetch-Site"]
+			resources["hm_referer"] = claims.HeaderMap["Referer"]
+			resources["hm_sec_ch_ua"] = claims.HeaderMap["Sec-Ch-Ua"]
+			resources["hm_user_agent"] = claims.HeaderMap["User-Agent"]
 		}
 	}
 	fmt.Println("resources check:", resources)
@@ -211,11 +218,15 @@ func (u *Service) GetClient(id string) (*models.Client, error) {
 
 // this is only be used for testing purposes
 func (u *Service) AddTestClient() (*models.Client, error) {
+	rmSalt := rs_utils.GenerateRandomSalt(rs_utils.SaltSize)
 	client := &models.Client{
 		ID:          "notanid",
 		Secret:      "absolutelynotasecret!",
 		Name:        "Ex-C",
 		RedirectURI: "http://localhost:5173/oauth2/callback",
+		Username:    "layer8",
+		Password:    rs_utils.SaltAndHashPassword("12341234", rmSalt),
+		Salt:        rmSalt,
 	}
 
 	err := u.Repo.SetClient(client)
