@@ -95,7 +95,9 @@ resource "aws_ecs_task_definition" "task_definition" {
       cpu               = 0,
       memoryReservation = 128,
       mountPoints       = [],
-      portMappings      = [],
+      portMappings      = [
+        { containerPort = 4317, hostPort = 4317, protocol = "tcp" },
+      ],
       environment = [
         {
           name  = "INFLUXDB_URL",
