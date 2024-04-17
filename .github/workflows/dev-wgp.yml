@@ -1,10 +1,7 @@
-name: Deploy WGP Mock
+name: Deploy WGP Mock to Development Environment
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 jobs:
   build-wgp:
