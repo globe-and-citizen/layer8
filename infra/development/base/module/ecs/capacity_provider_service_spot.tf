@@ -16,7 +16,7 @@ resource "aws_launch_template" "service_spot_launch_template" {
 resource "aws_autoscaling_group" "service_spot_asg" {
   name                = "${aws_ecs_cluster.cluster.name}-service-spot-asg"
   min_size            = 1
-  max_size            = 10
+  max_size            = 1
   capacity_rebalance  = "true"
   vpc_zone_identifier = var.subnets[*].id
 
@@ -58,11 +58,5 @@ resource "aws_ecs_capacity_provider" "service_spot_capacity_provider" {
   auto_scaling_group_provider {
     auto_scaling_group_arn         = aws_autoscaling_group.service_spot_asg.arn
     managed_termination_protection = "DISABLED"
-    managed_scaling {
-      maximum_scaling_step_size = 2
-      minimum_scaling_step_size = 1
-      status                    = "ENABLED"
-      target_capacity           = 100
-    }
   }
 }
