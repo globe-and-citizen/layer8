@@ -45,6 +45,16 @@ resource "aws_ecs_task_definition" "task_definition" {
         }
       ],
       mountPoints = [
+        {
+          sourceVolume  = "influxdb-data"
+          containerPath = "/var/lib/influxdb2"
+          readOnly      = false
+        },
+        {
+          sourceVolume  = "influxdb-data"
+          containerPath = "/etc/influxdb2"
+          readOnly      = false
+        },
       ],
       environment = [
         {
@@ -77,7 +87,7 @@ resource "aws_ecs_task_definition" "task_definition" {
           "awslogs-create-group" : "true",
           "awslogs-group" : "ecs/development",
           "awslogs-region" : "${var.aws_region}",
-          "awslogs-stream-prefix": "influxdb2"
+          "awslogs-stream-prefix" : "influxdb2"
         },
       },
       user = "0"
@@ -100,7 +110,7 @@ resource "aws_ecs_task_definition" "task_definition" {
           "awslogs-create-group" : "true",
           "awslogs-group" : "ecs/development",
           "awslogs-region" : "${var.aws_region}",
-          "awslogs-stream-prefix": "cloudflare-tunnel"
+          "awslogs-stream-prefix" : "layer8server"
         },
       },
       user = "0",
@@ -111,20 +121,28 @@ resource "aws_ecs_task_definition" "task_definition" {
         "--token",
         "${var.cloudflare_tunnel_token}"
       ]
-    }
+    },
   ])
 
   tags = {
     Name = "influxdb2"
   }
+
+  volume {
+    name = "influxdb-data"
+    efs_volume_configuration {
+      file_system_id = "fs-0a8d9664aa4ff570b"
+      root_directory = "/"
+    }
+  }
 }
 
 resource "aws_ecs_service" "service" {
-  name            = "influxdb2"
-  cluster         = data.terraform_remote_state.network.outputs.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.task_definition.arn
-  desired_count   = 1
-  deployment_maximum_percent = 100
+  name                               = "influxdb2"
+  cluster                            = data.terraform_remote_state.network.outputs.ecs_cluster_id
+  task_definition                    = aws_ecs_task_definition.task_definition.arn
+  desired_count                      = 1
+  deployment_maximum_percent         = 100
   deployment_minimum_healthy_percent = 0
 
   deployment_circuit_breaker {

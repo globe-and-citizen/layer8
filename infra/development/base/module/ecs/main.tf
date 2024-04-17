@@ -7,7 +7,7 @@ data "aws_ssm_parameter" "ecs_node_ami" {
 }
 
 resource "aws_ecs_cluster_capacity_providers" "capacity_provider_mapping" {
-  cluster_name       = aws_ecs_cluster.cluster.name
+  cluster_name = aws_ecs_cluster.cluster.name
   capacity_providers = [
     aws_ecs_capacity_provider.service_spot_capacity_provider.name
   ]
@@ -29,8 +29,8 @@ resource "aws_security_group" "ecs_node_sg" {
 
   ingress {
     from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = [var.vpc_cidr_block]
     description = "vpc cidr"
   }

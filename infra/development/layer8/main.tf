@@ -53,7 +53,7 @@ resource "aws_ecs_task_definition" "task_definition" {
           "awslogs-create-group" : "true",
           "awslogs-group" : "ecs/development",
           "awslogs-region" : "${var.aws_region}",
-          "awslogs-stream-prefix": "layer8server"
+          "awslogs-stream-prefix" : "layer8server"
         },
       },
       user = "0"
@@ -76,7 +76,7 @@ resource "aws_ecs_task_definition" "task_definition" {
           "awslogs-create-group" : "true",
           "awslogs-group" : "ecs/development",
           "awslogs-region" : "${var.aws_region}",
-          "awslogs-stream-prefix": "layer8server"
+          "awslogs-stream-prefix" : "layer8server"
         },
       },
       user = "0",
@@ -96,7 +96,7 @@ resource "aws_ecs_task_definition" "task_definition" {
       memoryReservation = 128,
       mountPoints       = [],
       portMappings      = [],
-      environment       = [
+      environment = [
         {
           name  = "INFLUXDB_URL",
           value = "${var.influxdb_url}",
@@ -114,19 +114,19 @@ resource "aws_ecs_task_definition" "task_definition" {
           value = "layer8",
         }
       ],
-      environmentFiles  = [],
-      systemControls    = [],
-      volumesFrom       = [],
+      environmentFiles = [],
+      systemControls   = [],
+      volumesFrom      = [],
       logConfiguration = {
         logDriver = "awslogs",
         options = {
           "awslogs-create-group" : "true",
           "awslogs-group" : "ecs/development",
           "awslogs-region" : "${var.aws_region}",
-          "awslogs-stream-prefix": "layer8server"
+          "awslogs-stream-prefix" : "layer8server"
         },
       },
-      user = "0",
+      user    = "0",
       command = []
     }
   ])

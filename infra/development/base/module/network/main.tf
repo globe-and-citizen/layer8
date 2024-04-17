@@ -10,6 +10,8 @@ resource "aws_vpc" "vpc" {
   tags = {
     Name = "${terraform.workspace}-vpc"
   }
+
+  enable_dns_hostnames = true
 }
 resource "aws_subnet" "public" {
   vpc_id            = aws_vpc.vpc.id
