@@ -2,16 +2,13 @@ terraform {
   backend "remote" {
     organization = "globe-and-citizen"
     workspaces {
-      name = "layer8-influxdb-development"
+      name = "wgp-mock-development"
     }
   }
 }
 
 provider "aws" {
   region = var.aws_region
-}
-
-provider "random" {
 }
 
 data "terraform_remote_state" "network" {
@@ -25,31 +22,8 @@ data "terraform_remote_state" "network" {
   }
 }
 
-resource "aws_efs_file_system" "efs" {
-  creation_token = "influxdb-development"
-
-  tags = {
-    Name = "influxdb-development"
-  }
-}
-
-resource "aws_efs_mount_target" "efs_mount" {
-  count = 2
-  file_system_id = aws_efs_file_system.efs.id
-  subnet_id      = data.terraform_remote_state.network.outputs.private_subnets[count.index].id
-  security_groups = [
-    data.terraform_remote_state.network.outputs.node_security_group_id
-  ]
-}
-
-resource "random_password" "influxdb_password" {
-  length           = 16
-  special          = true
-  override_special = "!#$%&*()-_=+[]{}<>:?"
-}
-
 resource "aws_ecs_task_definition" "task_definition" {
-  family                   = "influxdb2"
+  family                   = "wgp-mock"
   task_role_arn            = data.terraform_remote_state.network.outputs.task_role_arn
   execution_role_arn       = data.terraform_remote_state.network.outputs.task_execution_role_arn
   network_mode             = "awsvpc"
@@ -58,62 +32,77 @@ resource "aws_ecs_task_definition" "task_definition" {
 
   container_definitions = jsonencode([
     {
-      name              = "influxdb2",
-      image             = "influxdb:2",
+      name              = "frontend",
       essential         = true,
+      image             = "${var.ecr_repository_url}:frontend-latest",
       cpu               = 0,
-      memoryReservation = 512,
+      memoryReservation = 256,
+      mountPoints       = [],
       portMappings = [
-        {
-          containerPort = 8086,
-          hostPort      = 8086,
-          protocol      = "tcp",
-        }
-      ],
-      mountPoints = [
-        {
-          sourceVolume  = "influxdb-data"
-          containerPath = "/var/lib/influxdb2"
-          readOnly      = false
-        },
-        {
-          sourceVolume  = "influxdb-data"
-          containerPath = "/etc/influxdb2"
-          readOnly      = false
-        },
+        { containerPort = 8080, hostPort = 8080, protocol = "tcp" },
       ],
       environment = [
         {
-          name  = "DOCKER_INFLUXDB_INIT_MODE",
-          value = "setup",
+          name  = "VITE_BACKEND_URL",
+          value = var.backend_url,
         },
         {
-          name  = "DOCKER_INFLUXDB_INIT_USERNAME",
-          value = "influxdbadmin",
-        },
-        {
-          name  = "DOCKER_INFLUXDB_INIT_PASSWORD",
-          value = random_password.influxdb_password.result,
-        },
-        {
-          name  = "DOCKER_INFLUXDB_INIT_ORG",
-          value = "layer8",
-        },
-        {
-          name  = "DOCKER_INFLUXDB_INIT_BUCKET",
-          value = "layer8",
-        },
-      ]
+          name = "VITE_PROXY_URL",
+          value = var.layer8_url
+        }
+      ],
       environmentFiles = [],
-      systemControls   = [],
-      volumesFrom      = [],
+      systemControls = [],
+      volumesFrom    = [],
       logConfiguration = {
         logDriver = "awslogs",
         options = {
           "awslogs-create-group" : "true",
           "awslogs-group" : "ecs/development",
           "awslogs-region" : "${var.aws_region}",
-          "awslogs-stream-prefix" : "influxdb2"
+          "awslogs-stream-prefix": "wgp-frontend"
+        },
+      },
+      user = "0"
+    },
+    {
+      name              = "backend",
+      essential         = true,
+      image             = "${var.ecr_repository_url}:backend-latest",
+      cpu               = 0,
+      memoryReservation = 256,
+      mountPoints       = [],
+      portMappings = [
+        { containerPort = 8000, hostPort = 8000, protocol = "tcp" },
+      ],
+      environment = [
+        {
+          name  = "PORT",
+          value = var.backend_port,
+        },
+        {
+          name  = "FRONTEND_URL",
+          value = var.frontend_url,
+        },
+        {
+          name  = "BACKEND_URL",
+          value = var.backend_url,
+        },
+        {
+          name = "LAYER8_URL",
+          value = var.layer8_url
+        }
+      ],
+      environmentFiles = [],
+      systemControls = [],
+      volumesFrom    = [],
+      logConfiguration = {
+        logDriver = "awslogs",
+        options = {
+          "awslogs-create-group" : "true",
+          "awslogs-group" : "ecs/development",
+          "awslogs-region" : "${var.aws_region}",
+          "awslogs-stream-prefix": "wgp-frontend"
         },
       },
       user = "0"
@@ -136,7 +125,7 @@ resource "aws_ecs_task_definition" "task_definition" {
           "awslogs-create-group" : "true",
           "awslogs-group" : "ecs/development",
           "awslogs-region" : "${var.aws_region}",
-          "awslogs-stream-prefix" : "layer8server"
+          "awslogs-stream-prefix": "layer8server"
         },
       },
       user = "0",
@@ -147,34 +136,25 @@ resource "aws_ecs_task_definition" "task_definition" {
         "--token",
         "${var.cloudflare_tunnel_token}"
       ]
-    },
+    }
   ])
 
   tags = {
-    Name = "influxdb2"
-  }
-
-  volume {
-    name = "influxdb-data"
-    efs_volume_configuration {
-      file_system_id = aws_efs_file_system.efs.id
-      root_directory = "/"
-    }
+    Name = "wgp"
   }
 }
 
 resource "aws_ecs_service" "service" {
-  name                               = "influxdb2"
-  cluster                            = data.terraform_remote_state.network.outputs.ecs_cluster_id
-  task_definition                    = aws_ecs_task_definition.task_definition.arn
-  desired_count                      = 1
-  deployment_maximum_percent         = 100
-  deployment_minimum_healthy_percent = 0
+  name            = "wgp"
+  cluster         = data.terraform_remote_state.network.outputs.ecs_cluster_id
+  task_definition = aws_ecs_task_definition.task_definition.arn
+  desired_count   = 1
 
   deployment_circuit_breaker {
     enable   = "true"
     rollback = "false"
   }
+
 
   network_configuration {
     assign_public_ip = false
