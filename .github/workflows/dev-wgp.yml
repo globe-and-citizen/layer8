@@ -14,6 +14,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: kciter/aws-ecr-action@v3
         with:
+          path: "./sp_mocks/wgp/frontend"
+          dockerfile: ./sp_mocks/wgp/frontend/Dockerfile
           access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           account_id: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -21,9 +23,10 @@ jobs:
           region: ${{ vars.AWS_REGION }}
           tags: frontend-latest
           create_repo: true
-          path: ./sp_mocks/wgp/frontend
       - uses: kciter/aws-ecr-action@v3
         with:
+            path: ./sp_mocks/wgp/backend
+            dockerfile: ./sp_mocks/wgp/backend/Dockerfile
             access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
             secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             account_id: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -31,7 +34,6 @@ jobs:
             region: ${{ vars.AWS_REGION }}
             tags: backend-latest
             create_repo: true
-            path: ./sp_mocks/wgp/backend
   deploy-wgp:
     name: "Deploy WGP To Development"
     environment: "development"
@@ -53,16 +55,11 @@ jobs:
           echo -e "$TFVARS_STRING" >> terraform.tfvars
         env:
           TFVARS_STRING: |
-            cloudflare_tunnel_token = "${{ secrets.LAYER8_CLOUDFLARE_TUNNEL_TOKEN }}"
-            ecr_repository_url = "${{ vars.ECR_REPOSITORY_URL }}"
+            ecr_repository_url = "${{ vars.WGP_ECR_REPOSITORY_URL }}"
       
       - name: Terraform Init
         id: init
         run: terraform init
-        
-      - name: Terraform Plan
-        id: plan
-        run: terraform plan
 
       - name: Terraform Apply
         id: apply

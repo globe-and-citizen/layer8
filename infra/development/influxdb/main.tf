@@ -34,7 +34,7 @@ resource "aws_efs_file_system" "efs" {
 }
 
 resource "aws_efs_mount_target" "efs_mount" {
-  count = 2
+  count          = 2
   file_system_id = aws_efs_file_system.efs.id
   subnet_id      = data.terraform_remote_state.network.outputs.private_subnets[count.index].id
   security_groups = [
@@ -52,7 +52,7 @@ resource "aws_ecs_task_definition" "task_definition" {
   family                   = "influxdb2"
   task_role_arn            = data.terraform_remote_state.network.outputs.task_role_arn
   execution_role_arn       = data.terraform_remote_state.network.outputs.task_execution_role_arn
-  network_mode             = "awsvpc"
+  network_mode             = "host"
   requires_compatibilities = ["EC2"]
   skip_destroy             = true
 
@@ -118,36 +118,6 @@ resource "aws_ecs_task_definition" "task_definition" {
       },
       user = "0"
     },
-    {
-      name              = "cloudflared-tunnel",
-      essential         = true,
-      image             = "cloudflare/cloudflared:latest",
-      cpu               = 0,
-      memoryReservation = 128,
-      mountPoints       = [],
-      portMappings      = [],
-      environment       = [],
-      environmentFiles  = [],
-      systemControls    = [],
-      volumesFrom       = [],
-      logConfiguration = {
-        logDriver = "awslogs",
-        options = {
-          "awslogs-create-group" : "true",
-          "awslogs-group" : "ecs/development",
-          "awslogs-region" : "${var.aws_region}",
-          "awslogs-stream-prefix" : "layer8server"
-        },
-      },
-      user = "0",
-      command = [
-        "tunnel",
-        "--no-autoupdate",
-        "run",
-        "--token",
-        "${var.cloudflare_tunnel_token}"
-      ]
-    },
   ])
 
   tags = {
@@ -174,12 +144,6 @@ resource "aws_ecs_service" "service" {
   deployment_circuit_breaker {
     enable   = "true"
     rollback = "false"
-  }
-
-  network_configuration {
-    assign_public_ip = false
-    security_groups  = [data.terraform_remote_state.network.outputs.node_security_group_id]
-    subnets          = data.terraform_remote_state.network.outputs.private_subnets[*].id
   }
 
   capacity_provider_strategy {

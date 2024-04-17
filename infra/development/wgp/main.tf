@@ -26,7 +26,7 @@ resource "aws_ecs_task_definition" "task_definition" {
   family                   = "wgp-mock"
   task_role_arn            = data.terraform_remote_state.network.outputs.task_role_arn
   execution_role_arn       = data.terraform_remote_state.network.outputs.task_execution_role_arn
-  network_mode             = "awsvpc"
+  network_mode             = "host"
   requires_compatibilities = ["EC2"]
   skip_destroy             = true
 
@@ -44,23 +44,23 @@ resource "aws_ecs_task_definition" "task_definition" {
       environment = [
         {
           name  = "VITE_BACKEND_URL",
-          value = var.backend_url,
+          value = "${var.backend_url}",
         },
         {
-          name = "VITE_PROXY_URL",
-          value = var.layer8_url
-        }
+          name  = "VITE_PROXY_URL",
+          value = "${var.layer8_url}",
+        },
       ],
       environmentFiles = [],
-      systemControls = [],
-      volumesFrom    = [],
+      systemControls   = [],
+      volumesFrom      = [],
       logConfiguration = {
         logDriver = "awslogs",
         options = {
           "awslogs-create-group" : "true",
           "awslogs-group" : "ecs/development",
           "awslogs-region" : "${var.aws_region}",
-          "awslogs-stream-prefix": "wgp-frontend"
+          "awslogs-stream-prefix" : "wgp-frontend"
         },
       },
       user = "0"
@@ -78,65 +78,35 @@ resource "aws_ecs_task_definition" "task_definition" {
       environment = [
         {
           name  = "PORT",
-          value = var.backend_port,
+          value = "${var.backend_port}",
         },
         {
           name  = "FRONTEND_URL",
-          value = var.frontend_url,
+          value = "${var.frontend_url}",
         },
         {
           name  = "BACKEND_URL",
-          value = var.backend_url,
+          value = "${var.backend_url}",
         },
         {
-          name = "LAYER8_URL",
-          value = var.layer8_url
-        }
+          name  = "LAYER8_URL",
+          value = "${var.layer8_url}",
+        },
       ],
       environmentFiles = [],
-      systemControls = [],
-      volumesFrom    = [],
+      systemControls   = [],
+      volumesFrom      = [],
       logConfiguration = {
         logDriver = "awslogs",
         options = {
           "awslogs-create-group" : "true",
           "awslogs-group" : "ecs/development",
           "awslogs-region" : "${var.aws_region}",
-          "awslogs-stream-prefix": "wgp-frontend"
+          "awslogs-stream-prefix" : "wgp-frontend"
         },
       },
       user = "0"
     },
-    {
-      name              = "cloudflared-tunnel",
-      essential         = true,
-      image             = "cloudflare/cloudflared:latest",
-      cpu               = 0,
-      memoryReservation = 128,
-      mountPoints       = [],
-      portMappings      = [],
-      environment       = [],
-      environmentFiles  = [],
-      systemControls    = [],
-      volumesFrom       = [],
-      logConfiguration = {
-        logDriver = "awslogs",
-        options = {
-          "awslogs-create-group" : "true",
-          "awslogs-group" : "ecs/development",
-          "awslogs-region" : "${var.aws_region}",
-          "awslogs-stream-prefix": "layer8server"
-        },
-      },
-      user = "0",
-      command = [
-        "tunnel",
-        "--no-autoupdate",
-        "run",
-        "--token",
-        "${var.cloudflare_tunnel_token}"
-      ]
-    }
   ])
 
   tags = {
@@ -145,21 +115,16 @@ resource "aws_ecs_task_definition" "task_definition" {
 }
 
 resource "aws_ecs_service" "service" {
-  name            = "wgp"
-  cluster         = data.terraform_remote_state.network.outputs.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.task_definition.arn
-  desired_count   = 1
+  name                               = "wgp"
+  cluster                            = data.terraform_remote_state.network.outputs.ecs_cluster_id
+  task_definition                    = aws_ecs_task_definition.task_definition.arn
+  desired_count                      = 1
+  deployment_maximum_percent         = 100
+  deployment_minimum_healthy_percent = 0
 
   deployment_circuit_breaker {
     enable   = "true"
     rollback = "false"
-  }
-
-
-  network_configuration {
-    assign_public_ip = false
-    security_groups  = [data.terraform_remote_state.network.outputs.node_security_group_id]
-    subnets          = data.terraform_remote_state.network.outputs.private_subnets[*].id
   }
 
   capacity_provider_strategy {

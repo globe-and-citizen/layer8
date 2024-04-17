@@ -6,12 +6,8 @@ variable "ecr_repository_url" {
   description = "The URL of the ECR repository"
 }
 
-variable "cloudflare_tunnel_token" {
-  description = "Cloudflare tunnel token"
-}
-
 variable "backend_port" {
-  default = 8000
+  default = "8000"
 }
 
 variable "frontend_url" {

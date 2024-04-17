@@ -57,7 +57,6 @@ jobs:
           echo -e "$TFVARS_STRING" >> terraform.tfvars
         env:
           TFVARS_STRING: |
-            cloudflare_tunnel_token = "${{ secrets.LAYER8_CLOUDFLARE_TUNNEL_TOKEN }}"
             ecr_image_tag = "${{ github.sha }}"
             s3_arn_env_file = "arn:aws:s3:::${{ vars.S3_APP_ENV_LOCATION }}"
             ecr_repository_url = "${{ vars.ECR_REPOSITORY_URL }}"

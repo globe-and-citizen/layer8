@@ -17,3 +17,11 @@ variable "subnets" {
 variable "iam_profile_arn" {
   description = "IAM profile ARN for the ECS cluster"
 }
+
+variable "task_execution_role_arn" {}
+
+variable "task_role_arn" {}
+
+variable "aws_region" {}
+
+variable "cloudflare_tunnel_token" {}
