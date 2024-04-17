@@ -48,7 +48,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: |
-          echo -e "${{ secrets.NON_PRODUCTION_APP_ENV }}" >> app.env
+          echo -e "${{ vars.NON_PRODUCTION_APP_ENV }}" >> app.env
           aws s3 cp ./app.env s3://${{ vars.S3_APP_ENV_LOCATION }}
       
       - name: Add Terraform Environment Variables
@@ -60,7 +60,7 @@ jobs:
             ecr_image_tag = "${{ github.sha }}"
             s3_arn_env_file = "arn:aws:s3:::${{ vars.S3_APP_ENV_LOCATION }}"
             ecr_repository_url = "${{ vars.ECR_REPOSITORY_URL }}"
-            influxdb_url = "${{ secrets.INFLUXDB_URL }}"
+            influxdb_url = "${{ vars.INFLUXDB_URL }}"
             influxdb_token = "${{ secrets.INFLUXDB_TOKEN }}"
       
       - name: Terraform Init
