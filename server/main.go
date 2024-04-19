@@ -137,7 +137,7 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 			staticFS, _ := fs.Sub(StaticFiles, "dist")
 			httpFS := http.FileServer(http.FS(staticFS))
 
-			if r.Header.Get("X-Forwarded-Proto") != "" {
+			if r.Header.Get("up-JWT") != "" {
 				handlers.Tunnel(w, r)
 				return
 			}
