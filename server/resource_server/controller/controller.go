@@ -71,18 +71,18 @@ func ClientProfileHandler(w http.ResponseWriter, r *http.Request) {
 	tokenString = tokenString[7:]
 	userName, err := utils.ValidateClientToken(tokenString)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile", err)
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile, invalid token", err)
 		return
 	}
 
 	profileResp, err := newService.ProfileClient(userName)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile", err)
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile, user not found", err)
 		return
 	}
 
 	if err := json.NewEncoder(w).Encode(profileResp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile", err)
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile, error encoding response", err)
 		return
 	}
 }

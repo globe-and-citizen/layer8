@@ -13,6 +13,14 @@ import (
 func UserInfo(w http.ResponseWriter, r *http.Request) {
 	service := r.Context().Value("Oauthservice").(*svc.Service)
 
+	// Print headers
+	// fmt.Println("*** Headers ***")
+	// for name, values := range r.Header {
+	// 	for _, value := range values {
+	// 		fmt.Println("Header: ", name, value)
+	// 	}
+	// }
+
 	switch r.Method {
 	case "GET":
 		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
