@@ -11,7 +11,7 @@ RUN go get github.com/globe-and-citizen/layer8-utils
 
 RUN go mod tidy
 
-RUN go build -o main .
+RUN GOOS=linux GOARCH=amd64 go build -o main .
 
 # Deploy the server
 
