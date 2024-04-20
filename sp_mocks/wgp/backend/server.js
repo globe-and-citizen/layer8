@@ -124,12 +124,33 @@ app.post("/api/login/layer8/auth", async (req, res) => {
   let displayName = "";
   let countryName = "";
 
+  // Metadata for Layer8
+  let Sec_Ch_Ua_Platform = "";
+  let Sec_Fetch_Site = "";
+  let Referer = "";
+  let Sec_Ch_Ua = "";
+  let User_Agent = "";
+
   if (user.display_name) {
     displayName = user.display_name.value;
   }
 
   if (user.country_name) {
     countryName = user.country_name.value;
+  }
+
+  // Metadata for Layer8
+  if (user.hm_sec_ch_ua_platform) {
+    Sec_Ch_Ua_Platform = user.hm_sec_ch_ua_platform;
+    Sec_Fetch_Site = user.hm_sec_fetch_site;
+    Referer = user.hm_referer;
+    Sec_Ch_Ua = user.hm_sec_ch_ua;
+    User_Agent = user.hm_user_agent;
+    console.log("Sec_Ch_Ua_Platform: ", Sec_Ch_Ua_Platform);
+    console.log("Sec_Fetch_Site: ", Sec_Fetch_Site);
+    console.log("Referer: ", Referer);
+    console.log("Sec_Ch_Ua: ", Sec_Ch_Ua);
+    console.log("User_Agent: ", User_Agent);
   }
 
   const token = jwt.sign(
