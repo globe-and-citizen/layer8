@@ -39,13 +39,13 @@ run_server_local: # Port 5001 with in-memory db
 
 # Build and Push Docker Images
 build_server_image:
-	docker build --tag layer8-server --file Dockerfile .
+	docker build --tag layer8-server-new --file Dockerfile .
 
 build_sp_mocks_frontend_image:
-	cd sp_mocks/frontend && docker build --tag sp_mocks_frontend --file Dockerfile .
+	cd sp_mocks/wgp/frontend && docker build --tag sp_mocks_frontend --file Dockerfile .
 
 build_sp_mocks_backend_image:
-	cd sp_mocks/backend && docker build --tag sp_mocks_backend --file Dockerfile .
+	cd sp_mocks/wgp/backend && docker build --tag sp_mocks_backend --file Dockerfile .
 
 
 # To build all images at once
@@ -53,7 +53,7 @@ build_images:
 	make build_server_image && make build_sp_mocks_frontend_image && make build_sp_mocks_backend_image
 
 run_layer8_server_image:
-	docker run -p 5001:5001 -t layer8-server
+	docker run -p 5001:5001 -t layer8-server-new
 
 run_sp_mocks_frontend_image:
 	docker run -p 8080:8080 -t sp_mocks_frontend
@@ -62,13 +62,13 @@ run_sp_mocks_backend_image:
 	docker run -p 8000:8000 -t sp_mocks_backend
 
 push_layer8_server_image:
-	aws lightsail push-container-image --region ca-central-1 --service-name aws-container-service-t1 --label layer8-server-version-stable-7 --image layer8-server:latest
+	aws lightsail push-container-image --region ca-central-1 --service-name aws-container-service-t1 --label layer8-server-version-stable-9 --image layer8-server-new:latest
 
 push_sp_mocks_frontend_image:
-	aws lightsail push-container-image --region ca-central-1 --service-name container-service-2 --label frontendversionstable1 --image sp_mocks_frontend:latest
+	aws lightsail push-container-image --region ca-central-1 --service-name container-service-2 --label frontendversiontest2 --image sp_mocks_frontend:latest
 
 push_sp_mocks_backend_image:
-	aws lightsail push-container-image --region ca-central-1 --service-name container-service-3 --label backendversionstable1 --image sp_mocks_backend:latest
+	aws lightsail push-container-image --region ca-central-1 --service-name container-service-3 --label backendtest2 --image sp_mocks_backend:latest
 
 push_images:
 	make push_layer8_server_image && make push_sp_mocks_frontend_image && make push_sp_mocks_backend_image
