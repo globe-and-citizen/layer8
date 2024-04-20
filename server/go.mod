@@ -4,7 +4,6 @@ go 1.21.1
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/globe-and-citizen/layer8-utils v0.0.0-20240415124731-111a19cce948
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
@@ -26,6 +25,7 @@ require (
 	github.com/aead/ecdh v0.2.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
