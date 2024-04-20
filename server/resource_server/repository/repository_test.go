@@ -266,8 +266,9 @@ func TestProfileClient(t *testing.T) {
 	testUserID := "testuser"
 
 	// Expect a query to be executed and return a row
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "clients" WHERE username = $1 ORDER BY "clients"."id" LIMIT 1`)).WithArgs(testUserID).WillReturnRows(sqlmock.NewRows([]string{"id", "secret", "name", "redirect_uri"}).AddRow("notanid", "testsecret", "testuser", "https://gcitizen.com/callback"))
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "clients" WHERE username = $1 ORDER BY "clients"."id" LIMIT 1`)).WithArgs(testUserID).WillReturnRows(sqlmock.NewRows([]string{"id", "secret", "name", "redirect_uri", "username"}).AddRow("notanid", "testsecret", "testuser", "https://gcitizen.com/callback", "testuser"))
 
+	// ("notanid", "testsecret", "testuser", "https://gcitizen.com/callback")
 	// Call the ProfileClient method
 	client, err := repo.ProfileClient(testUserID)
 
