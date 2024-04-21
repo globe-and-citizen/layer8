@@ -129,7 +129,7 @@ func CompleteLogin(req dto.LoginUserDTO, user models.User) (models.LoginUserResp
 }
 
 func CompleteClientLogin(req dto.LoginClientDTO, client models.Client) (models.LoginUserResponseOutput, error) {
-	JWT_SECRET_STR := os.Getenv("JWT_SECRET")
+	JWT_SECRET_STR := os.Getenv("JWT_SECRET_KEY")
 	JWT_SECRET_BYTE := []byte(JWT_SECRET_STR)
 
 	expirationTime := time.Now().Add(60 * time.Minute)
@@ -157,7 +157,7 @@ func CompleteClientLogin(req dto.LoginClientDTO, client models.Client) (models.L
 
 func ValidateToken(tokenString string) (uint, error) {
 	claims := &models.Claims{}
-	JWT_SECRET_STR := os.Getenv("JWT_SECRET")
+	JWT_SECRET_STR := os.Getenv("JWT_SECRET_KEY")
 	JWT_SECRET_BYTE := []byte(JWT_SECRET_STR)
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return JWT_SECRET_BYTE, nil
@@ -173,7 +173,7 @@ func ValidateToken(tokenString string) (uint, error) {
 
 func ValidateClientToken(tokenString string) (string, error) {
 	claims := &models.ClientClaims{}
-	JWT_SECRET_STR := os.Getenv("JWT_SECRET")
+	JWT_SECRET_STR := os.Getenv("JWT_SECRET_KEY")
 	JWT_SECRET_BYTE := []byte(JWT_SECRET_STR)
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return JWT_SECRET_BYTE, nil
@@ -188,7 +188,7 @@ func ValidateClientToken(tokenString string) (string, error) {
 }
 
 func GenerateToken(user models.User) (string, error) {
-	JWT_SECRET_STR := os.Getenv("JWT_SECRET")
+	JWT_SECRET_STR := os.Getenv("JWT_SECRET_KEY")
 	JWT_SECRET_BYTE := []byte(JWT_SECRET_STR)
 
 	expirationTime := time.Now().Add(60 * time.Minute)

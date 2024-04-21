@@ -5,6 +5,9 @@ type Client struct {
 	Secret      string `json:"secret"`
 	Name        string `json:"name"`
 	RedirectURI string `json:"redirect_uri"`
+	Username    string `json:"username"`
+	Password    string `json:"password"`
+	Salt        string `json:"salt"`
 }
 
 func CreateClient(id, secret, name, redirect_uri string) Client {

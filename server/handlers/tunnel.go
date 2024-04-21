@@ -205,7 +205,7 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("header pairs from SP: ", k, v)
 	}
 
-	//w.WriteHeader(res.StatusCode)
+	w.WriteHeader(res.StatusCode)
 	n, err := io.Copy(w, res.Body)
 	if err != nil {
 		fmt.Println("Error copying response:", err)

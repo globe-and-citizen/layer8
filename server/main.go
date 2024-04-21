@@ -137,7 +137,7 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 			staticFS, _ := fs.Sub(StaticFiles, "dist")
 			httpFS := http.FileServer(http.FS(staticFS))
 
-			if r.Header.Get("X-Forwarded-Proto") != "" {
+			if r.Header.Get("up-JWT") != "" {
 				handlers.Tunnel(w, r)
 				return
 			}
@@ -158,7 +158,7 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 			case strings.HasPrefix(path, "/assets-v1"):
 				http.StripPrefix("/assets-v1", http.FileServer(http.Dir("./assets-v1"))).ServeHTTP(w, r)
 
-				// Resource Server endpoints
+			// Resource Server endpoints
 			case path == "/":
 				Ctl.IndexHandler(w, r)
 			case path == "/user":
