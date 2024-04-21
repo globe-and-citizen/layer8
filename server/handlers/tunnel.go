@@ -8,14 +8,31 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"database/sql"
 
 	"globe-and-citizen/layer8/server/resource_server/utils"
 
 	utilities "github.com/globe-and-citizen/layer8-utils"
 )
 
+type ClientPortalRecord struct {
+	ID   int
+	Secret string
+	Name string
+	RedirectURI string
+	Username string
+	Password string
+	Salt string
+}
+
 // Tunnel forwards the request to the service provider's backend
 func InitTunnel(w http.ResponseWriter, r *http.Request) {
+	clientPortalData, err := getClientPortalData()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(clientPortalData)
+
 	fmt.Println("\n\n*************")
 	fmt.Println(r.Method) // > GET  | > POST
 	fmt.Println(r.URL)    // (http://localhost:5000/api/v1 ) > /api/v1
@@ -204,4 +221,38 @@ func TestError(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Test error endpoint:", err.Error())
 	http.Error(w, err.Error(), http.StatusInternalServerError)
 	return
+}
+
+func getClientPortalData() ([]ClientPortalRecord, error) {
+    db, err := sql.Open("postgres", "postgres://root:1234@localhost/ResourceServer?sslmode=disable")
+    if err != nil {
+        return nil, err
+    }
+    defer db.Close()
+
+    query := "SELECT * FROM clients"
+
+    rows, err := db.Query(query)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var clientPortalData []ClientPortalRecord
+
+    for rows.Next() {
+        var record ClientPortalRecord
+
+        if err := rows.Scan(&record.ID, &record.Name, &record.Secret, &record.RedirectURI, &record.Username, &record.Password, &record.Salt); err != nil {
+            return nil, err
+        }
+
+        clientPortalData = append(clientPortalData, record)
+    }
+
+    if err := rows.Err(); err != nil {
+        return nil, err
+    }
+
+    return clientPortalData, nil
 }

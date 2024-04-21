@@ -208,6 +208,22 @@ func GetClientData(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func GetClientFullData(w http.ResponseWriter, r *http.Request) {
+	newService := r.Context().Value("service").(interfaces.IService)
+	clientName := r.Header.Get("Name")
+
+	clientModel, err := newService.GetClientData(clientName)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(clientModel); err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
+		return
+	}
+}
+
 func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
 	newService := r.Context().Value("service").(interfaces.IService)
 	tokenString := r.Header.Get("Authorization")
