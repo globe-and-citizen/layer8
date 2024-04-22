@@ -290,6 +290,22 @@ func (r *MemoryRepository) GetClient(id string) (*serverModels.Client, error) {
 	return &client, nil
 }
 
+func (r *MemoryRepository) GetAllClientData() ([]models.Client, error) {
+    var clients []models.Client
+
+    for _, clientData := range r.storage {
+        appClient := models.Client{
+            ID:          clientData["id"],
+            Secret:      clientData["secret"],
+            Name:        clientData["name"],
+            RedirectURI: clientData["redirect_uri"],
+        }
+        clients = append(clients, appClient)
+    }
+
+    return clients, nil
+}
+
 func (r *MemoryRepository) SetTTL(key string, value []byte, ttl time.Duration) error {
 	r.byteStorage[key] = value
 	go func() {

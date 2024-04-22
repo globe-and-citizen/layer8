@@ -20,6 +20,7 @@ type IRepository interface {
 	UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error
 	RegisterClient(req dto.RegisterClientDTO) error
 	GetClientData(clientName string) (models.Client, error)
+	GetAllClientData() ([]models.Client, error)
 	// Oauth2 methods
 	LoginUserPrecheck(username string) (string, error)
 	GetUser(username string) (*serverModel.User, error)

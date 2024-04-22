@@ -98,6 +98,14 @@ func (r *Repository) GetClientData(clientName string) (models.Client, error) {
 	return client, nil
 }
 
+func (r *Repository) GetAllClientData() ([]models.Client, error) {
+    var clients []models.Client
+    if err := r.connection.Find(&clients).Error; err != nil {
+        return nil, err
+    }
+    return clients, nil
+}
+
 func (r *Repository) LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string, error) {
 	var user models.User
 	if err := r.connection.Where("username = ?", req.Username).First(&user).Error; err != nil {

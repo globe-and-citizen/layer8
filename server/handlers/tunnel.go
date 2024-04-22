@@ -12,10 +12,14 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/utils"
 
 	utilities "github.com/globe-and-citizen/layer8-utils"
+	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
 )
 
 // Tunnel forwards the request to the service provider's backend
 func InitTunnel(w http.ResponseWriter, r *http.Request) {
+	clientPortalData := Ctl.GetAllClientData(w, r)
+	fmt.Println("client data", clientPortalData)
+	
 	fmt.Println("\n\n*************")
 	fmt.Println(r.Method) // > GET  | > POST
 	fmt.Println(r.URL)    // (http://localhost:5000/api/v1 ) > /api/v1

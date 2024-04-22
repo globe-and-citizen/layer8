@@ -52,6 +52,12 @@ func (s *service) GetClientData(clientName string) (models.ClientResponseOutput,
 	return clientModel, nil
 }
 
+func (s *service) GetAllClientData() ([]models.Client, error) {
+	clientData, err := s.repository.GetAllClientData()
+
+	return clientData, err
+}
+
 func (s *service) LoginPreCheckUser(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error) {
 	if err := validator.New().Struct(req); err != nil {
 		return models.LoginPrecheckResponseOutput{}, err
