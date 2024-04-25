@@ -15,10 +15,6 @@ module "network" {
   source = "./module/network"
 }
 
-module "iam" {
-  source = "./module/iam"
-}
-
 module "ecs" {
   source                  = "./module/ecs"
   cluster_name            = "layer8-development"
@@ -29,12 +25,4 @@ module "ecs" {
   task_execution_role_arn = var.task_execution_role_arn
   task_role_arn           = var.task_role_arn
   aws_region              = var.AWS_REGION
-}
-
-module "ecr" {
-  source = "./module/ecr"
-}
-
-module "s3" {
-  source = "./module/s3"
 }
