@@ -36,11 +36,11 @@ resource "aws_autoscaling_group" "service_spot_asg" {
       }
 
       override {
-        instance_type = "t3.medium"
+        instance_type = "t3.micro"
       }
 
       override {
-        instance_type = "t3a.medium"
+        instance_type = "t3a.micro"
       }
     }
   }

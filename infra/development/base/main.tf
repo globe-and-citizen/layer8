@@ -29,7 +29,6 @@ module "ecs" {
   task_execution_role_arn = module.iam.task_execution_role_arn
   task_role_arn           = module.iam.task_role_arn
   aws_region              = var.AWS_REGION
-  cloudflare_tunnel_token = var.cloudflare_tunnel_token
 }
 
 module "ecr" {

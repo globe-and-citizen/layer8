@@ -23,5 +23,3 @@ variable "task_execution_role_arn" {}
 variable "task_role_arn" {}
 
 variable "aws_region" {}
-
-variable "cloudflare_tunnel_token" {}

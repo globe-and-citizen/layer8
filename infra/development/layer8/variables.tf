@@ -14,6 +14,10 @@ variable "s3_arn_env_file" {
   description = "The ARN of the S3 bucket for the environment file"
 }
 
+variable "cloudflare_tunnel_token" {
+  description = "Cloudflare tunnel token"
+}
+
 variable "influxdb_url" {
   description = "InfluxDB URL"
 }
