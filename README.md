@@ -142,4 +142,4 @@ docker compose -f docker-compose-influx.yml up
 docker compose -f docker-compose-telegraf.yml up 
 ```
 6. After Telegraf is up and running, any metrics collected by the OpenTelemetry SDK could be sent via the gRPC protocol to port 4317.
-7. For our case, set `OTEL_EXPORTER_OTLP_ENDPOINT` to localhost:4317.
+7. For our case, set `OTEL_EXPORTER_OTLP_ENDPOINT` to localhost:4317 then add it to the layer8 server environment variable file.
