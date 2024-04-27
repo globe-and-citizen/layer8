@@ -41,12 +41,12 @@ data "aws_iam_policy_document" "ecs_task_doc" {
 }
 
 resource "aws_iam_role" "ecs_task_role" {
-  name               = "ecs-task-role-nonprod"
+  name               = "ecs-task-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_doc.json
 }
 
 resource "aws_iam_role" "ecs_exec_role" {
-  name               = "ecs-exec-role-nonprod"
+  name               = "ecs-exec-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_doc.json
 }
 

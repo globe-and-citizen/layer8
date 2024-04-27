@@ -17,7 +17,3 @@ output "private_subnets" {
 output "node_security_group_id" {
   value = module.ecs.security_group_id
 }
-
-output "ecr_repository_url" {
-  value = module.ecr.repository_url
-}

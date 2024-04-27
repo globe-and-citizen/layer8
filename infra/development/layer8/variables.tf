@@ -27,9 +27,9 @@ variable "influxdb_token" {
 }
 
 variable "task_role_arn" {
-  
+
 }
 
 variable "task_execution_role_arn" {
-  
+
 }

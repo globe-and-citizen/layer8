@@ -31,7 +31,7 @@ resource "aws_instance" "ec2_instance" {
   instance_type = "t3.micro"
   key_name      = "key-pair-one"
 
-  subnet_id     = data.terraform_remote_state.network.outputs.private_subnets[0].id
+  subnet_id              = data.terraform_remote_state.network.outputs.private_subnets[0].id
   vpc_security_group_ids = [data.terraform_remote_state.network.outputs.node_security_group_id]
 
 
@@ -46,7 +46,7 @@ resource "aws_instance" "ec2_instance" {
       echo '393e8779c89ac8d958f81f942f9ad7fb82a25e133faddaf92e15b16e6ac9ce4c influxdata-archive_compat.key' | sha256sum -c && cat influxdata-archive_compat.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg > /dev/null
       echo 'deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg] https://repos.influxdata.com/debian stable main' | sudo tee /etc/apt/sources.list.d/influxdata.list
       sudo apt-get update
-      sudo apt-get install influxdb2
+      sudo apt-get install -y influxdb2
       sudo systemctl start influxdb
       sudo systemctl enable influxdb
       

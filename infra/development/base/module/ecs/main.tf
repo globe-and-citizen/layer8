@@ -20,11 +20,11 @@ resource "aws_ecs_cluster_capacity_providers" "capacity_provider_mapping" {
 }
 
 resource "aws_cloudwatch_log_group" "log_group" {
-  name = "ecs/production"
+  name = "ecs/development"
 }
 
 resource "aws_security_group" "ecs_node_sg" {
-  name   = "ecs-node-sg-production"
+  name   = "ecs-node-sg-development"
   vpc_id = var.vpc_id
 
   ingress {

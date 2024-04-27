@@ -63,6 +63,7 @@ jobs:
             influxdb_token = "${{ secrets.DEVELOPMENT_INFLUXDB_TOKEN }}"
             task_role_arn = "${{ secrets.ECS_TASK_ROLE_ARN }}"
             task_execution_role_arn = "${{ secrets.ECS_TASK_EXECUTION_ROLE_ARN }}"
+            cloudflare_tunnel_token = "${{ secrets.DEVELOPMENT_LAYER8_CLOUDFLARE_TUNNEL_TOKEN }}"
       
       - name: Terraform Init
         id: init
