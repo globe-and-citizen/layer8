@@ -135,12 +135,11 @@ Note: During routine usage, there are no special calls necessary to make use of 
 docker compose -f docker-compose-influx.yml up 
 ```
 2. Open the InfluxDB dashboard via a browser using the defined credentials in docker-compose-influx.yml on port 8086.
-3. Create an access token in the InfluxDB UI (https://docs.influxdata.com/influxdb/cloud/admin/tokens/create-token/).
-4. Create a bucket with `layer8` name in InfluxDB
-5. Add `INFLUXDB_URL` and `INFLUXDB_TOKEN` variable to `.env` file based on the created token.
-6. Start Telegraf by running the following command:
+3. Create an access token in the InfluxDB UI (https://docs.influxdata.com/influxdb/v2/admin/tokens/create-token/).
+4. Add `INFLUXDB_URL` as `host.docker.internal` and `INFLUXDB_TOKEN` value as based on the created token variable to `.env` file to run the telegraf container.
+5. Start Telegraf by running the following command:
 ```
 docker compose -f docker-compose-telegraf.yml up 
 ```
-7. After Telegraf is up and running, any metrics collected by the OpenTelemetry SDK could be sent via the gRPC protocol to port 4317.
-8. For our case, set `OTEL_EXPORTER_OTLP_ENDPOINT` to localhost:4317.
+6. After Telegraf is up and running, any metrics collected by the OpenTelemetry SDK could be sent via the gRPC protocol to port 4317.
+7. For our case, set `OTEL_EXPORTER_OTLP_ENDPOINT` to localhost:4317.

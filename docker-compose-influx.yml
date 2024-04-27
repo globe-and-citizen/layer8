@@ -13,7 +13,7 @@ services:
       - DOCKER_INFLUXDB_INIT_USERNAME=influxdbadmin
       - DOCKER_INFLUXDB_INIT_PASSWORD=somethingthatyoudontknow
       - DOCKER_INFLUXDB_INIT_ORG=layer8
-      - DOCKER_INFLUXDB_INIT_BUCKET=admin
+      - DOCKER_INFLUXDB_INIT_BUCKET=layer8
 volumes:
   influxdb2-data:
   influxdb2-config:
