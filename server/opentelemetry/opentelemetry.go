@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/metric"
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
@@ -75,10 +76,15 @@ func getOtelMetricsCollectorExporter(ctx context.Context) (metricsdk.Exporter, e
 		otlpmetricgrpc.WithEndpoint(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")),
 		otlpmetricgrpc.WithCompressor("gzip"),
 		otlpmetricgrpc.WithInsecure(),
+		otlpmetricgrpc.WithTemporalitySelector(temporalityDeltaSelector),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("could not create metric exporter: %w", err)
 	}
 
 	return exporter, nil
+}
+
+func temporalityDeltaSelector(_ metricsdk.InstrumentKind) metricdata.Temporality {
+	return metricdata.DeltaTemporality
 }
