@@ -53,6 +53,12 @@ func main() {
 
 	flag.Parse()
 
+	// If the above code block runs, this section is never reached.
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	// Use flags for using in-memory repository, otherwise app will use database
 	if *port != 8080 && *jwtKey != "" && *MpKey != "" && *UpKey != "" && *ProxyURL != "" {
 		os.Setenv("SERVER_PORT", strconv.Itoa(*port))
@@ -73,12 +79,6 @@ func main() {
 		service := svc.NewService(repository)
 		fmt.Println("Running app with in-memory repository")
 		Server(*port, service, repository) // Run server
-	}
-
-	// If the above code block runs, this section is never reached.
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
 	}
 
 	// If the user has set a database user or password, init the database
