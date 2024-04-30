@@ -60,6 +60,7 @@ func (r *MemoryRepository) RegisterClient(req dto.RegisterClientDTO) error {
 		"id":           clientUUID,
 		"secret":       clientSecret,
 		"redirect_uri": req.RedirectURI,
+		"backend_uri": req.BackendURI,
 		"username":     req.Username,
 		"password":     req.Password,
 	}
