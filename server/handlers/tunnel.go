@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"database/sql"
 
 	"globe-and-citizen/layer8/server/resource_server/utils"
 
