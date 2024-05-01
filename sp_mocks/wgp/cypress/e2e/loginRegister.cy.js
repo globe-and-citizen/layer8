@@ -1,6 +1,6 @@
 describe('My Vue.js App', () => {
     beforeEach(() => {
-      cy.visit('http://localhost:5173');
+      cy.visit('http://localhost:5173/');
     });
   
     it('should allow user registration', () => {
@@ -16,7 +16,7 @@ describe('My Vue.js App', () => {
       cy.intercept('POST', 'http://localhost:5173/api/register').as('registerRequest');
   
       cy.get('button:contains("Register")').click();
-  
+      
       cy.wait('@registerRequest').then((xhr) => {
         expect(xhr.response.statusCode).to.equal(200);
         cy.contains('Registration successful!').should('be.visible');
@@ -26,7 +26,7 @@ describe('My Vue.js App', () => {
     it('should allow user login', () => {
       cy.get('input[placeholder="default user: tester"]').type('tester');
       cy.get('input[placeholder="default pass: 1234"]').type('1234');
-      cy.intercept('POST', '**/api/login').as('loginRequest');
+      cy.intercept('POST', 'http://localhost:5173/api/login').as('loginRequest');
   
       cy.get('button:contains("Login")').click();
   

@@ -1,6 +1,6 @@
 describe('My Vue.js App', () => {
     beforeEach(() => {
-      cy.visit('/');
+      cy.visit('http://localhost:5173/home');
     });
   
     it('should display the navbar', () => {
