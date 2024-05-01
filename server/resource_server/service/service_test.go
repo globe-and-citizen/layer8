@@ -276,6 +276,7 @@ func TestRegisterClient(t *testing.T) {
 	req := dto.RegisterClientDTO{
 		Name:        "testclient",
 		RedirectURI: "https://gcitizen.com/callback",
+		BackendURI: "https://gcitizen_backend.com/callback",
 		Username:    "test_user",
 		Password:    "12345",
 	}
