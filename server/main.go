@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
+	"globe-and-citizen/layer8/server/opentelemetry"
 	"io/fs"
 	"log"
 	"net/http"
@@ -43,7 +44,6 @@ func getPwd() {
 }
 
 func main() {
-
 	// Use flags to set the port
 	port := flag.Int("port", 8080, "Port to run the server on")
 	jwtKey := flag.String("jwtKey", "secret", "Key to sign JWT tokens")
@@ -54,9 +54,12 @@ func main() {
 	flag.Parse()
 
 	// If the above code block runs, this section is never reached.
-	err := godotenv.Load()
-	if err != nil {
+	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
+	}
+
+	if err := opentelemetry.NewMeter(context.Background()); err != nil {
+		log.Fatalf("Failed to create meter: %v", err)
 	}
 
 	// Use flags for using in-memory repository, otherwise app will use database
@@ -99,7 +102,6 @@ func main() {
 	service := svc.NewService(rsRepository)
 
 	Server(proxyServerPortInt, service, rsRepository) // Run server (which never returns)
-
 }
 
 func Server(port int, service interfaces.IService, memoryRepository interfaces.IRepository) {
