@@ -1,13 +1,16 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 
+	"globe-and-citizen/layer8/server/resource_server/db"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
+	"globe-and-citizen/layer8/server/resource_server/repository"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 )
 
@@ -256,6 +259,21 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 	resp := utils.BuildResponse(true, "OK!", "Display name updated successfully")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)
+		return
+	}
+}
+
+func GetUsageStats(w http.ResponseWriter, r *http.Request) {
+	statRepo := repository.NewStatRepository(db.GetInfluxDBClient())
+	data, err := statRepo.GetTotalRequestsInLastXDays(context.Background(), 30)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get usage statistic", err)
+		return
+	}
+
+	resp := utils.BuildResponse(true, "OK!", data)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get stats", err)
 		return
 	}
 }
