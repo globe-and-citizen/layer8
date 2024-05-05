@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
-	// "globe-and-citizen/layer8/server/opentelemetry"
+	"globe-and-citizen/layer8/server/opentelemetry"
 	"io/fs"
 	"log"
 	"net/http"
@@ -58,9 +58,9 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	// if err := opentelemetry.NewMeter(context.Background()); err != nil {
-	// 	log.Fatalf("Failed to create meter: %v", err)
-	// }
+	if err := opentelemetry.NewMeter(context.Background()); err != nil {
+		log.Fatalf("Failed to create meter: %v", err)
+	}
 
 	// Use flags for using in-memory repository, otherwise app will use database
 	if *port != 8080 && *jwtKey != "" && *MpKey != "" && *UpKey != "" && *ProxyURL != "" {
