@@ -141,7 +141,7 @@ func LoginPrecheckHandler(w http.ResponseWriter, r *http.Request) {
 	loginPrecheckResp, err := newService.LoginPreCheckUser(req)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return
+		return          
 	}
 
 	if err := json.NewEncoder(w).Encode(loginPrecheckResp); err != nil {
@@ -237,7 +237,7 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
 	userID, err := utils.ValidateToken(tokenString)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)
+		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)                                                                                      
 		return
 	}
 

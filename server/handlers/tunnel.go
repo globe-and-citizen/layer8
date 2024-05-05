@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"globe-and-citizen/layer8/server/resource_server/utils"
+	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
 
 	utilities "github.com/globe-and-citizen/layer8-utils"
 	"go.opentelemetry.io/otel"
@@ -43,7 +44,7 @@ var (
 )
 
 // Tunnel forwards the request to the service provider's backend
-func InitTunnel(w http.ResponseWriter, r *http.Request) {
+func InitTunnel(w http.ResponseWriter, r *http.Request) {	
 	fmt.Println("\n\n*************")
 	fmt.Println(r.Method) // > GET  | > POST
 	fmt.Println(r.URL)    // (http://localhost:5000/api/v1 ) > /api/v1
@@ -66,6 +67,10 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+	client, err := newService.GetClientDataByBackendURL(backend)
+	fmt.Println("client data", client)
 
 	reqData := utilities.ReadResponseBody(r.Body)
 	b64PubJWK := string(reqData)

@@ -52,6 +52,21 @@ func (s *service) GetClientData(clientName string) (models.ClientResponseOutput,
 	return clientModel, nil
 }
 
+func (s *service) GetClientDataByBackendURL(backendURL string) (models.ClientResponseOutput, error) {
+	clientData, err := s.repository.GetClientDataByBackendURL(backendURL)
+	if err != nil {
+		return models.ClientResponseOutput{}, err
+	}
+	clientModel := models.ClientResponseOutput{
+		ID:          clientData.ID,
+		Secret:      clientData.Secret,
+		Name:        clientData.Name,
+		RedirectURI: clientData.RedirectURI,
+		BackendURI: clientData.BackendURI,
+	}
+	return clientModel, nil
+}
+
 func (s *service) LoginPreCheckUser(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error) {
 	if err := validator.New().Struct(req); err != nil {
 		return models.LoginPrecheckResponseOutput{}, err
