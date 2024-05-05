@@ -291,20 +291,22 @@ func (r *MemoryRepository) GetClient(id string) (*serverModels.Client, error) {
 	return &client, nil
 }
 
-func (r *MemoryRepository) GetClientDataByBackendURL(backendURL string) ([]models.Client, error) {
-    var clients []models.Client
-
-    for _, clientData := range r.storage {
-        appClient := models.Client{
-            ID:          clientData["id"],
-            Secret:      clientData["secret"],
-            Name:        clientData["name"],
-            RedirectURI: clientData["redirect_uri"],
-        }
-        clients = append(clients, appClient)
-    }
-
-    return clients, nil
+func (r *MemoryRepository) GetClientDataByBackendURL(id string) (models.Client, error) {
+	if strings.Contains(id, ":") {
+		id = id[strings.LastIndex(id, ":")+1:]
+		// fmt.Println("ID check:", id)
+	}
+	if _, ok := r.storage[id]; !ok {
+		fmt.Println("client not found while using GetClient")
+		return models.Client{}, fmt.Errorf("client not found")
+	}
+	client := models.Client{
+		ID:          r.storage[id]["id"],
+		Secret:      r.storage[id]["secret"],
+		Name:        r.storage[id]["name"],
+		RedirectURI: r.storage[id]["redirect_uri"],
+	}
+	return client, nil
 }
 
 func (r *MemoryRepository) SetTTL(key string, value []byte, ttl time.Duration) error {

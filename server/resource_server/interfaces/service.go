@@ -17,5 +17,5 @@ type IService interface {
 	UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error
 	RegisterClient(req dto.RegisterClientDTO) error
 	GetClientData(clientName string) (models.ClientResponseOutput, error)
-	GetClientDataByBackendURL(backendURL string) ([]models.Client, error)
+	GetClientDataByBackendURL(backendURL string) (models.ClientResponseOutput, error)
 }
