@@ -79,6 +79,7 @@ func (r *Repository) RegisterClient(req dto.RegisterClientDTO) error {
 		Secret:      clientSecret,
 		Name:        req.Name,
 		RedirectURI: req.RedirectURI,
+		BackendURI:  req.BackendURI,
 		Username:    req.Username,
 		Password:    HashedAndSaltedPass,
 		Salt:        rmSalt,

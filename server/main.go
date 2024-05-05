@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
+	"globe-and-citizen/layer8/server/opentelemetry"
 	"io/fs"
 	"log"
 	"net/http"
@@ -43,7 +44,6 @@ func getPwd() {
 }
 
 func main() {
-
 	// Use flags to set the port
 	port := flag.Int("port", 8080, "Port to run the server on")
 	jwtKey := flag.String("jwtKey", "secret", "Key to sign JWT tokens")
@@ -52,6 +52,15 @@ func main() {
 	ProxyURL := flag.String("ProxyURL", "http://localhost:5001", "URL to populate go HTML templates")
 
 	flag.Parse()
+
+	// If the above code block runs, this section is never reached.
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	if err := opentelemetry.NewMeter(context.Background()); err != nil {
+		log.Fatalf("Failed to create meter: %v", err)
+	}
 
 	// Use flags for using in-memory repository, otherwise app will use database
 	if *port != 8080 && *jwtKey != "" && *MpKey != "" && *UpKey != "" && *ProxyURL != "" {
@@ -75,12 +84,6 @@ func main() {
 		Server(*port, service, repository) // Run server
 	}
 
-	// If the above code block runs, this section is never reached.
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
 	// If the user has set a database user or password, init the database
 	if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
 		config.InitDB()
@@ -99,7 +102,6 @@ func main() {
 	service := svc.NewService(rsRepository)
 
 	Server(proxyServerPortInt, service, rsRepository) // Run server (which never returns)
-
 }
 
 func Server(port int, service interfaces.IService, memoryRepository interfaces.IRepository) {
