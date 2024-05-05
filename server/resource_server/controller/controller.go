@@ -1,15 +1,16 @@
 package controller
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"globe-and-citizen/layer8/server/resource_server/db"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
+	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/repository"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 )
@@ -265,13 +266,38 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetUsageStats(w http.ResponseWriter, r *http.Request) {
 	statRepo := repository.NewStatRepository(db.GetInfluxDBClient())
-	data, err := statRepo.GetTotalRequestsInLastXDays(context.Background(), 30)
+
+	now := time.Now()
+	firstDayOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	firstDayOfNextMonth := time.Date(firstDayOfMonth.Year(), firstDayOfMonth.Month()+1, 1, 0, 0, 0, 0, time.UTC)
+	lastDayOfCurrentMonth := firstDayOfNextMonth.Add(-24 * time.Hour)
+	totalDaysInMonth := lastDayOfCurrentMonth.Day()
+	totalDaysBeforeNextMonth := totalDaysInMonth - now.Day()
+
+	thirtyDaysStatistic, err := statRepo.GetTotalRequestsInLastXDays(r.Context(), 30)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get usage statistic", err)
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get last thrthy days usage statistic", err)
 		return
 	}
 
-	resp := utils.BuildResponse(true, "OK!", data)
+	monthToDateTotal, err := statRepo.GetTotalByDateRange(r.Context(), firstDayOfMonth, firstDayOfNextMonth)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get month to date usage statistic", err)
+		return
+	}
+
+	finalResponse := models.UsageStatisticResponse{
+		MonthToDate: models.MonthToDateStatistic{
+			Month:                     firstDayOfMonth.Month().String(),
+			MonthToDateUsage:          monthToDateTotal / 1000000000,
+			ForecastedEndOfMonthUsage: (monthToDateTotal / 1000000000) + float64(totalDaysBeforeNextMonth)*thirtyDaysStatistic.Average,
+		},
+		LastThirtyDaysStatistic: thirtyDaysStatistic,
+		MetricType:              "data_transferred",
+		UnitOfMeasurement:       "GB",
+	}
+
+	resp := utils.BuildResponse(true, "OK!", finalResponse)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get stats", err)
 		return

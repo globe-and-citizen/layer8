@@ -131,13 +131,42 @@
             </div>
 
             <div class="bg-white rounded-2xl py-3 md:py-4 px-4 md:px-6 mb-6 md:mb-0 mt-6">
-              
-              <canvas id="statisticChart"></canvas>
+              <h1 class="font-medium text-lg md:text-xl text-black">Your usage statistics</h1>
+              <p class="font-normal text-sm md:text-base text-[#8E8E93] mb-5">Your product data to use on your
+              <div class="grid grid-cols-4 gap-4">
+                <div class="col-span-1 md:ml-20">
+                  <h2 class="text-xl font-bold">{{ stats.last_thirty_days_statistic.total.toFixed(6) }} {{
+                    stats.unit_of_measurement }}</h2>
+                  <p class="text-gray-600 font-light">In Last 30 Days</p>
+                </div>
+                <div class="col-span-1 ml-10">
+                  <h2 class="text-xl font-bold">{{ stats.last_thirty_days_statistic.average.toFixed(6) }} {{
+                    stats.unit_of_measurement }}</h2>
+                  <p class="s text-gray-600 font-light">Daily Average</p>
+                </div>
+                <div class="col-span-2">
+                  <div class="max-w-md mx-auto bg-gray-400 rounded-xl shadow-md overflow-hidden">
+                    <div class="p-4">
+                      <div class="uppercase tracking-wide text-lg font-extrabold text-gray-100">{{
+                        stats.month_to_date.month }}</div>
+                      <h3 class="text-white text-sm font-light">Month-to-date usage : {{
+                        stats.month_to_date.month_to_date_usage.toFixed(6) }} {{ stats.unit_of_measurement }}</h3>
+                      <h3 class="text-white text-sm font-light">Forecasted end-of-month usage : {{
+                        stats.month_to_date.forecasted_end_of_month_usage.toFixed(6) }} {{ stats.unit_of_measurement }}</h3>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <canvas id="statisticChart"></canvas>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+  </div>
+  </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -152,6 +181,20 @@
     });
     const isCopied = ref("")
     const sidebarShow = ref(false)
+    const stats = ref({
+      metric_type: "",
+      unit_of_measurement: "",
+      month_to_date: {
+        month: "",
+        month_to_date_usage: 0,
+        forecasted_end_of_month_usage: 0
+      },
+      last_thirty_days_statistic: {
+        total: 0,
+        average: 0,
+        details: []
+      }
+    })
 
     const getUserDetails = async () => {
       try {
@@ -223,17 +266,23 @@
     const app = createApp({
       setup() {
         onMounted(async () => {
-          stats = await getStats()
+          stats.value = await getStats()
           const ctx = document.getElementById("statisticChart")
+
+          const mappedValue = stats.value.last_thirty_days_statistic.details.map(v => {
+            v.total = (v.total * 1000000).toFixed(4)
+            return v
+          })
+
 
           const lineChart = new Chart(ctx, {
             type: 'line',
             data: {
               datasets: [
                 {
-                  label: "Total Request",
+                  label: "Total Byte",
                   borderWidth: 3,
-                  data: stats,
+                  data: mappedValue,
                 }
               ]
             },
@@ -243,18 +292,18 @@
                 yAxisKey: 'total'
               },
               plugins: {
-                legend: false
+                legend: false,
               },
             }
           })
 
+
           getUserDetails();
-
-
         });
 
         return {
           user,
+          stats,
           logoutUser,
           copyToClipboard,
           isCopied,
