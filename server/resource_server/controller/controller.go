@@ -142,7 +142,7 @@ func LoginPrecheckHandler(w http.ResponseWriter, r *http.Request) {
 	loginPrecheckResp, err := newService.LoginPreCheckUser(req)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return
+		return          
 	}
 
 	if err := json.NewEncoder(w).Encode(loginPrecheckResp); err != nil {
@@ -209,10 +209,13 @@ func GetClientData(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetAllClientData(w http.ResponseWriter, r *http.Request) ([]models.Client) {
+func GetClientDataByBackendURL(w http.ResponseWriter, r *http.Request) ([]models.Client) {
     newService := r.Context().Value("service").(interfaces.IService)
 
-    clients, err := newService.GetAllClientData()
+	backendURL := r.Header.Get("BackendURL")
+    fmt.Println("BACKEND", backendURL)
+
+    clients, err := newService.GetClientDataByBackendURL(backendURL)
     if err != nil {
         utils.HandleError(w, http.StatusBadRequest, "Failed to get client table", err)
         return nil
@@ -250,7 +253,7 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
 	userID, err := utils.ValidateToken(tokenString)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)
+		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)                                                                                      
 		return
 	}
 

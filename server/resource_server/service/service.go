@@ -52,8 +52,8 @@ func (s *service) GetClientData(clientName string) (models.ClientResponseOutput,
 	return clientModel, nil
 }
 
-func (s *service) GetAllClientData() ([]models.Client, error) {
-	clientData, err := s.repository.GetAllClientData()
+func (s *service) GetClientDataByBackendURL(backendURL string) ([]models.Client, error) {
+	clientData, err := s.repository.GetClientDataByBackendURL(backendURL)
 
 	return clientData, err
 }

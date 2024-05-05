@@ -290,7 +290,7 @@ func (r *MemoryRepository) GetClient(id string) (*serverModels.Client, error) {
 	return &client, nil
 }
 
-func (r *MemoryRepository) GetAllClientData() ([]models.Client, error) {
+func (r *MemoryRepository) GetClientDataByBackendURL(backendURL string) ([]models.Client, error) {
     var clients []models.Client
 
     for _, clientData := range r.storage {

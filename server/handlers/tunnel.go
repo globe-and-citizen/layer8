@@ -17,7 +17,9 @@ import (
 
 // Tunnel forwards the request to the service provider's backend
 func InitTunnel(w http.ResponseWriter, r *http.Request) {
-	clientPortalData := Ctl.GetAllClientData(w, r)
+
+	r.Header.Set("BackendURL", "victus_backend.com")
+	clientPortalData := Ctl.GetClientDataByBackendURL(w, r)
 	fmt.Println("client data", clientPortalData)
 	
 	fmt.Println("\n\n*************")

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"fmt"
 )
 
 type Repository struct {
@@ -98,9 +99,10 @@ func (r *Repository) GetClientData(clientName string) (models.Client, error) {
 	return client, nil
 }
 
-func (r *Repository) GetAllClientData() ([]models.Client, error) {
+func (r *Repository) GetClientDataByBackendURL(backendURL string) ([]models.Client, error) {
+	fmt.Println("ABABABA", backendURL)
     var clients []models.Client
-    if err := r.connection.Find(&clients).Error; err != nil {
+    if err := r.connection.Where("backend_uri = ?", backendURL).First(&clients).Error; err != nil {
         return nil, err
     }
     return clients, nil
