@@ -9,7 +9,6 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/utils"
-	"globe-and-citizen/layer8/server/resource_server/models"
 )
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -207,21 +206,6 @@ func GetClientData(w http.ResponseWriter, r *http.Request) {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
 		return
 	}
-}
-
-func GetClientDataByBackendURL(w http.ResponseWriter, r *http.Request) ([]models.Client) {
-    newService := r.Context().Value("service").(interfaces.IService)
-
-	backendURL := r.Header.Get("BackendURL")
-    fmt.Println("BACKEND", backendURL)
-
-    clients, err := newService.GetClientDataByBackendURL(backendURL)
-    if err != nil {
-        utils.HandleError(w, http.StatusBadRequest, "Failed to get client table", err)
-        return nil
-    }
-
-    return clients
 }
 
 func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {

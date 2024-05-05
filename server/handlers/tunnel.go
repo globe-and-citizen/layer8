@@ -11,9 +11,9 @@ import (
 	"os"
 
 	"globe-and-citizen/layer8/server/resource_server/utils"
+	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
 
 	utilities "github.com/globe-and-citizen/layer8-utils"
-	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -45,10 +45,9 @@ var (
 
 // Tunnel forwards the request to the service provider's backend
 func InitTunnel(w http.ResponseWriter, r *http.Request) {
-
-	r.Header.Set("BackendURL", "victus_backend.com")
-	clientPortalData := Ctl.GetClientDataByBackendURL(w, r)
-	fmt.Println("client data", clientPortalData)
+	newService := r.Context().Value("service").(interfaces.IService)
+	clients, err := newService.GetClientDataByBackendURL("victus_backend.com")
+	fmt.Println("client data", clients)
 	
 	fmt.Println("\n\n*************")
 	fmt.Println(r.Method) // > GET  | > POST
