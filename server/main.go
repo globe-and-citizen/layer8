@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
+	"globe-and-citizen/layer8/server/opentelemetry"
 	"io/fs"
 	"log"
 	"net/http"
@@ -57,9 +58,9 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	// if err := opentelemetry.NewMeter(context.Background()); err != nil {
-	// 	log.Fatalf("Failed to create meter: %v", err)
-	// }
+	if err := opentelemetry.NewMeter(context.Background()); err != nil {
+		log.Fatalf("Failed to create meter: %v", err)
+	}
 
 	// If the user has set a database user or password, init the database
 	if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {

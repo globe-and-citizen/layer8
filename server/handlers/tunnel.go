@@ -68,7 +68,7 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mpJWT, err := utilities.GenerateStandardToken(os.Getenv("UP_999_SECRET_KEY"))
+	mpJWT, err := utilities.GenerateStandardToken(os.Getenv("MP_123_SECRET_KEY"))
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -190,7 +190,7 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 	upJWT := r.Header.Get("up-jwt") // RAVI! LOOK HERE
 	fmt.Println("up-jwt coming from client: ", upJWT)
 
-	upJWTClaims, err := utilities.VerifyStandardToken(upJWT, os.Getenv("UP_999_SECRET_KEY"))
+	upJWTClaims, err := utils.ValidateUPTokenJWT(upJWT, os.Getenv("UP_999_SECRET_KEY"))
 	if err != nil {
 		fmt.Println("UP JWT verify error: ", err.Error())
 		http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -237,19 +237,19 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 
 	TotalRequestMetrics.Add(r.Context(), 1,
 		metric.WithAttributes(
-			attribute.String("client_id", upJWTClaims.Audience),
+			attribute.String("client_id", upJWTClaims.Audience[0]),
 		),
 	)
 
 	TotalSuccessMetrics.Add(r.Context(), 1,
 		metric.WithAttributes(
-			attribute.String("client_id", upJWTClaims.Audience),
+			attribute.String("client_id", upJWTClaims.Audience[0]),
 		),
 	)
 
 	TotalByteTransferredMetrics.Add(r.Context(), int64(binary.Size(bodyBytes)+binary.Size(w.Header())),
 		metric.WithAttributes(
-			attribute.String("client_id", upJWTClaims.Audience),
+			attribute.String("client_id", upJWTClaims.Audience[0]),
 		),
 	)
 }

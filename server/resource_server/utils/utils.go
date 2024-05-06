@@ -226,3 +226,19 @@ func GenerateUPTokenJWT(secret string, clientID string) (string, error) {
 
 	return tokenStr, nil
 }
+
+func ValidateUPTokenJWT(tokenString string, secretKey string) (*jwt.RegisteredClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secretKey), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, fmt.Errorf("invalid token")
+}
