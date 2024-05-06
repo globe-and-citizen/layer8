@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
-	"globe-and-citizen/layer8/server/opentelemetry"
 	"io/fs"
 	"log"
 	"net/http"
@@ -58,8 +57,13 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	if err := opentelemetry.NewMeter(context.Background()); err != nil {
-		log.Fatalf("Failed to create meter: %v", err)
+	// if err := opentelemetry.NewMeter(context.Background()); err != nil {
+	// 	log.Fatalf("Failed to create meter: %v", err)
+	// }
+
+	// If the user has set a database user or password, init the database
+	if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
+		config.InitDB()
 	}
 
 	// Use flags for using in-memory repository, otherwise app will use database
@@ -82,11 +86,6 @@ func main() {
 		service := svc.NewService(repository)
 		fmt.Println("Running app with in-memory repository")
 		Server(*port, service, repository) // Run server
-	}
-
-	// If the user has set a database user or password, init the database
-	if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
-		config.InitDB()
 	}
 
 	proxyServerPort := os.Getenv("SERVER_PORT") // Port override

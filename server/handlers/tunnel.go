@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"os"
 
-	"globe-and-citizen/layer8/server/resource_server/utils"
 	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
+	"globe-and-citizen/layer8/server/resource_server/utils"
 
 	utilities "github.com/globe-and-citizen/layer8-utils"
 	"go.opentelemetry.io/otel"
@@ -44,7 +44,7 @@ var (
 )
 
 // Tunnel forwards the request to the service provider's backend
-func InitTunnel(w http.ResponseWriter, r *http.Request) {	
+func InitTunnel(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\n\n*************")
 	fmt.Println(r.Method) // > GET  | > POST
 	fmt.Println(r.URL)    // (http://localhost:5000/api/v1 ) > /api/v1
@@ -61,16 +61,19 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("User agent is attempting to initialize this backend SP: ", backend)
 	}
 
-	mpJWT, err := utilities.GenerateStandardToken(os.Getenv("MP_123_SECRET_KEY"))
+	srv := r.Context().Value("service").(interfaces.IService)
+	client, err := srv.GetClientDataByBackendURL(backend)
 	if err != nil {
-		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
-	newService := r.Context().Value("service").(interfaces.IService)
-	client, err := newService.GetClientDataByBackendURL(backend)
-	fmt.Println("client data", client)
+	mpJWT, err := utilities.GenerateStandardToken(os.Getenv("UP_999_SECRET_KEY"))
+	if err != nil {
+		fmt.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	reqData := utilities.ReadResponseBody(r.Body)
 	b64PubJWK := string(reqData)
@@ -111,10 +114,8 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 	res.Body = io.NopCloser(bytes.NewBuffer(resBodyTemp.Bytes()))
 
 	fmt.Println("\nReceived response from 8000:", backend, " of code: ", res.StatusCode)
-
-	upJWT, err := utilities.GenerateStandardToken(os.Getenv("UP_999_SECRET_KEY"))
+	upJWT, err := utils.GenerateUPTokenJWT(os.Getenv("UP_999_SECRET_KEY"), client.ID)
 	if err != nil {
-		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -145,7 +146,7 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 
 	TotalTunnelInitiated.Add(r.Context(), 1,
 		metric.WithAttributes(
-			attribute.String("backend", backend),
+			attribute.String("client_id", client.ID),
 		),
 	)
 }
@@ -189,7 +190,7 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 	upJWT := r.Header.Get("up-jwt") // RAVI! LOOK HERE
 	fmt.Println("up-jwt coming from client: ", upJWT)
 
-	_, err = utilities.VerifyStandardToken(upJWT, os.Getenv("UP_999_SECRET_KEY"))
+	upJWTClaims, err := utilities.VerifyStandardToken(upJWT, os.Getenv("UP_999_SECRET_KEY"))
 	if err != nil {
 		fmt.Println("UP JWT verify error: ", err.Error())
 		http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -236,19 +237,19 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 
 	TotalRequestMetrics.Add(r.Context(), 1,
 		metric.WithAttributes(
-			attribute.String("backend", host),
+			attribute.String("client_id", upJWTClaims.Audience),
 		),
 	)
 
 	TotalSuccessMetrics.Add(r.Context(), 1,
 		metric.WithAttributes(
-			attribute.String("backend", host),
+			attribute.String("client_id", upJWTClaims.Audience),
 		),
 	)
 
 	TotalByteTransferredMetrics.Add(r.Context(), int64(binary.Size(bodyBytes)+binary.Size(w.Header())),
 		metric.WithAttributes(
-			attribute.String("backend", host),
+			attribute.String("client_id", upJWTClaims.Audience),
 		),
 	)
 }

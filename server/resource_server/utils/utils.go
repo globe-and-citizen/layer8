@@ -207,3 +207,22 @@ func GenerateToken(user models.User) (string, error) {
 	}
 	return tokenString, nil
 }
+
+func GenerateUPTokenJWT(secret string, clientID string) (string, error) {
+	claims := jwt.RegisteredClaims{
+		Issuer:    "layer8",
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+		Audience: jwt.ClaimStrings{
+			clientID,
+		},
+		IssuedAt: jwt.NewNumericDate(time.Now()),
+	}
+
+	tokenObj := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenStr, err := tokenObj.SignedString([]byte(secret))
+	if err != nil {
+		return "", err
+	}
+
+	return tokenStr, nil
+}

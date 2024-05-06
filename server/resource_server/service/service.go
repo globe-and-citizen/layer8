@@ -62,7 +62,7 @@ func (s *service) GetClientDataByBackendURL(backendURL string) (models.ClientRes
 		Secret:      clientData.Secret,
 		Name:        clientData.Name,
 		RedirectURI: clientData.RedirectURI,
-		BackendURI: clientData.BackendURI,
+		BackendURI:  clientData.BackendURI,
 	}
 	return clientModel, nil
 }
