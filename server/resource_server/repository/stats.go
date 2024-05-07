@@ -22,7 +22,7 @@ func NewStatRepository(
 	}
 }
 
-func (s *StatRepository) GetTotalRequestsInLastXDays(ctx context.Context, days int) (models.Statistics, error) {
+func (s *StatRepository) GetTotalRequestsInLastXDaysByClient(ctx context.Context, days int, clientID string) (models.Statistics, error) {
 	result := make([]models.UsageStatisticPerDate, 0)
 
 	queryAPI := s.influxDBClient.QueryAPI("layer8")
@@ -31,8 +31,9 @@ func (s *StatRepository) GetTotalRequestsInLastXDays(ctx context.Context, days i
 	|> range(start: -%dd)
 	|> filter(fn: (r) => r["_measurement"] == "total_byte_transferred")
 	|> filter(fn: (r) => r["_field"] == "counter")
+	|> filter(fn: (r) => r["client_id"] == "%s")
 	|> aggregateWindow(every: 1d, fn: sum, createEmpty: true)
-	|> yield(name: "sum")`, days)
+	|> yield(name: "sum")`, days, clientID)
 
 	rawDataFromInflux, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
@@ -66,15 +67,16 @@ func (s *StatRepository) GetTotalRequestsInLastXDays(ctx context.Context, days i
 	}, nil
 }
 
-func (s *StatRepository) GetTotalByDateRange(ctx context.Context, start time.Time, end time.Time) (float64, error) {
+func (s *StatRepository) GetTotalByDateRangeByClient(ctx context.Context, start time.Time, end time.Time, clientID string) (float64, error) {
 	queryAPI := s.influxDBClient.QueryAPI("layer8")
 
 	query := fmt.Sprintf(`
 	from(bucket: "layer8")
 	|> range(start: %s, stop: %s)
 	|> filter(fn: (r) => r["_measurement"] == "total_byte_transferred")
+	|> filter(fn: (r) => r["client_id"] == "%s")
 	|> filter(fn: (r) => r["_field"] == "counter")
-	|> sum()`, start.Format(time.RFC3339), end.Format(time.RFC3339))
+	|> sum()`, start.Format(time.RFC3339), end.Format(time.RFC3339), clientID)
 
 	rawDataFromInflux, err := queryAPI.Query(context.Background(), query)
 	if err != nil {

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -73,13 +74,13 @@ func ClientProfileHandler(w http.ResponseWriter, r *http.Request) {
 	newService := r.Context().Value("service").(interfaces.IService)
 	tokenString := r.Header.Get("Authorization")
 	tokenString = tokenString[7:]
-	userName, err := utils.ValidateClientToken(tokenString)
+	clientClaims, err := utils.ValidateClientToken(tokenString)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile, invalid token", err)
 		return
 	}
 
-	profileResp, err := newService.ProfileClient(userName)
+	profileResp, err := newService.ProfileClient(clientClaims.UserName)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile, user not found", err)
 		return
@@ -265,6 +266,19 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUsageStats(w http.ResponseWriter, r *http.Request) {
+	authToken := r.Header.Get("Authorization")
+	if authToken == "" {
+		utils.HandleError(w, http.StatusUnauthorized, "failed to show client usage statistics", errors.New("missing jwt token"))
+		return
+	}
+
+	authToken = authToken[7:]
+	clientClaims, err := utils.ValidateClientToken(authToken)
+	if err != nil {
+		utils.HandleError(w, http.StatusUnauthorized, "failed to show client usage statistics", errors.New("jwt token invalid"))
+		return
+	}
+
 	statRepo := repository.NewStatRepository(db.GetInfluxDBClient())
 
 	now := time.Now()
@@ -274,13 +288,13 @@ func GetUsageStats(w http.ResponseWriter, r *http.Request) {
 	totalDaysInMonth := lastDayOfCurrentMonth.Day()
 	totalDaysBeforeNextMonth := totalDaysInMonth - now.Day()
 
-	thirtyDaysStatistic, err := statRepo.GetTotalRequestsInLastXDays(r.Context(), 30)
+	thirtyDaysStatistic, err := statRepo.GetTotalRequestsInLastXDaysByClient(r.Context(), 30, clientClaims.ClientID)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get last thrthy days usage statistic", err)
 		return
 	}
 
-	monthToDateTotal, err := statRepo.GetTotalByDateRange(r.Context(), firstDayOfMonth, firstDayOfNextMonth)
+	monthToDateTotal, err := statRepo.GetTotalByDateRangeByClient(r.Context(), firstDayOfMonth, firstDayOfNextMonth, clientClaims.ClientID)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get month to date usage statistic", err)
 		return
