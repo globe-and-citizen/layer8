@@ -233,7 +233,7 @@ func TestVerifyEmail(t *testing.T) {
 	// Create a new service by passing the mock repository
 	mockService := service.NewService(mockRepo)
 
-	// Call the VerifyEmail method of the mock service
+	// Call the OnEmailVerified method of the mock service
 	err := mockService.VerifyEmail(1)
 	if err != nil {
 		t.Error("Expected nil, got", err)
@@ -276,7 +276,7 @@ func TestRegisterClient(t *testing.T) {
 	req := dto.RegisterClientDTO{
 		Name:        "testclient",
 		RedirectURI: "https://gcitizen.com/callback",
-		BackendURI: "https://gcitizen_backend.com/callback",
+		BackendURI:  "https://gcitizen_backend.com/callback",
 		Username:    "test_user",
 		Password:    "12345",
 	}

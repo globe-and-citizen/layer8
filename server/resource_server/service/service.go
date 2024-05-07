@@ -6,18 +6,24 @@ import (
 	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
+	"globe-and-citizen/layer8/server/resource_server/verification/email"
 
 	"github.com/go-playground/validator/v10"
 )
 
 type service struct {
-	repository interfaces.IRepository
+	repository    interfaces.IRepository
+	emailVerifier *email.Verifier
 }
 
 // Newservice creates a new instance of service
-func NewService(repo interfaces.IRepository) interfaces.IService {
+func NewService(
+	repo interfaces.IRepository,
+	emailVerifier *email.Verifier,
+) interfaces.IService {
 	return &service{
-		repository: repo,
+		repository:    repo,
+		emailVerifier: emailVerifier,
 	}
 }
 
@@ -152,7 +158,33 @@ func (s *service) ProfileClient(userName string) (models.ClientResponseOutput, e
 }
 
 func (s *service) VerifyEmail(userID uint) error {
-	return s.repository.VerifyEmail(userID)
+	user, e := s.repository.FindUser(userID)
+	if e != nil {
+		return e
+	}
+
+	data, e := s.emailVerifier.InitVerification(&user)
+	if e != nil {
+		return e
+	}
+
+	return s.repository.SaveVerificationData(data)
+}
+
+func (s *service) VerifyCode(userID uint, code string) error {
+	data, e := s.repository.GetAndDeleteVerificationData(userID)
+	if e != nil {
+		return e
+	}
+
+	e = s.emailVerifier.VerifyCode(code, data)
+	if e != nil {
+		return e
+	}
+
+	// generate zk-proof of the verification procedure
+
+	return s.repository.OnEmailVerified(userID, code)
 }
 
 func (s *service) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {

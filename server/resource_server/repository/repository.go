@@ -65,6 +65,17 @@ func (r *Repository) RegisterUser(req dto.RegisterUserDTO) error {
 	return nil
 }
 
+func (r *Repository) FindUser(userId uint) (models.User, error) {
+	var user models.User
+	e := r.connection.Where("userId = ?", userId).First(&user).Error
+
+	if e != nil {
+		return models.User{}, e
+	}
+
+	return user, e
+}
+
 func (r *Repository) RegisterClient(req dto.RegisterClientDTO) error {
 
 	clientUUID := utils.GenerateUUID()
@@ -159,8 +170,42 @@ func (r *Repository) ProfileClient(userID string) (models.Client, error) {
 	return client, nil
 }
 
-func (r *Repository) VerifyEmail(userID uint) error {
-	return r.connection.Model(&models.UserMetadata{}).Where("user_id = ? AND key = ?", userID, "email_verified").Update("value", "true").Error
+func (r *Repository) OnEmailVerified(userID uint, verificationCode string) error {
+	e := r.connection.Where(
+		models.User{ID: userID},
+	).Update("verification_code", verificationCode).Error
+	if e != nil {
+		return e
+	}
+
+	return r.connection.Model(
+		&models.UserMetadata{},
+	).Where(
+		"user_id = ? AND key = ?",
+		userID,
+		"email_verified",
+	).Update("value", "true").Error
+}
+
+func (r *Repository) SaveVerificationData(data models.EmailVerificationData) error {
+	return r.connection.Where(
+		models.EmailVerificationData{UserId: data.UserId},
+	).Assign(data).FirstOrCreate(&models.EmailVerificationData{}).Error
+}
+
+func (r *Repository) GetAndDeleteVerificationData(userId uint) (models.EmailVerificationData, error) {
+	var data models.EmailVerificationData
+	e := r.connection.Where("user_id = ?", userId).First(&data).Error
+	if e != nil {
+		return models.EmailVerificationData{}, e
+	}
+
+	e = r.connection.Delete(data).Error
+	if e != nil {
+		return models.EmailVerificationData{}, e
+	}
+
+	return data, nil
 }
 
 func (r *Repository) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {

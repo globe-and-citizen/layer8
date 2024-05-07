@@ -224,10 +224,46 @@ func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := utils.BuildResponse(true, "OK!", "Email verified successfully")
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to verify email", err)
+	utils.ParseHTML(
+		w,
+		"assets-v1/templates/src/pages/user_portal/email-verification.html",
+		map[string]interface{}{
+			"ProxyURL": os.Getenv("PROXY_URL"),
+		},
+	)
+}
+
+func VerifyCode(w http.ResponseWriter, r *http.Request) {
+	newService := r.Context().Value("service").(interfaces.IService)
+	tokenString := r.Header.Get("Authorization")
+	tokenString = tokenString[7:] // Remove the "Bearer " prefix
+	userID, e := utils.ValidateToken(tokenString)
+	if e != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to verify user's token", e)
 		return
+	}
+
+	var request dto.VerifyCodeDTO
+	e = json.NewDecoder(r.Body).Decode(&request)
+	if e != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to decode request body", e)
+		return
+	}
+
+	e = newService.VerifyCode(userID, request.Code)
+	if e != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to verify code", e)
+		return
+	}
+
+	response := utils.BuildResponse(
+		true,
+		"OK!",
+		"Your email was successfully verified!",
+	)
+	e = json.NewEncoder(w).Encode(response)
+	if e != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Internal error happened", e)
 	}
 }
 

@@ -176,8 +176,8 @@ func TestVerifyEmail(t *testing.T) {
 	// Create the user repository with the mock database connection
 	repo := NewRepository(db)
 
-	// Call the VerifyEmail function
-	repo.VerifyEmail(1)
+	// Call the OnEmailVerified function
+	repo.OnEmailVerified(1)
 
 }
 

@@ -193,6 +193,8 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 				Ctl.ClientProfileHandler(w, r)
 			case path == "/api/v1/verify-email":
 				Ctl.VerifyEmailHandler(w, r)
+			case path == "/api/v1/verify-code":
+				Ctl.VerifyCode(w, r)
 			case path == "/api/v1/change-display-name":
 				Ctl.UpdateDisplayNameHandler(w, r)
 			case path == "/favicon.ico":

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+            rel="stylesheet"
+            href="/assets-v1/templates/assets/styles/output.css"
+    />
+    <link
+            rel="stylesheet"
+            href="/assets-v1/templates/assets/styles/base.css"
+    />
+    <title>Verify your email</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+</head>
+
+<body>
+    <div>
+        <label>Input your verification code:</label>
+        <input type="text" placeholder="code" v-model="verificationCode"/>
+    </div>
+    <button @click="verifyCode">Submit</button>
+</body>
+
+<script>
+    const { createApp, computed, ref } = Vue;
+    const verificationCode = ref("");
+    const token = ref(localStorage.getItem("token") || null);
+
+    const verifyCode = async () => {
+        const response = await window.fetch(
+            "[[ .ProxyURL ]]/api/v1/verify-code",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token.value}`,
+                },
+                body: JSON.stringify({
+                    code: verificationCode.value,
+                }),
+            }
+        );
+
+    }
+
+    const app = createApp({
+        setup() {
+            return {
+                verifyCode,
+                verificationCode,
+            };
+        },
+    });
+</script>
