@@ -17,8 +17,18 @@ import (
 	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
 )
 
+var authenticationToken, _ = utils.GenerateToken(
+	models.User{
+		ID:       1,
+		Username: "test_user",
+	},
+)
+
 // MockService implements interfaces.IService for testing purposes.
-type MockService struct{}
+type MockService struct {
+	verifyEmail func(userID uint) error
+	verifyCode  func(userID uint, code string) error
+}
 
 func (ms *MockService) RegisterUser(req dto.RegisterUserDTO) error {
 	// Mock implementation for testing purposes.
@@ -55,8 +65,11 @@ func (ms *MockService) ProfileUser(userID uint) (models.ProfileResponseOutput, e
 }
 
 func (ms *MockService) VerifyEmail(userID uint) error {
-	// Mock implementation for testing purposes.
-	return nil
+	return ms.verifyEmail(userID)
+}
+
+func (ms *MockService) VerifyCode(userID uint, code string) error {
+	return ms.verifyCode(userID, code)
 }
 
 func (ms *MockService) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
@@ -331,49 +344,128 @@ func TestGetClientData(t *testing.T) {
 	assert.Equal(t, "https://gcitizen.com/callback", response.RedirectURI)
 }
 
-func TestVerifyEmailHandler(t *testing.T) {
-	// Generate a Mock JWT token
-	tokenString, err := utils.GenerateToken(models.User{
-		ID:       1,
-		Username: "test_user",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Create a mock request
+func TestVerifyEmailHandler_FailedToVerifyEmail(t *testing.T) {
 	req, err := http.NewRequest("GET", "/api/v1/verify-email", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
 
-	// Set the Authorization header
-	req.Header.Set("Authorization", "Bearer "+tokenString)
-
-	// Create a mock service and set it in the request context
-	mockService := &MockService{}
+	mockService := &MockService{
+		verifyEmail: func(userID uint) error {
+			return fmt.Errorf("failed to verify email for user %d", userID)
+		},
+	}
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 
-	// Create a ResponseRecorder to record the response
 	rr := httptest.NewRecorder()
 
-	// Call the handler function
 	Ctl.VerifyEmailHandler(rr, req)
 
-	// Check the status code
-	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	// Decode the response body
 	var response utils.Response
 	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
 		t.Fatal(err)
 	}
 
-	// Now assert the fields directly
+	assert.False(t, response.Status)
+	assert.Equal(t, "Failed to verify email", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestVerifyEmailHandler_Success(t *testing.T) {
+	req, err := http.NewRequest("GET", "/api/v1/verify-email", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{
+		verifyEmail: func(userID uint) error {
+			return nil
+		},
+	}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.VerifyEmailHandler(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	var response utils.Response
+	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+		t.Fatal(err)
+	}
+
 	assert.True(t, response.Status)
 	assert.Equal(t, "OK!", response.Message)
+	assert.Equal(t, "Verification email sent", response.Data)
 	assert.Nil(t, response.Error)
-	assert.Equal(t, "Email verified successfully", response.Data.(string))
+}
+
+func TestVerifyCode_FailedToVerifyCode(t *testing.T) {
+	requestBody := []byte(`{"code": "123467"}`)
+	req, err := http.NewRequest("GET", "/api/v1/verify-code", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{
+		verifyCode: func(userID uint, code string) error {
+			return fmt.Errorf("failed to verify code for user %d", userID)
+		},
+	}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.VerifyCode(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var response utils.Response
+	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Failed to verify code", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestVerifyCode_Success(t *testing.T) {
+	requestBody := []byte(`{"code": "123467"}`)
+	req, err := http.NewRequest("GET", "/api/v1/verify-code", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{
+		verifyCode: func(userID uint, code string) error {
+			return nil
+		},
+	}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.VerifyCode(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	var response utils.Response
+	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.True(t, response.Status)
+	assert.Equal(t, "OK!", response.Message)
+	assert.Equal(t, "Your email was successfully verified!", response.Data)
+	assert.Nil(t, response.Error)
 }
 
 func TestUpdateDisplayNameHandler(t *testing.T) {

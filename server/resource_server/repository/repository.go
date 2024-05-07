@@ -65,6 +65,17 @@ func (r *Repository) RegisterUser(req dto.RegisterUserDTO) error {
 	return nil
 }
 
+func (r *Repository) FindUser(userId uint) (models.User, error) {
+	var user models.User
+	e := r.connection.Where("id = ?", userId).First(&user).Error
+
+	if e != nil {
+		return models.User{}, e
+	}
+
+	return user, e
+}
+
 func (r *Repository) RegisterClient(req dto.RegisterClientDTO) error {
 
 	clientUUID := utils.GenerateUUID()
@@ -167,8 +178,59 @@ func (r *Repository) ProfileClient(userID string) (models.Client, error) {
 	return client, nil
 }
 
-func (r *Repository) VerifyEmail(userID uint) error {
-	return r.connection.Model(&models.UserMetadata{}).Where("user_id = ? AND key = ?", userID, "email_verified").Update("value", "true").Error
+func (r *Repository) SetUserEmailVerified(userID uint) error {
+	return r.connection.Model(
+		&models.UserMetadata{},
+	).Where(
+		"user_id = ? AND key = ?",
+		userID,
+		"email_verified",
+	).Update("value", "true").Error
+}
+
+func (r *Repository) SaveProofOfEmailVerification(userID uint, verificationCode string, emailProof string) error {
+	return r.connection.Model(
+		&models.User{},
+	).Where(
+		"id = ?", userID,
+	).Updates(map[string]interface{}{
+		"verification_code": verificationCode,
+		"email_proof":       emailProof,
+	}).Error
+}
+
+func (r *Repository) SaveEmailVerificationData(data models.EmailVerificationData) error {
+	tx := r.connection.Begin()
+
+	err := tx.Where(
+		models.EmailVerificationData{UserId: data.UserId},
+	).Assign(data).FirstOrCreate(&models.EmailVerificationData{}).Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (r *Repository) GetEmailVerificationData(userId uint) (models.EmailVerificationData, error) {
+	var data models.EmailVerificationData
+	e := r.connection.Where("user_id = ?", userId).First(&data).Error
+	if e != nil {
+		return models.EmailVerificationData{}, e
+	}
+
+	return data, nil
+}
+
+func (r *Repository) DeleteEmailVerificationData(userId uint) error {
+	return r.connection.Where(
+		"user_id = ?", userId,
+	).Delete(
+		&models.EmailVerificationData{},
+	).Error
 }
 
 func (r *Repository) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {

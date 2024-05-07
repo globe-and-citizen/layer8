@@ -236,7 +236,7 @@
 
       const verifyEmail = async () => {
         try {
-          const resp = await window.fetch(
+            const response = await window.fetch(
             "[[ .ProxyURL ]]/api/v1/verify-email",
             {
               method: "POST",
@@ -245,14 +245,14 @@
                 Authorization: `Bearer ${token.value}`,
               },
             }
-          );
-          const data = await resp.json();
-          if (data.message === "OK!") {
-            alert("Email verified!");
-            user.value.email_verified = true;
-          } else {
-            alert("Email verification failed!");
-          }
+            );
+            const data = await response.json();
+
+            if (data.message === "OK!") {
+                window.location.href = "[[ .ProxyURL ]]/verify-email-page"
+            } else {
+                alert("Error happened: " + data.errors)
+            }
         } catch (error) {
           console.error(error);
         }

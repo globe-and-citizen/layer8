@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link
+                rel="stylesheet"
+                href="/assets-v1/templates/assets/styles/output.css"
+        />
+        <link
+                rel="stylesheet"
+                href="/assets-v1/templates/assets/styles/base.css"
+        />
+        <title>Verify your email</title>
+        <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+    </head>
+
+    <body>
+        <div id="app">
+            <div id="navbar" class="user-container">
+                <div class="bg-white flex justify-center items-center my-4">
+                    <img
+                            src="../assets-v1/images/L8Logo.png"
+                            alt="Layer8"
+                            width="250"
+                            height="535"
+                    />
+                </div>
+            </div>
+
+            <div id="body" class="bg-[#F6F8FF] md:grid md:grid-cols-2">
+                <div class="self-center py-4 mx-10 lg:mx-36">
+                    <div class="mb-6">
+                        <label class="text-lg text-[#414141] mb-1 block">Input your verification code:</label>
+                        <input
+                            class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
+                            placeholder="Verification code"
+                            v-model="verificationCode"
+                        />
+                    </div>
+                    <button
+                        class="w-[70%] bg-[#4F80E1] rounded-lg text-center text-white py-4 mb-12"
+                        @click="verifyCode"
+                    >
+                        Submit
+                    </button>
+                </div>
+
+                <div class="bg-white hidden md:flex items-center">
+                    <img src="/assets-v1/templates/assets/images/client-image.png" />
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const { createApp, computed, ref } = Vue;
+            const verificationCode = ref("");
+            const token = ref(localStorage.getItem("token") || null);
+
+            const verifyCode = async () => {
+                const response = await window.fetch(
+                    "[[ .ProxyURL ]]/api/v1/verify-code",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token.value}`,
+                        },
+                        body: JSON.stringify({
+                            code: verificationCode.value,
+                        }),
+                    }
+                );
+                const result = await response.json();
+
+                alert(result.message);
+
+                window.location.href = "[[ .ProxyURL ]]/user";
+            };
+
+            const app = createApp({
+                setup() {
+                    return {
+                        verifyCode,
+                        verificationCode,
+                    };
+                },
+            });
+
+            app.mount("#app");
+        </script>
+    </body>
+</html>

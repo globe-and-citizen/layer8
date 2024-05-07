@@ -8,15 +8,19 @@ import (
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
 	"globe-and-citizen/layer8/server/opentelemetry"
+	"globe-and-citizen/layer8/server/resource_server/db"
+	"globe-and-citizen/layer8/server/resource_server/emails/sender"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
-	"globe-and-citizen/layer8/server/resource_server/db"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
 
@@ -104,9 +108,20 @@ func main() {
 		fmt.Println("Running the app with postgres repository")
 	}
 
+	adminEmailAddress := fmt.Sprintf("layer8@%s", os.Getenv("LAYER8_EMAIL_DOMAIN"))
+	emailVerifier := verification.NewEmailVerifier(
+		adminEmailAddress,
+		sender.NewMailerSendService(
+			os.Getenv("MAILER_SEND_API_KEY"),
+			os.Getenv("MAILER_SEND_TEMPLATE_ID"),
+		),
+		&code.RandomCodeGenerator{},
+		time.Now,
+	)
+
 	// Run server (which never returns)
 	Server(
-		svc.NewService(resourceRepository),
+		svc.NewService(resourceRepository, emailVerifier),
 		oauthService,
 	)
 }
@@ -163,6 +178,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.LoginUserPage(w, r)
 			case path == "/user-register-page":
 				Ctl.RegisterUserPage(w, r)
+			case path == "/verify-email-page":
+				Ctl.VerifyEmailPage(w, r)
 			case path == "/client-register-page":
 				Ctl.ClientHandler(w, r)
 			case path == "/client-login-page":
@@ -187,6 +204,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.ClientProfileHandler(w, r)
 			case path == "/api/v1/verify-email":
 				Ctl.VerifyEmailHandler(w, r)
+			case path == "/api/v1/verify-code":
+				Ctl.VerifyCode(w, r)
 			case path == "/api/v1/change-display-name":
 				Ctl.UpdateDisplayNameHandler(w, r)
 			case path == "/api/v1/usage-stats":
