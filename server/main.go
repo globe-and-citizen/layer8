@@ -62,6 +62,11 @@ func main() {
 		log.Fatalf("Failed to create meter: %v", err)
 	}
 
+	// If the user has set a database user or password, init the database
+	if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
+		config.InitDB()
+	}
+
 	// Use flags for using in-memory repository, otherwise app will use database
 	if *port != 8080 && *jwtKey != "" && *MpKey != "" && *UpKey != "" && *ProxyURL != "" {
 		os.Setenv("SERVER_PORT", strconv.Itoa(*port))
@@ -82,11 +87,6 @@ func main() {
 		service := svc.NewService(repository)
 		fmt.Println("Running app with in-memory repository")
 		Server(*port, service, repository) // Run server
-	}
-
-	// If the user has set a database user or password, init the database
-	if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
-		config.InitDB()
 	}
 
 	proxyServerPort := os.Getenv("SERVER_PORT") // Port override

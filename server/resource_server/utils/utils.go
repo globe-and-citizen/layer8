@@ -207,3 +207,38 @@ func GenerateToken(user models.User) (string, error) {
 	}
 	return tokenString, nil
 }
+
+func GenerateUPTokenJWT(secret string, clientID string) (string, error) {
+	claims := jwt.RegisteredClaims{
+		Issuer:    "layer8",
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+		Audience: jwt.ClaimStrings{
+			clientID,
+		},
+		IssuedAt: jwt.NewNumericDate(time.Now()),
+	}
+
+	tokenObj := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenStr, err := tokenObj.SignedString([]byte(secret))
+	if err != nil {
+		return "", err
+	}
+
+	return tokenStr, nil
+}
+
+func ValidateUPTokenJWT(tokenString string, secretKey string) (*jwt.RegisteredClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secretKey), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, fmt.Errorf("invalid token")
+}

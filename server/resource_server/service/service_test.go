@@ -132,6 +132,10 @@ func (m *mockRepository) ProfileClient(userID string) (models.Client, error) {
 	return models.Client{}, nil
 }
 
+func (m *mockRepository) GetClientDataByBackendURL(backendURL string) (models.Client, error) {
+	return models.Client{}, nil
+}
+
 func TestRegisterUser(t *testing.T) {
 	// Create a new mock repository
 	mockRepo := new(mockRepository)
@@ -276,7 +280,7 @@ func TestRegisterClient(t *testing.T) {
 	req := dto.RegisterClientDTO{
 		Name:        "testclient",
 		RedirectURI: "https://gcitizen.com/callback",
-		BackendURI: "https://gcitizen_backend.com/callback",
+		BackendURI:  "https://gcitizen_backend.com/callback",
 		Username:    "test_user",
 		Password:    "12345",
 	}
