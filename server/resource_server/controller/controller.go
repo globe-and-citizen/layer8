@@ -146,7 +146,7 @@ func LoginPrecheckHandler(w http.ResponseWriter, r *http.Request) {
 	loginPrecheckResp, err := newService.LoginPreCheckUser(req)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return          
+		return
 	}
 
 	if err := json.NewEncoder(w).Encode(loginPrecheckResp); err != nil {
@@ -242,7 +242,7 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
 	userID, err := utils.ValidateToken(tokenString)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)                                                                                      
+		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)
 		return
 	}
 
@@ -302,13 +302,16 @@ func GetUsageStats(w http.ResponseWriter, r *http.Request) {
 
 	finalResponse := models.UsageStatisticResponse{
 		MonthToDate: models.MonthToDateStatistic{
-			Month:                     firstDayOfMonth.Month().String(),
-			MonthToDateUsage:          monthToDateTotal / 1000000000,
-			ForecastedEndOfMonthUsage: (monthToDateTotal / 1000000000) + float64(totalDaysBeforeNextMonth)*thirtyDaysStatistic.Average,
+			Month: firstDayOfMonth.Month().String(),
 		},
 		LastThirtyDaysStatistic: thirtyDaysStatistic,
 		MetricType:              "data_transferred",
 		UnitOfMeasurement:       "GB",
+	}
+
+	if monthToDateTotal > 0 {
+		finalResponse.MonthToDate.MonthToDateUsage = monthToDateTotal / 1000000000
+		finalResponse.MonthToDate.ForecastedEndOfMonthUsage = (monthToDateTotal / 1000000000) + float64(totalDaysBeforeNextMonth)*thirtyDaysStatistic.Average
 	}
 
 	resp := utils.BuildResponse(true, "OK!", finalResponse)

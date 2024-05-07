@@ -49,16 +49,23 @@ func (s *StatRepository) GetTotalRequestsInLastXDaysByClient(ctx context.Context
 			decimalValueTotal = 0
 		}
 
-		totalRequest += decimalValueTotal / 1000000000
+		var totalForThisPeriod float64
+		if decimalValueTotal > 0 {
+			totalRequest += decimalValueTotal / 1000000000
+			totalForThisPeriod = decimalValueTotal / 1000000000
+		}
 
 		at := rawDataPointer.ValueByKey("_time").(time.Time)
 		result = append(result, models.UsageStatisticPerDate{
 			Date:  at.Format("Mon, 02 Jan 2006"),
-			Total: decimalValueTotal / 1000000000,
+			Total: totalForThisPeriod,
 		})
 	}
 
-	averageRequest := totalRequest / float64(len(result))
+	var averageRequest float64
+	if totalRequest > 0 {
+		averageRequest = totalRequest / float64(len(result))
+	}
 
 	return models.Statistics{
 		Total:            totalRequest,
