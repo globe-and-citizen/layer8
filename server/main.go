@@ -51,10 +51,13 @@ func main() {
 	MpKey := flag.String("MpKey", "secret", "Key to sign mpJWT tokens")
 	UpKey := flag.String("UpKey", "secret", "Key to sign upJWT tokens")
 	ProxyURL := flag.String("ProxyURL", "http://localhost:5001", "URL to populate go HTML templates")
+	InMemoryDb := flag.Bool(
+		"InMemoryDb",
+		false,
+		"Defines whether or not to use the in-memory database implementation")
 
 	flag.Parse()
 
-	// If the above code block runs, this section is never reached.
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
@@ -63,22 +66,23 @@ func main() {
 		log.Fatalf("Failed to create meter: %v", err)
 	}
 
-	// If the user has set a database user or password, init the database
-	if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
-		config.InitDB()
-	}
-
 	db.InitInfluxDBClient()
 
-	// Use flags for using in-memory repository, otherwise app will use database
-	if *port != 8080 && *jwtKey != "" && *MpKey != "" && *UpKey != "" && *ProxyURL != "" {
-		os.Setenv("SERVER_PORT", strconv.Itoa(*port))
+	var proxyPort int
+	var resourceRepository interfaces.IRepository
+	var oauthService *oauthSvc.Service
+
+	if *InMemoryDb {
+		proxyPort = *port
+
+		os.Setenv("SERVER_PORT", strconv.Itoa(proxyPort))
 		os.Setenv("JWT_SECRET_KEY", *jwtKey)
 		os.Setenv("MP_123_SECRET_KEY", *MpKey)
 		os.Setenv("UP_999_SECRET_KEY", *UpKey)
 		os.Setenv("PROXY_URL", *ProxyURL)
-		repository := rsRepo.NewMemoryRepository()
-		repository.RegisterUser(dto.RegisterUserDTO{
+
+		resourceRepository = rsRepo.NewMemoryRepository()
+		resourceRepository.RegisterUser(dto.RegisterUserDTO{
 			Email:       "user@test.com",
 			Username:    "tester",
 			FirstName:   "Test",
@@ -87,37 +91,37 @@ func main() {
 			Country:     "Antarctica",
 			DisplayName: "test_user_mem",
 		})
-		service := svc.NewService(repository)
+
+		oauthService = &oauthSvc.Service{Repo: resourceRepository}
+
 		fmt.Println("Running app with in-memory repository")
-		Server(*port, service, repository) // Run server
+	} else {
+		// If the user has set a database user or password, init the database
+		if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
+			config.InitDB()
+		}
+
+		var err error
+		proxyPort, err = strconv.Atoi(os.Getenv("SERVER_PORT")) // Port override
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		resourceRepository = rsRepo.NewRepository(config.DB)
+		oauthService = &oauthSvc.Service{Repo: oauthRepo.NewOauthRepository(config.DB)}
+
+		fmt.Println("Running the app with postgres repository")
 	}
 
-	proxyServerPort := os.Getenv("SERVER_PORT") // Port override
-
-	proxyServerPortInt, err := strconv.Atoi(proxyServerPort)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Register repository
-	rsRepository := rsRepo.NewRepository(config.DB)
-	// Register service(usecase)
-	service := svc.NewService(rsRepository)
-
-	Server(proxyServerPortInt, service, rsRepository) // Run server (which never returns)
+	// Run server (which never returns)
+	Server(
+		proxyPort,
+		svc.NewService(resourceRepository),
+		oauthService,
+	)
 }
 
-func Server(port int, service interfaces.IService, memoryRepository interfaces.IRepository) {
-
-	// CHOOSE TO USE POSTRGRES OR IN_MEMORY IMPLEMENTATION BY COMMENTING / UNCOMMENTING
-
-	// ** USE LOCAL POSTGRES DB **
-	oauthRepository := oauthRepo.NewOauthRepository(config.DB)
-	oauthService := &oauthSvc.Service{Repo: oauthRepository}
-
-	// ** USE THE IN MEMORY IMPLEMENTATION **
-	// oauthService := &oauthSvc.Service{Repo: memoryRepository}
-
+func Server(port int, resourceService interfaces.IService, oauthService *oauthSvc.Service) {
 	_, err := oauthService.AddTestClient()
 	if err != nil {
 		log.Fatal(err)
@@ -137,7 +141,7 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 			}
 
 			r = r.WithContext(context.WithValue(r.Context(), "Oauthservice", oauthService))
-			r = r.WithContext(context.WithValue(r.Context(), "service", service))
+			r = r.WithContext(context.WithValue(r.Context(), "service", resourceService))
 
 			staticFS, _ := fs.Sub(StaticFiles, "dist")
 			httpFS := http.FileServer(http.FS(staticFS))
