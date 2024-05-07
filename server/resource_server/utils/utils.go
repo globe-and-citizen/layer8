@@ -242,3 +242,9 @@ func ValidateUPTokenJWT(tokenString string, secretKey string) (*jwt.RegisteredCl
 
 	return nil, fmt.Errorf("invalid token")
 }
+
+func RemoveProtocolFromURL(url string) string {
+	cleanedURL := strings.Replace(url, "http://", "", -1)
+	cleanedURL = strings.Replace(cleanedURL, "https://", "", -1)
+	return cleanedURL
+}
