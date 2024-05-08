@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
+	"globe-and-citizen/layer8/server/opentelemetry"
 	"io/fs"
 	"log"
 	"net/http"
@@ -15,8 +16,11 @@ import (
 	"strings"
 
 	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
+	"globe-and-citizen/layer8/server/resource_server/db"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
+
+	oauthRepo "globe-and-citizen/layer8/server/internals/repository"
 
 	rsRepo "globe-and-citizen/layer8/server/resource_server/repository"
 
@@ -41,7 +45,6 @@ func getPwd() {
 }
 
 func main() {
-
 	// Use flags to set the port
 	port := flag.Int("port", 8080, "Port to run the server on")
 	jwtKey := flag.String("jwtKey", "secret", "Key to sign JWT tokens")
@@ -50,6 +53,22 @@ func main() {
 	ProxyURL := flag.String("ProxyURL", "http://localhost:5001", "URL to populate go HTML templates")
 
 	flag.Parse()
+
+	// If the above code block runs, this section is never reached.
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	if err := opentelemetry.NewMeter(context.Background()); err != nil {
+		log.Fatalf("Failed to create meter: %v", err)
+	}
+
+	// If the user has set a database user or password, init the database
+	if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
+		config.InitDB()
+	}
+
+	db.InitInfluxDBClient()
 
 	// Use flags for using in-memory repository, otherwise app will use database
 	if *port != 8080 && *jwtKey != "" && *MpKey != "" && *UpKey != "" && *ProxyURL != "" {
@@ -73,17 +92,6 @@ func main() {
 		Server(*port, service, repository) // Run server
 	}
 
-	// If the above code block runs, this section is never reached.
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	// If the user has set a database user or password, init the database
-	if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
-		config.InitDB()
-	}
-
 	proxyServerPort := os.Getenv("SERVER_PORT") // Port override
 
 	proxyServerPortInt, err := strconv.Atoi(proxyServerPort)
@@ -97,7 +105,6 @@ func main() {
 	service := svc.NewService(rsRepository)
 
 	Server(proxyServerPortInt, service, rsRepository) // Run server (which never returns)
-
 }
 
 func Server(port int, service interfaces.IService, memoryRepository interfaces.IRepository) {
@@ -105,11 +112,11 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 	// CHOOSE TO USE POSTRGRES OR IN_MEMORY IMPLEMENTATION BY COMMENTING / UNCOMMENTING
 
 	// ** USE LOCAL POSTGRES DB **
-	// oauthRepository := oauthRepo.NewOauthRepository(config.DB)
-	// oauthService := &oauthSvc.Service{Repo: oauthRepository}
+	oauthRepository := oauthRepo.NewOauthRepository(config.DB)
+	oauthService := &oauthSvc.Service{Repo: oauthRepository}
 
 	// ** USE THE IN MEMORY IMPLEMENTATION **
-	oauthService := &oauthSvc.Service{Repo: memoryRepository}
+	// oauthService := &oauthSvc.Service{Repo: memoryRepository}
 
 	_, err := oauthService.AddTestClient()
 	if err != nil {
@@ -135,6 +142,11 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 			staticFS, _ := fs.Sub(StaticFiles, "dist")
 			httpFS := http.FileServer(http.FS(staticFS))
 
+			if r.Header.Get("up-JWT") != "" {
+				handlers.Tunnel(w, r)
+				return
+			}
+
 			switch path := r.URL.Path; {
 
 			// Authorization Server endpoints
@@ -156,8 +168,16 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 				Ctl.IndexHandler(w, r)
 			case path == "/user":
 				Ctl.UserHandler(w, r)
-			case path == "/register":
+			case path == "/user-login-page":
+				Ctl.LoginUserPage(w, r)
+			case path == "/user-register-page":
+				Ctl.RegisterUserPage(w, r)
+			case path == "/client-register-page":
 				Ctl.ClientHandler(w, r)
+			case path == "/client-login-page":
+				Ctl.LoginClientPage(w, r)
+			case path == "/client-profile":
+				Ctl.ClientProfilePage(w, r)
 			case path == "/api/v1/register-user":
 				Ctl.RegisterUserHandler(w, r)
 			case path == "/api/v1/register-client":
@@ -168,12 +188,18 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 				Ctl.LoginPrecheckHandler(w, r)
 			case path == "/api/v1/login-user":
 				Ctl.LoginUserHandler(w, r)
+			case path == "/api/v1/login-client":
+				Ctl.LoginClientHandler(w, r) // Login Client
 			case path == "/api/v1/profile":
 				Ctl.ProfileHandler(w, r)
+			case path == "/api/v1/client-profile":
+				Ctl.ClientProfileHandler(w, r)
 			case path == "/api/v1/verify-email":
 				Ctl.VerifyEmailHandler(w, r)
 			case path == "/api/v1/change-display-name":
 				Ctl.UpdateDisplayNameHandler(w, r)
+			case path == "/api/v1/usage-stats":
+				Ctl.GetUsageStats(w, r)
 			case path == "/favicon.ico":
 				faviconPath := workingDirectory + "/dist/favicon.ico"
 				http.ServeFile(w, r, faviconPath)
@@ -185,11 +211,9 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 				handlers.InitTunnel(w, r)
 			case path == "/error":
 				handlers.TestError(w, r)
-			// TODO: For later, to be discussed more
-			// case path == "/tunnel":
-			// 	handlers.Tunnel(w, r)
-			default:
-				handlers.Tunnel(w, r)
+				// TODO: For later, to be discussed more
+				// case path == "/tunnel":
+				// 	handlers.Tunnel(w, r)
 			}
 		}),
 	}

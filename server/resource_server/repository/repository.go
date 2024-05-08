@@ -70,11 +70,18 @@ func (r *Repository) RegisterClient(req dto.RegisterClientDTO) error {
 	clientUUID := utils.GenerateUUID()
 	clientSecret := utils.GenerateSecret(utils.SecretSize)
 
+	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
+	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
+
 	client := models.Client{
 		ID:          clientUUID,
 		Secret:      clientSecret,
 		Name:        req.Name,
 		RedirectURI: req.RedirectURI,
+		BackendURI:  req.BackendURI,
+		Username:    req.Username,
+		Password:    HashedAndSaltedPass,
+		Salt:        rmSalt,
 	}
 
 	if err := r.connection.Create(&client).Error; err != nil {
@@ -92,6 +99,14 @@ func (r *Repository) GetClientData(clientName string) (models.Client, error) {
 	return client, nil
 }
 
+func (r *Repository) GetClientDataByBackendURL(backendURL string) (models.Client, error) {
+	var client models.Client
+	if err := r.connection.Where("backend_uri = ?", backendURL).First(&client).Error; err != nil {
+		return models.Client{}, err
+	}
+	return client, nil
+}
+
 func (r *Repository) LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string, error) {
 	var user models.User
 	if err := r.connection.Where("username = ?", req.Username).First(&user).Error; err != nil {
@@ -100,12 +115,36 @@ func (r *Repository) LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string
 	return user.Username, user.Salt, nil
 }
 
+func (r *Repository) LoginPreCheckClient(req dto.LoginPrecheckDTO) (string, string, error) {
+	var client models.Client
+	// RAVI
+	// if err := config.DB.Where("username = ?", req.Username).First(&client).Error; err != nil {
+	// 	return "", "", err
+	// }
+	if err := r.connection.Where("username = ?", req.Username).First(&client).Error; err != nil {
+		return "", "", err
+	}
+	return client.Username, client.Salt, nil
+}
+
 func (r *Repository) LoginUser(req dto.LoginUserDTO) (models.User, error) {
 	var user models.User
 	if err := r.connection.Where("username = ?", req.Username).First(&user).Error; err != nil {
 		return models.User{}, err
 	}
 	return user, nil
+}
+
+func (r *Repository) LoginClient(req dto.LoginClientDTO) (models.Client, error) {
+	var client models.Client
+	// RAVI HERE
+	// if err := config.DB.Where("username = ?", req.Username).First(&client).Error; err != nil {
+	// 	return models.Client{}, err
+	// }
+	if err := r.connection.Where("username = ?", req.Username).First(&client).Error; err != nil {
+		return models.Client{}, err
+	}
+	return client, nil
 }
 
 func (r *Repository) ProfileUser(userID uint) (models.User, []models.UserMetadata, error) {
@@ -118,6 +157,14 @@ func (r *Repository) ProfileUser(userID uint) (models.User, []models.UserMetadat
 		return models.User{}, []models.UserMetadata{}, err
 	}
 	return user, userMetadata, nil
+}
+
+func (r *Repository) ProfileClient(userID string) (models.Client, error) {
+	var client models.Client
+	if err := r.connection.Where("username = ?", userID).First(&client).Error; err != nil {
+		return models.Client{}, err
+	}
+	return client, nil
 }
 
 func (r *Repository) VerifyEmail(userID uint) error {

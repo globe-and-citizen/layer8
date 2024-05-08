@@ -26,9 +26,10 @@ func NewMemoryRepository() interfaces.IRepository {
 
 func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO) error {
 	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
-	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
+	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt) // what if two user's use the same password?
 	userID := fmt.Sprintf("%d", len(r.storage))
-	r.storage[req.Password] = map[string]string{
+	key := fmt.Sprintf("%s:%s", req.Username, req.Password)
+	r.storage[key] = map[string]string{
 		"user_id":        userID,
 		"email":          req.Email,
 		"username":       req.Username,
@@ -41,21 +42,27 @@ func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO) error {
 	}
 	r.storage[req.Username] = map[string]string{
 		"salt":     rmSalt,
-		"password": req.Password,
+		"password": key,
 	}
 	r.storage[userID] = map[string]string{
-		"password": req.Password,
+		"password": key,
 	}
 	return nil
 }
 
 func (r *MemoryRepository) RegisterClient(req dto.RegisterClientDTO) error {
+	if _, ok := r.storage[req.Username]; ok {
+		return fmt.Errorf("Client username already registered.")
+	}
 	clientUUID := utils.GenerateUUID()
 	clientSecret := utils.GenerateSecret(utils.SecretSize)
-	r.storage[req.Name] = map[string]string{
+	r.storage[req.Username] = map[string]string{
 		"id":           clientUUID,
 		"secret":       clientSecret,
 		"redirect_uri": req.RedirectURI,
+		"backend_uri": req.BackendURI,
+		"username":     req.Username,
+		"password":     req.Password,
 	}
 	return nil
 }
@@ -81,27 +88,48 @@ func (r *MemoryRepository) LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, 
 }
 
 func (r *MemoryRepository) LoginUser(req dto.LoginUserDTO) (models.User, error) {
-	if _, ok := r.storage[req.Password]; !ok {
+	key := fmt.Sprintf("%s:%s", req.Username, req.Password)
+	if _, ok := r.storage[key]; !ok {
 		return models.User{}, fmt.Errorf("user not found")
 	}
-	if r.storage[req.Password]["username"] != req.Username {
+	if r.storage[key]["username"] != req.Username {
 		return models.User{}, fmt.Errorf("invalid username")
 	}
-	UserID := r.storage[req.Password]["user_id"]
+	UserID := r.storage[key]["user_id"]
 	userIdUint, err := strconv.ParseUint(UserID, 10, 32)
 	if err != nil {
 		return models.User{}, err
 	}
 	user := models.User{
 		ID:        uint(userIdUint),
-		Email:     r.storage[req.Password]["email"],
-		Username:  r.storage[req.Password]["username"],
-		Password:  r.storage[req.Password]["password"],
-		FirstName: r.storage[req.Password]["first_name"],
-		LastName:  r.storage[req.Password]["last_name"],
-		Salt:      r.storage[req.Username]["salt"],
+		Email:     r.storage[key]["email"],
+		Username:  r.storage[key]["username"],
+		Password:  r.storage[key]["password"],
+		FirstName: r.storage[key]["first_name"],
+		LastName:  r.storage[key]["last_name"],
+		Salt:      r.storage[key]["salt"],
 	}
 	return user, nil
+}
+
+func (r *MemoryRepository) LoginClient(req dto.LoginClientDTO) (models.Client, error) {
+	if _, ok := r.storage[req.Username]; !ok {
+		return models.Client{}, fmt.Errorf("user not found")
+	}
+
+	if r.storage[req.Username]["password"] != req.Password {
+		return models.Client{}, fmt.Errorf("invalid password")
+	}
+
+	client := models.Client{
+		ID:          r.storage[req.Username]["id"],
+		Secret:      r.storage[req.Username]["secret"],
+		RedirectURI: r.storage[req.Username]["redirect_uri"],
+		Username:    r.storage[req.Username]["username"],
+	}
+
+	fmt.Println("client: ", client)
+	return client, nil
 }
 
 func (r *MemoryRepository) ProfileUser(userID uint) (models.User, []models.UserMetadata, error) {
@@ -135,6 +163,20 @@ func (r *MemoryRepository) ProfileUser(userID uint) (models.User, []models.UserM
 	return user, userMetadata, nil
 }
 
+func (r *MemoryRepository) ProfileClient(username string) (models.Client, error) {
+	if _, ok := r.storage[username]; !ok {
+		return models.Client{}, fmt.Errorf("user not found")
+	}
+
+	client := models.Client{
+		ID:          r.storage[username]["id"],
+		Secret:      r.storage[username]["secret"],
+		RedirectURI: r.storage[username]["redirect_uri"],
+		Username:    username,
+	}
+	return client, nil
+}
+
 func (r *MemoryRepository) VerifyEmail(userID uint) error {
 	if _, ok := r.storage[fmt.Sprintf("%d", userID)]; !ok {
 		return fmt.Errorf("user not found")
@@ -160,6 +202,11 @@ func (r *MemoryRepository) LoginUserPrecheck(username string) (string, error) {
 		return "", fmt.Errorf("user not found")
 	}
 	return r.storage[username]["salt"], nil
+}
+
+func (r *MemoryRepository) LoginPreCheckClient(req dto.LoginPrecheckDTO) (string, string, error) {
+
+	return "r.storage[username]['salt']", "second string...", nil
 }
 
 func (r *MemoryRepository) GetUser(username string) (*serverModels.User, error) {
@@ -242,6 +289,24 @@ func (r *MemoryRepository) GetClient(id string) (*serverModels.Client, error) {
 		RedirectURI: r.storage[id]["redirect_uri"],
 	}
 	return &client, nil
+}
+
+func (r *MemoryRepository) GetClientDataByBackendURL(id string) (models.Client, error) {
+	if strings.Contains(id, ":") {
+		id = id[strings.LastIndex(id, ":")+1:]
+		// fmt.Println("ID check:", id)
+	}
+	if _, ok := r.storage[id]; !ok {
+		fmt.Println("client not found while using GetClient")
+		return models.Client{}, fmt.Errorf("client not found")
+	}
+	client := models.Client{
+		ID:          r.storage[id]["id"],
+		Secret:      r.storage[id]["secret"],
+		Name:        r.storage[id]["name"],
+		RedirectURI: r.storage[id]["redirect_uri"],
+	}
+	return client, nil
 }
 
 func (r *MemoryRepository) SetTTL(key string, value []byte, ttl time.Duration) error {

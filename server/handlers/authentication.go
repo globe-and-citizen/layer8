@@ -3,6 +3,7 @@ package handlers
 import (
 	svc "globe-and-citizen/layer8/server/internals/service"
 	"globe-and-citizen/layer8/server/resource_server/utils"
+	"html/template"
 	"net/http"
 	"os"
 )
@@ -26,7 +27,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		utils.ParseHTML(w, "login.html",
+		utils.ParseHTML(w, "assets-v1/templates/src/pages/oauth_portal/login.html",
 			map[string]interface{}{
 				"HasNext":  next != "",
 				"Next":     next,
@@ -41,25 +42,31 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		// login the user
 		rUser, err := service.LoginUser(username, password)
 		if err != nil {
-			utils.ParseHTML(w, "login.html",
-				map[string]interface{}{
-					"HasNext": next != "",
-					"Next":    next,
-					"Error":   err.Error(),
-				},
-			)
+			t, errT := template.ParseFiles("assets-v1/templates/src/pages/oauth_portal/login.html")
+			if errT != nil {
+				http.Error(w, errT.Error(), http.StatusInternalServerError)
+				return
+			}
+			t.Execute(w, map[string]interface{}{
+				"HasNext": next != "",
+				"Next":    next,
+				"Error":   err.Error(),
+			})
 			return
 		}
 		// set the token cookie
 		token, ok := rUser["token"].(string)
 		if !ok {
-			utils.ParseHTML(w, "login.html",
-				map[string]interface{}{
-					"HasNext": next != "",
-					"Next":    next,
-					"Error":   "could not get token",
-				},
-			)
+			t, err := template.ParseFiles("assets-v1/templates/src/pages/oauth_portal/login.html")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			t.Execute(w, map[string]interface{}{
+				"HasNext": next != "",
+				"Next":    next,
+				"Error":   "could not get token",
+			})
 			return
 		}
 		http.SetCookie(w, &http.Cookie{

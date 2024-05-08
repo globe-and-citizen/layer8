@@ -128,9 +128,36 @@ func CompleteLogin(req dto.LoginUserDTO, user models.User) (models.LoginUserResp
 	return resp, nil
 }
 
+func CompleteClientLogin(req dto.LoginClientDTO, client models.Client) (models.LoginUserResponseOutput, error) {
+	JWT_SECRET_STR := os.Getenv("JWT_SECRET_KEY")
+	JWT_SECRET_BYTE := []byte(JWT_SECRET_STR)
+
+	expirationTime := time.Now().Add(60 * time.Minute)
+	claims := &models.ClientClaims{
+		UserName: client.Username,
+		ClientID: client.ID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			Issuer:    "GlobeAndCitizen",
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(JWT_SECRET_BYTE)
+	if err != nil {
+		return models.LoginUserResponseOutput{}, err
+	}
+
+	resp := models.LoginUserResponseOutput{
+		Token: tokenString,
+	}
+	fmt.Println(resp)
+
+	return resp, nil
+}
+
 func ValidateToken(tokenString string) (uint, error) {
 	claims := &models.Claims{}
-	JWT_SECRET_STR := os.Getenv("JWT_SECRET")
+	JWT_SECRET_STR := os.Getenv("JWT_SECRET_KEY")
 	JWT_SECRET_BYTE := []byte(JWT_SECRET_STR)
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return JWT_SECRET_BYTE, nil
@@ -144,8 +171,24 @@ func ValidateToken(tokenString string) (uint, error) {
 	return claims.UserID, nil
 }
 
+func ValidateClientToken(tokenString string) (*models.ClientClaims, error) {
+	claims := &models.ClientClaims{}
+	JWT_SECRET_STR := os.Getenv("JWT_SECRET_KEY")
+	JWT_SECRET_BYTE := []byte(JWT_SECRET_STR)
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return JWT_SECRET_BYTE, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+	return claims, nil
+}
+
 func GenerateToken(user models.User) (string, error) {
-	JWT_SECRET_STR := os.Getenv("JWT_SECRET")
+	JWT_SECRET_STR := os.Getenv("JWT_SECRET_KEY")
 	JWT_SECRET_BYTE := []byte(JWT_SECRET_STR)
 
 	expirationTime := time.Now().Add(60 * time.Minute)
@@ -163,4 +206,45 @@ func GenerateToken(user models.User) (string, error) {
 		return "", err
 	}
 	return tokenString, nil
+}
+
+func GenerateUPTokenJWT(secret string, clientID string) (string, error) {
+	claims := jwt.RegisteredClaims{
+		Issuer:    "layer8",
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+		Audience: jwt.ClaimStrings{
+			clientID,
+		},
+		IssuedAt: jwt.NewNumericDate(time.Now()),
+	}
+
+	tokenObj := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenStr, err := tokenObj.SignedString([]byte(secret))
+	if err != nil {
+		return "", err
+	}
+
+	return tokenStr, nil
+}
+
+func ValidateUPTokenJWT(tokenString string, secretKey string) (*jwt.RegisteredClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secretKey), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, fmt.Errorf("invalid token")
+}
+
+func RemoveProtocolFromURL(url string) string {
+	cleanedURL := strings.Replace(url, "http://", "", -1)
+	cleanedURL = strings.Replace(cleanedURL, "https://", "", -1)
+	return cleanedURL
 }

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="/assets-v1/templates/assets/styles/output.css"
+    />
+    <link
+      rel="stylesheet"
+      href="/assets-v1/templates/assets/styles/base.css"
+    />
+    <title>Register | Layer8</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+  </head>
+  <body>
+    <div id="app">
+      <div class="relative">
+        <div class="client-container">
+          <div class="grid grid-cols-1 md:grid-cols-2 bg-white h-dvh">
+            <div class="self-center">
+              <h1 class="font-bold text-3xl md:text-4xl text-[#3751FE] mb-11 animate-slideFromLeft">
+                Register your product
+              </h1>
+              <div class="mr-0 md:mr-16 lg:mr-28 animate-slideFromLeft">
+                <div class="relative border border-[#C1BBBB]">
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    v-model="name"
+                    @focus="isNameFocused = true"
+                    @blur="isNameFocused = false"
+                    class="w-full px-4 pt-10 pb-3 border-l-4 focus:border-blue-500 focus:outline-none text-lg text-[#3751FE]"
+                    placeholder=" "
+                  />
+                  <label
+                    for="name"
+                    class="absolute left-0 px-4 mt-6 transition-all duration-300 origin-0 text-[#636363] text-lg cursor-text"
+                    :class="{ '-top-4': isNameFocused || name }"
+                  >
+                    Project name
+                  </label>
+                </div>
+                <div class="relative border border-[#C1BBBB]">
+                  <input
+                    type="text"
+                    id="redirect_uri"
+                    name="redirect_uri"
+                    v-model="redirect_uri"
+                    @focus="isRUFocused = true"
+                    @blur="isRUFocused = false"
+                    class="w-full px-4 pt-10 pb-3 border-l-4 focus:border-blue-500 focus:outline-none text-lg text-[#3751FE]"
+                    placeholder=" "
+                  />
+                  <label
+                    for="redirect_uri"
+                    class="absolute left-0 px-4 mt-6 transition-all duration-300 origin-0 text-[#636363] text-lg cursor-text"
+                    :class="{ '-top-4': isRUFocused || redirect_uri }"
+                  >
+                    Redirect URL
+                  </label>
+                </div>
+                <div class="relative border border-[#C1BBBB]">
+                  <input
+                    type="text"
+                    id="backend_uri"
+                    name="backend_uri"
+                    v-model="backend_uri"
+                    @focus="isBUFocused = true"
+                    @blur="isBUFocused = false"
+                    class="w-full px-4 pt-10 pb-3 border-l-4 focus:border-blue-500 focus:outline-none text-lg text-[#3751FE]"
+                    placeholder=" "
+                  />
+                  <label
+                    for="backend_uri"
+                    class="absolute left-0 px-4 mt-6 transition-all duration-300 origin-0 text-[#636363] text-lg cursor-text"
+                    :class="{ '-top-4': isBUFocused || backend_uri }"
+                  >
+                    Backend URL
+                  </label>
+                </div>
+                <div class="relative border border-[#C1BBBB]">
+                  <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    v-model="username"
+                    @focus="isUsernameFocused = true"
+                    @blur="isUsernameFocused = false"
+                    class="w-full px-4 pt-10 pb-3 border-l-4 focus:border-blue-500 focus:outline-none text-lg text-[#3751FE]"
+                    placeholder=" "
+                  />
+                  <label
+                    for="username"
+                    class="absolute left-0 px-4 mt-6 transition-all duration-300 origin-0 text-[#636363] text-lg cursor-text"
+                    :class="{ '-top-4': isUsernameFocused || username }"
+                  >
+                    Username
+                  </label>
+                </div>
+                <div class="relative border border-[#C1BBBB] mb-9">
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    v-model="password"
+                    @focus="isPasswordFocused = true"
+                    @blur="isPasswordFocused = false"
+                    class="w-full px-4 pt-10 pb-3 border-l-4 focus:border-blue-500 focus:outline-none text-lg text-[#3751FE]"
+                    placeholder=" "
+                  />
+                  <label
+                    for="password"
+                    class="absolute left-0 px-4 mt-6 transition-all duration-300 origin-0 text-[#636363] text-lg cursor-text"
+                    :class="{ '-top-4': isPasswordFocused || password }"
+                  >
+                    Password
+                  </label>
+                </div>
+                <button
+                  @click="registerClient"
+                  class="animate-bounce w-full py-4 border border-[#3751FE] text-[#3751FE] mb-7 hover:shadow-lg hover:text-white hover:bg-[#3751FE]"
+                >
+                  Register
+                </button>
+                <a
+                  class="text-sm text-[#414141] font-normal text-start block cursor-pointer"
+                  href="/client-login-page"
+                >
+                  Already have an account? <span class="font-bold">Login</span>
+                </a>
+              </div>
+            </div>
+            <div class="hidden"></div>
+          </div>
+        </div>
+        <div class="hidden md:flex lg:flex items-center absolute bg-[#E5E5E5] right-0 top-0 w-1/2 h-dvh pt-[8%]">
+          <img
+            class="m-auto mt-10 animate-slideFromRight"
+            src="/assets-v1/templates/assets/images/client-image.png"
+          />
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { createApp, ref } = Vue;
+
+      const name = ref("");
+      const redirect_uri = ref("");
+      const backend_uri = ref("");
+      const username = ref("");
+      const password = ref("");
+
+      const isRegistered = ref(false);
+      const isNameFocused = ref(false);
+      const isRUFocused = ref(false);
+      const isBUFocused = ref(false);
+      const isUsernameFocused = ref(false);
+      const isPasswordFocused = ref(false);
+      const client = ref({
+        id: "",
+        secret: "",
+        name: "",
+        redirect_uri: "",
+        backend_uri: "",
+      });
+
+      const registerClient = async () => {
+        try {
+          if (name.value == "" || redirect_uri.value == "" || username.value == "" || password.value == "") {
+            alert("Please enter all fields!");
+            return;
+          }
+          await window.fetch("[[ .ProxyURL ]]/api/v1/register-client", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: name.value,
+              redirect_uri: redirect_uri.value,
+              backend_uri: backend_uri.value,
+              username: username.value,
+              password: password.value,
+            }),
+          });
+          alert("Registration successful!");
+          window.location.href = "[[ .ProxyURL ]]/client-login-page";
+        } catch (error) {
+          console.error(error);
+          alert("Registration failed!");
+        }
+      };
+
+      const app = createApp({
+        setup() {
+          return {
+            client,
+            name,
+            username,
+            password,
+            redirect_uri,
+            backend_uri,
+            registerClient,
+            isRegistered,
+            isRUFocused,
+            isBUFocused,
+            isNameFocused,
+            isUsernameFocused,
+            isPasswordFocused
+          };
+        },
+      });
+
+      app.mount("#app");
+    </script>
+  </body>
+</html>

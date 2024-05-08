@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="/assets-v1/templates/assets/styles/output.css"
+    />
+    <link
+      rel="stylesheet"
+      href="/assets-v1/templates/assets/styles/base.css"
+    />
+    <title>Authentication Page</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+  </head>
+  <body>
+    <div id="app">
+      <div id="navbar" class="user-container">
+        <div class="bg-white flex justify-center items-center my-4">
+          <img
+            src="../assets-v1/images/L8Logo.png"
+            alt="Layer8"
+            width="250"
+            height="535"
+          />
+        </div>
+      </div>
+      <div id="body" class="bg-[#F6F8FF] md:grid md:grid-cols-2">
+        <div class="seself-center py-4 md:py-0 mx-10 lg:mx-36 md:mx-18">
+          <h1 class="font-bold text-[#4F80E1] text-[40px] text-start mb-2">
+            Register
+          </h1>
+          <p class="font-normal text-xl text-[#414141] text-start mb-5">
+            Enter registration data.
+          </p>
+          <div>
+            <div class="mb-3">
+              <label class="text-sm text-[#414141] mb-1 block">Email</label>
+              <input
+                class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
+                v-model="registerEmail"
+                placeholder="Email"
+              />
+            </div>
+            <div class="mb-3">
+              <label class="text-sm text-[#414141] mb-1 block">Username</label>
+              <input
+                class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
+                v-model="registerUsername"
+                placeholder="Username"
+              />
+            </div>
+            <div class="mb-3">
+              <label class="text-sm text-[#414141] mb-1 block">First Name</label>
+              <input
+                class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
+                v-model="registerFirstName"
+                placeholder="First Name"
+              />
+            </div>
+            <div class="mb-3">
+              <label class="text-sm text-[#414141] mb-1 block">Last Name</label>
+              <input
+                class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
+                v-model="registerLastName"
+                placeholder="Last Name"
+              />
+            </div>
+            <div class="mb-3">
+              <label class="text-sm text-[#414141] mb-1 block">Display Name</label>
+              <input
+                class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
+                v-model="registerDisplayName"
+                placeholder="Display Name"
+              />
+            </div>
+            <div class="mb-3">
+              <label class="text-sm text-[#414141] mb-1 block">Country</label>
+              <input
+                class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
+                v-model="registerCountry"
+                placeholder="Country"
+              />
+            </div>
+            <div class="mb-12">
+              <label class="text-sm text-[#414141] mb-1 block">Password</label>
+              <input
+                class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
+                v-model="registerPassword"
+                type="password"
+                placeholder="Password"
+              />
+            </div>
+            <button
+              class="w-full bg-[#4F80E1] rounded-lg text-center text-white py-4 mb-4"
+              @click="registerUser"
+            >
+              Register
+            </button>
+            <a
+              class="text-sm text-[#414141] font-normal text-center block cursor-pointer"
+              href="/user-login-page"
+              >Already have an account? <span class="font-bold">Login</span></a
+            >
+          </div>
+        </div>
+        <div class="bg-white hidden md:flex lg:flex items-center">
+          <img src="/assets-v1/templates/assets/images/cyber-computer.png" />
+        </div>
+      </div>
+      <div id="footer" class="user-container">
+        <div class="bg-white flex justify-between items-center my-8">
+          <div>
+            <img
+              src="../assets-v1/images/L8Logo.png"
+              alt="Layer8"
+              class="mb-6 md:mb-12 h-[35px] md:w-full md:h-[70px]"
+            />
+            <p class="font-bold text-sm md:text-base text-black text-start self-end">
+              ©Layer8security 2023.
+            </p>
+          </div>
+          <div>
+            <div class="text-xl font-bold text-black text-end md:text-start mb-0 md:mb-4 lg:mb-6">Contact</div>
+            <ul class="font-medium text-sm md:text-base text-black text-end md:text-start self-end">
+              <li>Email: hi@layer8.com</li>
+              <li>Client Support: support@layer8.com</li>
+              <li>Phone number: 0371 525 777</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { createApp, computed, ref } = Vue;
+      const registerEmail = ref("");
+      const registerUsername = ref("");
+      const registerPassword = ref("");
+      const registerFirstName = ref("");
+      const registerLastName = ref("");
+      const registerDisplayName = ref("");
+      const registerCountry = ref("");
+
+      const registerUser = async () => {
+        try {
+          if (registerUsername.value == "" || registerPassword.value == "") {
+            alert("Please enter a username and password!");
+            return;
+          }
+          await window.fetch("[[ .ProxyURL ]]/api/v1/register-user", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: registerEmail.value,
+              username: registerUsername.value,
+              first_name: registerFirstName.value,
+              last_name: registerLastName.value,
+              password: registerPassword.value,
+              display_name: registerDisplayName.value,
+              country: registerCountry.value,
+            }),
+          });
+          alert("Registration successful!");
+          window.location.href = "[[ .ProxyURL ]]/user-login-page";
+        } catch (error) {
+          console.error(error);
+          alert("Registration failed!");
+        }
+      };
+
+      const app = createApp({
+        setup() {
+          return {
+            registerUser,
+            registerEmail,
+            registerUsername,
+            registerFirstName,
+            registerLastName,
+            registerDisplayName,
+            registerCountry,
+            registerPassword
+          };
+        },
+      });
+
+      app.mount("#app");
+    </script>
+  </body>
+</html>
