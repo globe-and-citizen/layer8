@@ -35,6 +35,9 @@ func (s *service) RegisterClient(req dto.RegisterClientDTO) error {
 	if err := validator.New().Struct(req); err != nil {
 		return err
 	}
+
+	req.BackendURI = utils.RemoveProtocolFromURL(req.BackendURI)
+
 	return s.repository.RegisterClient(req)
 }
 

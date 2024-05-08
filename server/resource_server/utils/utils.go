@@ -135,7 +135,7 @@ func CompleteClientLogin(req dto.LoginClientDTO, client models.Client) (models.L
 	expirationTime := time.Now().Add(60 * time.Minute)
 	claims := &models.ClientClaims{
 		UserName: client.Username,
-		UserID:   client.ID,
+		ClientID: client.ID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			Issuer:    "GlobeAndCitizen",
@@ -171,7 +171,7 @@ func ValidateToken(tokenString string) (uint, error) {
 	return claims.UserID, nil
 }
 
-func ValidateClientToken(tokenString string) (string, error) {
+func ValidateClientToken(tokenString string) (*models.ClientClaims, error) {
 	claims := &models.ClientClaims{}
 	JWT_SECRET_STR := os.Getenv("JWT_SECRET_KEY")
 	JWT_SECRET_BYTE := []byte(JWT_SECRET_STR)
@@ -179,12 +179,12 @@ func ValidateClientToken(tokenString string) (string, error) {
 		return JWT_SECRET_BYTE, nil
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if !token.Valid {
-		return "", fmt.Errorf("invalid token")
+		return nil, fmt.Errorf("invalid token")
 	}
-	return claims.UserName, nil
+	return claims, nil
 }
 
 func GenerateToken(user models.User) (string, error) {
@@ -241,4 +241,10 @@ func ValidateUPTokenJWT(tokenString string, secretKey string) (*jwt.RegisteredCl
 	}
 
 	return nil, fmt.Errorf("invalid token")
+}
+
+func RemoveProtocolFromURL(url string) string {
+	cleanedURL := strings.Replace(url, "http://", "", -1)
+	cleanedURL = strings.Replace(cleanedURL, "https://", "", -1)
+	return cleanedURL
 }

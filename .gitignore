@@ -172,3 +172,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+# vscode config
+.vscode
+

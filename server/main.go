@@ -16,16 +16,17 @@ import (
 	"strings"
 
 	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
+	"globe-and-citizen/layer8/server/resource_server/db"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
+
+	oauthRepo "globe-and-citizen/layer8/server/internals/repository"
 
 	rsRepo "globe-and-citizen/layer8/server/resource_server/repository"
 
 	svc "globe-and-citizen/layer8/server/resource_server/service" // there are two services
 
 	oauthSvc "globe-and-citizen/layer8/server/internals/service" // there are two services
-
-	oauthRepo "globe-and-citizen/layer8/server/internals/repository"
 
 	"github.com/joho/godotenv"
 )
@@ -66,6 +67,8 @@ func main() {
 	if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
 		config.InitDB()
 	}
+
+	db.InitInfluxDBClient()
 
 	// Use flags for using in-memory repository, otherwise app will use database
 	if *port != 8080 && *jwtKey != "" && *MpKey != "" && *UpKey != "" && *ProxyURL != "" {
@@ -195,6 +198,8 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 				Ctl.VerifyEmailHandler(w, r)
 			case path == "/api/v1/change-display-name":
 				Ctl.UpdateDisplayNameHandler(w, r)
+			case path == "/api/v1/usage-stats":
+				Ctl.GetUsageStats(w, r)
 			case path == "/favicon.ico":
 				faviconPath := workingDirectory + "/dist/favicon.ico"
 				http.ServeFile(w, r, faviconPath)

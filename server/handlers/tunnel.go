@@ -48,21 +48,20 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\n\n*************")
 	fmt.Println(r.Method) // > GET  | > POST
 	fmt.Println(r.URL)    // (http://localhost:5000/api/v1 ) > /api/v1
-	params := r.URL.Query()
-	var backend string
-	if _, ok := params["backend"]; !ok {
+
+	backend := r.URL.Query().Get("backend")
+	if backend == "" {
 		res := utils.BuildErrorResponse("Failed to get User. Malformed query string.", "", utils.EmptyObj{})
 		if err := json.NewEncoder(w).Encode(res); err != nil {
 			log.Printf("Error sending response: %v", err)
 		}
 		return
-	} else {
-		backend = params["backend"][0]
-		fmt.Println("User agent is attempting to initialize this backend SP: ", backend)
 	}
 
+	backendWithoutProtocol := utils.RemoveProtocolFromURL(backend)
+
 	srv := r.Context().Value("service").(interfaces.IService)
-	client, err := srv.GetClientDataByBackendURL(backend)
+	client, err := srv.GetClientDataByBackendURL(backendWithoutProtocol)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
