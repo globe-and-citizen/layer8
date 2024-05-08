@@ -20,6 +20,8 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
 
+	oauthRepo "globe-and-citizen/layer8/server/internals/repository"
+
 	rsRepo "globe-and-citizen/layer8/server/resource_server/repository"
 
 	svc "globe-and-citizen/layer8/server/resource_server/service" // there are two services
@@ -110,11 +112,11 @@ func Server(port int, service interfaces.IService, memoryRepository interfaces.I
 	// CHOOSE TO USE POSTRGRES OR IN_MEMORY IMPLEMENTATION BY COMMENTING / UNCOMMENTING
 
 	// ** USE LOCAL POSTGRES DB **
-	// oauthRepository := oauthRepo.NewOauthRepository(config.DB)
-	// oauthService := &oauthSvc.Service{Repo: oauthRepository}
+	oauthRepository := oauthRepo.NewOauthRepository(config.DB)
+	oauthService := &oauthSvc.Service{Repo: oauthRepository}
 
 	// ** USE THE IN MEMORY IMPLEMENTATION **
-	oauthService := &oauthSvc.Service{Repo: memoryRepository}
+	// oauthService := &oauthSvc.Service{Repo: memoryRepository}
 
 	_, err := oauthService.AddTestClient()
 	if err != nil {
