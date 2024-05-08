@@ -68,14 +68,11 @@ func main() {
 
 	db.InitInfluxDBClient()
 
-	var proxyPort int
 	var resourceRepository interfaces.IRepository
 	var oauthService *oauthSvc.Service
 
 	if *InMemoryDb {
-		proxyPort = *port
-
-		os.Setenv("SERVER_PORT", strconv.Itoa(proxyPort))
+		os.Setenv("SERVER_PORT", strconv.Itoa(*port))
 		os.Setenv("JWT_SECRET_KEY", *jwtKey)
 		os.Setenv("MP_123_SECRET_KEY", *MpKey)
 		os.Setenv("UP_999_SECRET_KEY", *UpKey)
@@ -101,12 +98,6 @@ func main() {
 			config.InitDB()
 		}
 
-		var err error
-		proxyPort, err = strconv.Atoi(os.Getenv("SERVER_PORT")) // Port override
-		if err != nil {
-			log.Fatal(err)
-		}
-
 		resourceRepository = rsRepo.NewRepository(config.DB)
 		oauthService = &oauthSvc.Service{Repo: oauthRepo.NewOauthRepository(config.DB)}
 
@@ -115,13 +106,14 @@ func main() {
 
 	// Run server (which never returns)
 	Server(
-		proxyPort,
 		svc.NewService(resourceRepository),
 		oauthService,
 	)
 }
 
-func Server(port int, resourceService interfaces.IService, oauthService *oauthSvc.Service) {
+func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service) {
+	port := os.Getenv("SERVER_PORT")
+
 	_, err := oauthService.AddTestClient()
 	if err != nil {
 		log.Fatal(err)
@@ -130,7 +122,7 @@ func Server(port int, resourceService interfaces.IService, oauthService *oauthSv
 	getPwd()
 
 	server := http.Server{
-		Addr: fmt.Sprintf(":%d", port),
+		Addr: fmt.Sprintf(":%s", port),
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Headers", "*")
@@ -221,6 +213,6 @@ func Server(port int, resourceService interfaces.IService, oauthService *oauthSv
 			}
 		}),
 	}
-	log.Printf("Starting server on port %d...", port)
+	log.Printf("Starting server on port %s...", port)
 	log.Fatal(server.ListenAndServe())
 }
