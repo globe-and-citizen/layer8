@@ -99,6 +99,14 @@ func (r *Repository) GetClientData(clientName string) (models.Client, error) {
 	return client, nil
 }
 
+func (r *Repository) GetClientDataByBackendURL(backendURL string) (models.Client, error) {
+	var client models.Client
+	if err := r.connection.Where("backend_uri = ?", backendURL).First(&client).Error; err != nil {
+		return models.Client{}, err
+	}
+	return client, nil
+}
+
 func (r *Repository) LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string, error) {
 	var user models.User
 	if err := r.connection.Where("username = ?", req.Username).First(&user).Error; err != nil {

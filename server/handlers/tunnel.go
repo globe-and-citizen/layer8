@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,34 +10,66 @@ import (
 	"net/http"
 	"os"
 
+	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 
 	utilities "github.com/globe-and-citizen/layer8-utils"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+)
+
+var (
+	meter = otel.GetMeterProvider().Meter("layer8")
+
+	TotalByteTransferredMetrics, _ = meter.Int64Counter(
+		"total_byte_transferred",
+		metric.WithDescription("The total number of bytes transferred"),
+	)
+
+	TotalRequestMetrics, _ = meter.Int64Counter(
+		"total_request",
+		metric.WithDescription("The total number of requests"),
+	)
+
+	TotalSuccessMetrics, _ = meter.Int64Counter(
+		"total_success",
+		metric.WithDescription("The total number of successful requests"),
+	)
+
+	TotalTunnelInitiated, _ = meter.Int64Counter(
+		"total_tunnel_initiated",
+		metric.WithDescription("The total number of tunnel initiated"),
+	)
 )
 // Tunnel forwards the request to the service provider's backend
 func InitTunnel(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\n\n*************")
 	fmt.Println(r.Method) // > GET  | > POST
 	fmt.Println(r.URL)    // (http://localhost:5000/api/v1 ) > /api/v1
-	params := r.URL.Query()
-	protocol := r.Header.Get("X-Forwarded-Proto")
-	var backend string
-	if _, ok := params["backend"]; !ok {
+
+	backend := r.URL.Query().Get("backend")
+	if backend == "" {
 		res := utils.BuildErrorResponse("Failed to get User. Malformed query string.", "", utils.EmptyObj{})
 		if err := json.NewEncoder(w).Encode(res); err != nil {
 			log.Printf("Error sending response: %v", err)
 		}
 		return
-	} else {
-		backend = params["backend"][0]
-		backend = protocol + backend
-		fmt.Println("User agent is attempting to initialize this backend SP: ", backend)
+	}
+
+	backendWithoutProtocol := utils.RemoveProtocolFromURL(backend)
+
+	srv := r.Context().Value("service").(interfaces.IService)
+	client, err := srv.GetClientDataByBackendURL(backendWithoutProtocol)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
 	}
 
 	mpJWT, err := utilities.GenerateStandardToken(os.Getenv("MP_123_SECRET_KEY"))
 	if err != nil {
 		fmt.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -79,10 +112,8 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 	res.Body = io.NopCloser(bytes.NewBuffer(resBodyTemp.Bytes()))
 
 	fmt.Println("\nReceived response from 8000:", backend, " of code: ", res.StatusCode)
-
-	upJWT, err := utilities.GenerateStandardToken(os.Getenv("UP_999_SECRET_KEY"))
+	upJWT, err := utils.GenerateUPTokenJWT(os.Getenv("UP_999_SECRET_KEY"), client.ID)
 	if err != nil {
-		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -111,6 +142,11 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(datatoSend)
 
+	TotalTunnelInitiated.Add(r.Context(), 1,
+		metric.WithAttributes(
+			attribute.String("client_id", client.ID),
+		),
+	)
 }
 
 func Tunnel(w http.ResponseWriter, r *http.Request) {
@@ -152,7 +188,7 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 	upJWT := r.Header.Get("up-jwt") // RAVI! LOOK HERE
 	fmt.Println("up-jwt coming from client: ", upJWT)
 
-	_, err = utilities.VerifyStandardToken(upJWT, os.Getenv("UP_999_SECRET_KEY"))
+	upJWTClaims, err := utils.ValidateUPTokenJWT(upJWT, os.Getenv("UP_999_SECRET_KEY"))
 	if err != nil {
 		fmt.Println("UP JWT verify error: ", err.Error())
 		http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -196,11 +232,28 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("Copied", n, "bytes from response body to client")
 	fmt.Println("w.Headers 2: ", w.Header())
+
+	TotalRequestMetrics.Add(r.Context(), 1,
+		metric.WithAttributes(
+			attribute.String("client_id", upJWTClaims.Audience[0]),
+		),
+	)
+
+	TotalSuccessMetrics.Add(r.Context(), 1,
+		metric.WithAttributes(
+			attribute.String("client_id", upJWTClaims.Audience[0]),
+		),
+	)
+
+	TotalByteTransferredMetrics.Add(r.Context(), int64(binary.Size(bodyBytes)+binary.Size(w.Header())),
+		metric.WithAttributes(
+			attribute.String("client_id", upJWTClaims.Audience[0]),
+		),
+	)
 }
 
 func TestError(w http.ResponseWriter, r *http.Request) {
 	err := fmt.Errorf("this is a test error")
 	fmt.Println("Test error endpoint:", err.Error())
 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	return
 }

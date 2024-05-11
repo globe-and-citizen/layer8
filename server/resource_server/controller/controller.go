@@ -2,12 +2,17 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
+	"globe-and-citizen/layer8/server/resource_server/db"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
+	"globe-and-citizen/layer8/server/resource_server/models"
+	"globe-and-citizen/layer8/server/resource_server/repository"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 )
 
@@ -69,13 +74,13 @@ func ClientProfileHandler(w http.ResponseWriter, r *http.Request) {
 	newService := r.Context().Value("service").(interfaces.IService)
 	tokenString := r.Header.Get("Authorization")
 	tokenString = tokenString[7:]
-	userName, err := utils.ValidateClientToken(tokenString)
+	clientClaims, err := utils.ValidateClientToken(tokenString)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile, invalid token", err)
 		return
 	}
 
-	profileResp, err := newService.ProfileClient(userName)
+	profileResp, err := newService.ProfileClient(clientClaims.UserName)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile, user not found", err)
 		return
@@ -256,6 +261,62 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 	resp := utils.BuildResponse(true, "OK!", "Display name updated successfully")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)
+		return
+	}
+}
+
+func GetUsageStats(w http.ResponseWriter, r *http.Request) {
+	authToken := r.Header.Get("Authorization")
+	if authToken == "" {
+		utils.HandleError(w, http.StatusUnauthorized, "failed to show client usage statistics", errors.New("missing jwt token"))
+		return
+	}
+
+	authToken = authToken[7:]
+	clientClaims, err := utils.ValidateClientToken(authToken)
+	if err != nil {
+		utils.HandleError(w, http.StatusUnauthorized, "failed to show client usage statistics", errors.New("jwt token invalid"))
+		return
+	}
+
+	statRepo := repository.NewStatRepository(db.GetInfluxDBClient())
+
+	now := time.Now()
+	firstDayOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	firstDayOfNextMonth := time.Date(firstDayOfMonth.Year(), firstDayOfMonth.Month()+1, 1, 0, 0, 0, 0, time.UTC)
+	lastDayOfCurrentMonth := firstDayOfNextMonth.Add(-24 * time.Hour)
+	totalDaysInMonth := lastDayOfCurrentMonth.Day()
+	totalDaysBeforeNextMonth := totalDaysInMonth - now.Day()
+
+	thirtyDaysStatistic, err := statRepo.GetTotalRequestsInLastXDaysByClient(r.Context(), 30, clientClaims.ClientID)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get last thrthy days usage statistic", err)
+		return
+	}
+
+	monthToDateTotal, err := statRepo.GetTotalByDateRangeByClient(r.Context(), firstDayOfMonth, firstDayOfNextMonth, clientClaims.ClientID)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get month to date usage statistic", err)
+		return
+	}
+
+	finalResponse := models.UsageStatisticResponse{
+		MonthToDate: models.MonthToDateStatistic{
+			Month: firstDayOfMonth.Month().String(),
+		},
+		LastThirtyDaysStatistic: thirtyDaysStatistic,
+		MetricType:              "data_transferred",
+		UnitOfMeasurement:       "GB",
+	}
+
+	if monthToDateTotal > 0 {
+		finalResponse.MonthToDate.MonthToDateUsage = monthToDateTotal / 1000000000
+		finalResponse.MonthToDate.ForecastedEndOfMonthUsage = (monthToDateTotal / 1000000000) + float64(totalDaysBeforeNextMonth)*thirtyDaysStatistic.Average
+	}
+
+	resp := utils.BuildResponse(true, "OK!", finalResponse)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get stats", err)
 		return
 	}
 }

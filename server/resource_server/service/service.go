@@ -35,6 +35,9 @@ func (s *service) RegisterClient(req dto.RegisterClientDTO) error {
 	if err := validator.New().Struct(req); err != nil {
 		return err
 	}
+
+	req.BackendURI = utils.RemoveProtocolFromURL(req.BackendURI)
+
 	return s.repository.RegisterClient(req)
 }
 
@@ -48,6 +51,21 @@ func (s *service) GetClientData(clientName string) (models.ClientResponseOutput,
 		Secret:      clientData.Secret,
 		Name:        clientData.Name,
 		RedirectURI: clientData.RedirectURI,
+	}
+	return clientModel, nil
+}
+
+func (s *service) GetClientDataByBackendURL(backendURL string) (models.ClientResponseOutput, error) {
+	clientData, err := s.repository.GetClientDataByBackendURL(backendURL)
+	if err != nil {
+		return models.ClientResponseOutput{}, err
+	}
+	clientModel := models.ClientResponseOutput{
+		ID:          clientData.ID,
+		Secret:      clientData.Secret,
+		Name:        clientData.Name,
+		RedirectURI: clientData.RedirectURI,
+		BackendURI:  clientData.BackendURI,
 	}
 	return clientModel, nil
 }

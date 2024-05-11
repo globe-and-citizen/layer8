@@ -10,6 +10,6 @@ type Claims struct {
 
 type ClientClaims struct {
 	UserName string `json:"username"`
-	UserID   string `json:"user_id"`
+	ClientID string `json:"user_id"`
 	jwt.RegisteredClaims
 }
