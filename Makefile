@@ -34,7 +34,7 @@ run_server: # Port 5001
 	cd server && go run main.go
 
 run_server_local: # Port 5001 with in-memory db
-	cd server && go run main.go -port=5001 -jwtKey=secret -MpKey=secret -UpKey=secret -ProxyURL=http://localhost:5001
+	cd server && go run main.go -port=5001 -jwtKey=secret -MpKey=secret -UpKey=secret -ProxyURL=http://localhost:5001 -InMemoryDb=true
 
 
 # Build and Push Docker Images
