@@ -22,5 +22,3 @@ try{
 
 <style scoped>
 </style>
-
-
