@@ -36,7 +36,7 @@ resource "aws_ecs_task_definition" "task_definition" {
       essential         = true,
       image             = "${var.ecr_repository_url}:${var.ecr_image_tag}",
       cpu               = 0,
-      memoryReservation = 512,
+      memoryReservation = 128,
       mountPoints       = [],
       portMappings = [
         { containerPort = 5001, hostPort = 5001, protocol = "tcp" },
@@ -63,7 +63,7 @@ resource "aws_ecs_task_definition" "task_definition" {
       essential         = true,
       image             = "cloudflare/cloudflared:latest",
       cpu               = 0,
-      memoryReservation = 128,
+      memoryReservation = 64,
       mountPoints       = [],
       portMappings      = [],
       environment       = [],
