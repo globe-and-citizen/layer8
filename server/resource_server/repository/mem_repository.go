@@ -59,8 +59,29 @@ func (r *MemoryRepository) RegisterClient(req dto.RegisterClientDTO) error {
 	r.storage[req.Username] = map[string]string{
 		"id":           clientUUID,
 		"secret":       clientSecret,
+		"name":         req.Name,
 		"redirect_uri": req.RedirectURI,
-		"backend_uri": req.BackendURI,
+		"backend_uri":  req.BackendURI,
+		"username":     req.Username,
+		"password":     req.Password,
+	}
+
+	r.storage[req.BackendURI] = map[string]string{
+		"id":           clientUUID,
+		"secret":       clientSecret,
+		"name":         req.Name,
+		"redirect_uri": req.RedirectURI,
+		"backend_uri":  req.BackendURI,
+		"username":     req.Username,
+		"password":     req.Password,
+	}
+
+	r.storage[clientUUID] = map[string]string{
+		"id":           clientUUID,
+		"secret":       clientSecret,
+		"name":         req.Name,
+		"redirect_uri": req.RedirectURI,
+		"backend_uri":  req.BackendURI,
 		"username":     req.Username,
 		"password":     req.Password,
 	}
@@ -117,15 +138,20 @@ func (r *MemoryRepository) LoginClient(req dto.LoginClientDTO) (models.Client, e
 		return models.Client{}, fmt.Errorf("user not found")
 	}
 
-	if r.storage[req.Username]["password"] != req.Password {
-		return models.Client{}, fmt.Errorf("invalid password")
-	}
+	// rmSalt := r.storage[req.Username]["salt"]
+	// HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
+	// if utils.CheckPassword(req.Password, rmSalt, HashedAndSaltedPass) {
+	// 	return models.Client{}, fmt.Errorf("invalid password")
+	// }
 
 	client := models.Client{
 		ID:          r.storage[req.Username]["id"],
 		Secret:      r.storage[req.Username]["secret"],
+		Name:        r.storage[req.Username]["name"],
 		RedirectURI: r.storage[req.Username]["redirect_uri"],
+		BackendURI:  r.storage[req.Username]["backend_uri"],
 		Username:    r.storage[req.Username]["username"],
+		Password:    r.storage[req.Username]["password"],
 	}
 
 	fmt.Println("client: ", client)
@@ -269,6 +295,29 @@ func (r *MemoryRepository) SetClient(client *serverModels.Client) error {
 		"secret":       client.Secret,
 		"name":         client.Name,
 		"redirect_uri": client.RedirectURI,
+		"backend_uri":  client.BackendURI,
+		"username":     client.Username,
+		"password":     client.Password,
+	}
+
+	r.storage[client.BackendURI] = map[string]string{
+		"id":           client.ID,
+		"secret":       client.Secret,
+		"name":         client.Name,
+		"redirect_uri": client.RedirectURI,
+		"backend_uri":  client.BackendURI,
+		"username":     client.Username,
+		"password":     client.Password,
+	}
+
+	r.storage[client.Username] = map[string]string{
+		"id":           client.ID,
+		"secret":       client.Secret,
+		"name":         client.Name,
+		"redirect_uri": client.RedirectURI,
+		"backend_uri":  client.BackendURI,
+		"username":     client.Username,
+		"password":     client.Password,
 	}
 	return nil
 }
@@ -292,12 +341,13 @@ func (r *MemoryRepository) GetClient(id string) (*serverModels.Client, error) {
 }
 
 func (r *MemoryRepository) GetClientDataByBackendURL(id string) (models.Client, error) {
-	if strings.Contains(id, ":") {
-		id = id[strings.LastIndex(id, ":")+1:]
-		// fmt.Println("ID check:", id)
-	}
+	fmt.Println("ID check 1:", id)
+	// if strings.Contains(id, ":") {
+	// 	id = id[strings.LastIndex(id, ":")+1:]
+	// 	fmt.Println("ID check 2:", id)
+	// }
 	if _, ok := r.storage[id]; !ok {
-		fmt.Println("client not found while using GetClient")
+		fmt.Println("client not found while using GetClientDataByBackendURL")
 		return models.Client{}, fmt.Errorf("client not found")
 	}
 	client := models.Client{
@@ -305,6 +355,7 @@ func (r *MemoryRepository) GetClientDataByBackendURL(id string) (models.Client, 
 		Secret:      r.storage[id]["secret"],
 		Name:        r.storage[id]["name"],
 		RedirectURI: r.storage[id]["redirect_uri"],
+		BackendURI:  r.storage[id]["backend_uri"],
 	}
 	return client, nil
 }

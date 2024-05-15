@@ -58,7 +58,11 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("Backend URL: ", backend)
+
 	backendWithoutProtocol := utils.RemoveProtocolFromURL(backend)
+
+	fmt.Println("Backend URL without protocol: ", backendWithoutProtocol)
 
 	srv := r.Context().Value("service").(interfaces.IService)
 	client, err := srv.GetClientDataByBackendURL(backendWithoutProtocol)

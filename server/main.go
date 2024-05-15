@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
-	"globe-and-citizen/layer8/server/opentelemetry"
 	"io/fs"
 	"log"
 	"net/http"
@@ -16,7 +15,6 @@ import (
 	"strings"
 
 	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
-	"globe-and-citizen/layer8/server/resource_server/db"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
 
@@ -58,15 +56,11 @@ func main() {
 
 	flag.Parse()
 
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	// if err := opentelemetry.NewMeter(context.Background()); err != nil {
+	// 	log.Fatalf("Failed to create meter: %v", err)
+	// }
 
-	if err := opentelemetry.NewMeter(context.Background()); err != nil {
-		log.Fatalf("Failed to create meter: %v", err)
-	}
-
-	db.InitInfluxDBClient()
+	// db.InitInfluxDBClient()
 
 	var resourceRepository interfaces.IRepository
 	var oauthService *oauthSvc.Service
@@ -93,6 +87,9 @@ func main() {
 
 		fmt.Println("Running app with in-memory repository")
 	} else {
+		if err := godotenv.Load(); err != nil {
+			log.Fatal("Error loading .env file")
+		}
 		// If the user has set a database user or password, init the database
 		if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
 			config.InitDB()
