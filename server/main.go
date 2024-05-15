@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"flag"
@@ -28,6 +29,10 @@ import (
 
 	oauthSvc "globe-and-citizen/layer8/server/internals/service" // there are two services
 
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/joho/godotenv"
 )
 
@@ -44,6 +49,62 @@ func getPwd() {
 	workingDirectory = dir
 }
 
+var (
+	LAYER8_CONFIG_AWS_REGION     string
+	LAYER8_CONFIG_AWS_ACCESS_KEY string
+	LAYER8_CONFIG_AWS_SECRET     string
+	LAYER8_CONFIG_BUCKET         string
+	LAYER8_CONFIG_OBJECT         string
+)
+
+func readConfigFromS3() {
+	creds := credentials.NewStaticCredentialsProvider(LAYER8_CONFIG_AWS_ACCESS_KEY, LAYER8_CONFIG_AWS_SECRET, "")
+
+	cfg, err := awsConfig.LoadDefaultConfig(
+		context.TODO(),
+		awsConfig.WithRegion(LAYER8_CONFIG_AWS_REGION),
+		awsConfig.WithCredentialsProvider(creds),
+	)
+	if err != nil {
+		log.Fatalf("Unable to load SDK config, %v", err)
+	}
+
+	// Create an Amazon S3 service client
+	client := s3.NewFromConfig(cfg)
+
+	// Get the .env file from S3
+	resp, err := client.GetObject(context.TODO(), &s3.GetObjectInput{
+		Bucket: aws.String(LAYER8_CONFIG_BUCKET),
+		Key:    aws.String(LAYER8_CONFIG_OBJECT),
+	})
+	if err != nil {
+		log.Fatalf("Unable to download item %q, %v", LAYER8_CONFIG_OBJECT, err)
+	}
+	defer resp.Body.Close()
+
+	// Read the content of the file
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(resp.Body)
+	if err != nil {
+		log.Fatalf("Unable to read .env file content, %v", err)
+	}
+	envContent := buf.String()
+
+	// Parse the .env file content
+	envMap, err := godotenv.Unmarshal(envContent)
+	if err != nil {
+		log.Fatalf("Error parsing .env file: %v", err)
+	}
+
+	// Set environment variables
+	for key, value := range envMap {
+		err := os.Setenv(key, value)
+		if err != nil {
+			log.Fatalf("Error setting environment variable %s: %v", key, err)
+		}
+	}
+}
+
 func main() {
 	// Use flags to set the port
 	port := flag.Int("port", 8080, "Port to run the server on")
@@ -51,15 +112,26 @@ func main() {
 	MpKey := flag.String("MpKey", "secret", "Key to sign mpJWT tokens")
 	UpKey := flag.String("UpKey", "secret", "Key to sign upJWT tokens")
 	ProxyURL := flag.String("ProxyURL", "http://localhost:5001", "URL to populate go HTML templates")
+
 	InMemoryDb := flag.Bool(
 		"InMemoryDb",
 		false,
 		"Defines whether or not to use the in-memory database implementation")
 
+	useRemoteConfig := flag.Bool(
+		"useRemoteConfig",
+		false,
+		"Defines whether or not to use the remote config stored in the S3 Bucket")
+
 	flag.Parse()
 
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
+	if *useRemoteConfig {
+		log.Println("running layer8 server with remote configuration")
+		readConfigFromS3()
+	} else {
+		if err := godotenv.Load(); err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
 
 	if err := opentelemetry.NewMeter(context.Background()); err != nil {
