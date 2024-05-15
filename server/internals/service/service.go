@@ -225,7 +225,7 @@ func (u *Service) AddTestClient() (*models.Client, error) {
 		Secret:      "absolutelynotasecret!",
 		Name:        "Ex-C",
 		RedirectURI: "http://localhost:5173/oauth2/callback",
-		BackendURI:  os.Getenv("BACKEND_URL"),
+		BackendURI:  os.Getenv("TEST_CLIENT_BACKEND_URL"),
 		Username:    "layer8",
 		Password:    rs_utils.SaltAndHashPassword("12341234", rmSalt),
 		Salt:        rmSalt,
