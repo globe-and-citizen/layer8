@@ -94,6 +94,10 @@ func (ms *MockService) ProfileClient(userID string) (models.ClientResponseOutput
 	return models.ClientResponseOutput{}, nil
 }
 
+func (ms *MockService) GetClientDataByBackendURL(backendURL string) (models.ClientResponseOutput, error) {
+	return models.ClientResponseOutput{}, nil
+}
+
 func TestRegisterUserHandler(t *testing.T) {
 	// Mock request body
 	requestBody := []byte(`{
@@ -470,4 +474,5 @@ func setMockServiceInContext(req *http.Request) *http.Request {
 	ctx := context.WithValue(req.Context(), "service", mockSvc)
 	return req.WithContext(ctx)
 }
+
 // Javokhir finished the testing
