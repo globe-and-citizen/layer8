@@ -32,6 +32,7 @@ func (s *StatRepository) GetTotalRequestsInLastXDaysByClient(ctx context.Context
 	|> filter(fn: (r) => r["_measurement"] == "total_byte_transferred")
 	|> filter(fn: (r) => r["_field"] == "counter")
 	|> filter(fn: (r) => r["client_id"] == "%s")
+	|> group(columns: ["client_id"])
 	|> aggregateWindow(every: 1d, fn: sum, createEmpty: true)
 	|> yield(name: "sum")`, days, clientID)
 
@@ -83,6 +84,7 @@ func (s *StatRepository) GetTotalByDateRangeByClient(ctx context.Context, start 
 	|> filter(fn: (r) => r["_measurement"] == "total_byte_transferred")
 	|> filter(fn: (r) => r["client_id"] == "%s")
 	|> filter(fn: (r) => r["_field"] == "counter")
+	|> group(columns: ["client_id"])
 	|> sum()`, start.Format(time.RFC3339), end.Format(time.RFC3339), clientID)
 
 	rawDataFromInflux, err := queryAPI.Query(context.Background(), query)
