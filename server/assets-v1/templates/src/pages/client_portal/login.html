@@ -104,46 +104,46 @@
         redirect_uri: "",
       });
 
-      const registerClient = async () => {
-        try {
-          if (name.value == "" || redirect_uri.value == "") {
-            alert("Please enter a name and redirect url!");
-            return;
-          }
-          await window.fetch("[[ .ProxyURL ]]/api/v1/register-client", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              name: name.value,
-              redirect_uri: redirect_uri.value,
-            }),
-          });
-          isRegistered.value = true;
-          alert("Registration successful!");
-          getClientData(name.value);
-        } catch (error) {
-          console.error(error);
-          alert("Registration failed!");
-        }
-      };
-      const getClientData = async (clientName) => {
-        try {
-          const resp = await window.fetch("[[ .ProxyURL ]]/api/v1/getClient",{
-              method: "GET",
-              headers: {
-                "Content-Type": "Application/Json",
-                Name: clientName,
-              },
-            }
-          );
-          const data = await resp.json();
-          client.value = data;
-        } catch (error) {
-          console.error(error);
-        }
-      };
+      // const registerClient = async () => {
+      //   try {
+      //     if (name.value == "" || redirect_uri.value == "") {
+      //       alert("Please enter a name and redirect url!");
+      //       return;
+      //     }
+      //     await window.fetch("[[ .ProxyURL ]]/api/v1/register-client", {
+      //       method: "POST",
+      //       headers: {
+      //         "Content-Type": "application/json",
+      //       },
+      //       body: JSON.stringify({
+      //         name: name.value,
+      //         redirect_uri: redirect_uri.value,
+      //       }),
+      //     });
+      //     isRegistered.value = true;
+      //     alert("Registration successful!");
+      //     getClientData(name.value);
+      //   } catch (error) {
+      //     console.error(error);
+      //     alert("Registration failed!");
+      //   }
+      // };
+      // const getClientData = async (clientName) => {
+      //   try {
+      //     const resp = await window.fetch("[[ .ProxyURL ]]/api/v1/getClient",{
+      //         method: "GET",
+      //         headers: {
+      //           "Content-Type": "Application/Json",
+      //           Name: clientName,
+      //         },
+      //       }
+      //     );
+      //     const data = await resp.json();
+      //     client.value = data;
+      //   } catch (error) {
+      //     console.error(error);
+      //   }
+      // };
 
       const loginClient = async () => {
         try {
@@ -181,8 +181,8 @@
             client,
             username,
             password,
-            registerClient,
-            getClientData,
+            // registerClient,
+            // getClientData,
             isRegistered,
             isUsernameFocused,
             isPasswordFocused,
