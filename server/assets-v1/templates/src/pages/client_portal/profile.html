@@ -33,7 +33,7 @@
         <div class="hidden md:block lg:block">
           <div class="flex space-x-4 items-center">
             <img src="/assets-v1/templates/assets/images/user_image.png" />
-            <div>{{ user.name }}</div>
+            <div>{{ client.name }}</div>
           </div>
         </div>
         <div class="cursor-pointer block md:hidden lg:hidden" @click="showSidebar(true)">
@@ -67,7 +67,7 @@
           </div>
         </div>
         <div class="md:col-span-4">
-          <div class="font-bold text-2xl md:text-4xl text-[#2F80ED] text-center my-4 md:my-9">Welcome “{{ user.name }}!”
+          <div class="font-bold text-2xl md:text-4xl text-[#2F80ED] text-center my-4 md:my-9">Welcome “{{ client.name }}!”
             Client Portal</div>
           <div class="grid md:grid-cols-1 md:gap-x-4">
             <div class="bg-white rounded-2xl py-3 md:py-4 px-4 md:px-6 mb-6 md:mb-0">
@@ -78,25 +78,28 @@
                 <ul class="col-span-1 flex flex-col space-y-3 md:space-y-6 my-auto">
                   <li class="font-bold text-lg text-black">Name:</li>
                   <li class="font-bold text-lg text-black">Redirect URI:</li>
+                  <li class="font-bold text-lg text-black">Backend URI:</li>
                   <li class="font-bold text-lg text-black">UUID:</li>
                   <li class="font-bold text-lg text-black">Secret:</li>
                 </ul>
                 <div class="col-span-2 flex flex-col space-y-2">
                   <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
-                    :value="user.name" />
+                    :value="client.name" />
                   <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
-                    :value="user.redirect_uri" />
+                    :value="client.redirect_uri" />
+                  <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
+                    :value="client.backend_uri" />
                   <div class="flex items-center space-x-2">
                     <input readonly
                       class="bg-[#ECF4FD] border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium shadow appearance-none"
-                      :value="user.id" />
-                    <button v-if="isCopied != user.id" @click="copyToClipboard(user.id)">
+                      :value="client.id" />
+                    <button v-if="isCopied != client.id" @click="copyToClipboard(client.id)">
                       <svg fill="#000000" width="30px" height="30px" viewBox="0 0 16 16"
                         xmlns="http://www.w3.org/2000/svg">
                         <path d="M14 12V2H4V0h12v12h-2zM0 4h12v12H0V4zm2 2v8h8V6H2z" fill-rule="evenodd" />
                       </svg>
                     </button>
-                    <div v-if="isCopied == user.id">
+                    <div v-if="isCopied == client.id">
                       <svg fill="#000000" width="40px" height="40px" viewBox="0 0 32 32" version="1.1"
                         xmlns="http://www.w3.org/2000/svg">
                         <title>checked</title>
@@ -109,14 +112,14 @@
                   <div class="flex items-center space-x-2">
                     <input readonly
                       class="bg-[#ECF4FD] border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
-                      :value="user.secret" />
-                    <button v-if="isCopied != user.secret" @click="copyToClipboard(user.secret)">
+                      :value="client.secret" />
+                    <button v-if="isCopied != client.secret" @click="copyToClipboard(client.secret)">
                       <svg fill="#000000" width="30px" height="30px" viewBox="0 0 16 16"
                         xmlns="http://www.w3.org/2000/svg">
                         <path d="M14 12V2H4V0h12v12h-2zM0 4h12v12H0V4zm2 2v8h8V6H2z" fill-rule="evenodd" />
                       </svg>
                     </button>
-                    <div v-if="isCopied == user.secret">
+                    <div v-if="isCopied == client.secret">
                       <svg fill="#000000" width="40px" height="40px" viewBox="0 0 32 32" version="1.1"
                         xmlns="http://www.w3.org/2000/svg">
                         <title>checked</title>
@@ -174,11 +177,12 @@
   <script>
     const { ref, onMounted, createApp } = Vue;
     const token = ref(localStorage.getItem("clientToken") || null);
-    const user = ref({
+    const client = ref({
       id: "",
       secret: "",
       name: "",
       redirect_uri: "",
+      backend_uri: "",
     });
     const isCopied = ref("")
     const sidebarShow = ref(false)
@@ -211,7 +215,7 @@
         );
         const data = await resp.json();
         console.log("resp", data);
-        user.value = data;
+        client.value = data;
       } catch (error) {
         console.error(error);
       }
@@ -303,7 +307,7 @@
         });
 
         return {
-          user,
+          client,
           stats,
           logoutUser,
           copyToClipboard,
