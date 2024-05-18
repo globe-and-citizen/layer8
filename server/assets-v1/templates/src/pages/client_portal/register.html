@@ -143,6 +143,9 @@
           />
         </div>
       </div>
+      <div :class="showToast ? 'opacity-100' : 'opacity-0 pointer-events-none'" class="fixed top-3 right-3 bg-red-500 text-white p-2 rounded-md transition-opacity ease-in-out duration-500 z-50">
+        {{ toastMessage }}
+      </div>
     </div>
 
     <script>
@@ -160,18 +163,13 @@
       const isBUFocused = ref(false);
       const isUsernameFocused = ref(false);
       const isPasswordFocused = ref(false);
-      const client = ref({
-        id: "",
-        secret: "",
-        name: "",
-        redirect_uri: "",
-        backend_uri: "",
-      });
+      const showToast = ref(false);
+      const toastMessage = ref("");
 
       const registerClient = async () => {
         try {
           if (name.value == "" || redirect_uri.value == "" || username.value == "" || password.value == "") {
-            alert("Please enter all fields!");
+            showToastMessage("Please enter all fields!", "error")
             return;
           }
           await window.fetch("[[ .ProxyURL ]]/api/v1/register-client", {
@@ -187,18 +185,25 @@
               password: password.value,
             }),
           });
-          alert("Registration successful!");
+          showToastMessage("Registration successful!", "error")
           window.location.href = "[[ .ProxyURL ]]/client-login-page";
         } catch (error) {
           console.error(error);
-          alert("Registration failed!");
+          showToastMessage("Registration failed!", "error")
         }
       };
+
+      const showToastMessage = (message, type) => {
+        toastMessage.value = message;
+        showToast.value = true;
+        setTimeout(() => {
+          showToast.value = false;
+        }, 3000);
+      }
 
       const app = createApp({
         setup() {
           return {
-            client,
             name,
             username,
             password,
@@ -210,7 +215,10 @@
             isBUFocused,
             isNameFocused,
             isUsernameFocused,
-            isPasswordFocused
+            isPasswordFocused,
+            showToastMessage,
+            showToast,
+            toastMessage
           };
         },
       });

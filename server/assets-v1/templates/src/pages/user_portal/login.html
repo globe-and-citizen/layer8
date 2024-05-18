@@ -91,6 +91,9 @@
           </div>
         </div>
       </div>
+      <div :class="showToast ? 'opacity-100' : 'opacity-0 pointer-events-none'" class="fixed top-3 right-3 bg-red-500 text-white p-2 rounded-md transition-opacity ease-in-out duration-500 z-50">
+        {{ toastMessage }}
+      </div>
     </div>
 
     <script>
@@ -98,13 +101,15 @@
       const loginUsername = ref("");
       const loginPassword = ref("");
       const token = ref(localStorage.getItem("token") || null);
+      const showToast = ref(false);
+      const toastMessage = ref("");
 
       const isLoggedIn = computed(() => token.value !== null);
 
       const loginUser = async () => {
         try {
           if (loginUsername.value == "" || loginPassword.value == "") {
-            alert("Please enter a username and password!");
+            showToastMessage("Please enter a username and password!", "error");
             return;
           }
           const respOne = await window.fetch(
@@ -140,16 +145,23 @@
           if (responseTwo.token) {
             token.value = responseTwo.token;
             localStorage.setItem("token", responseTwo.token);
-            alert("Login successful!");
+            showToastMessage("Login successful!", "error");
             window.location.href = "[[ .ProxyURL ]]/user";
           } else {
-            console.error("No token received.");
+            showToastMessage("No token received.", "error");
           }
         } catch (error) {
           console.error(error);
-          alert("Login failed!");
+          showToastMessage("Login failed!", "error");
         }
       };
+      const showToastMessage = (message, type) => {
+        toastMessage.value = message;
+        showToast.value = true;
+        setTimeout(() => {
+          showToast.value = false;
+        }, 3000);
+      }
 
       const app = createApp({
         setup() {
@@ -158,7 +170,9 @@
             isLoggedIn,
             loginPassword,
             loginUsername,
-            loginPassword
+            loginPassword,
+            toastMessage,
+            showToast
           };
         },
       });
