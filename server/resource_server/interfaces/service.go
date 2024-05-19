@@ -18,4 +18,5 @@ type IService interface {
 	RegisterClient(req dto.RegisterClientDTO) error
 	GetClientData(clientName string) (models.ClientResponseOutput, error)
 	GetClientDataByBackendURL(backendURL string) (models.ClientResponseOutput, error)
+	CheckBackendURI(backendURL string) (bool, error)
 }

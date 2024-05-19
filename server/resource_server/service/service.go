@@ -71,6 +71,14 @@ func (s *service) GetClientDataByBackendURL(backendURL string) (models.ClientRes
 	return clientModel, nil
 }
 
+func (s *service) CheckBackendURI(backendURL string) (bool, error) {
+	response, err := s.repository.BackendURIExists(backendURL)
+	if err != nil {
+		return false, err
+	}
+	return response, nil
+}
+
 func (s *service) LoginPreCheckUser(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error) {
 	if err := validator.New().Struct(req); err != nil {
 		return models.LoginPrecheckResponseOutput{}, err

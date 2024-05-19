@@ -320,3 +320,19 @@ func GetUsageStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func CheckBackendURI(w http.ResponseWriter, r *http.Request) {
+	newService := r.Context().Value("service").(interfaces.IService)
+	backend_uri := r.Header.Get("BackendURI")
+
+	response, err := newService.CheckBackendURI(backend_uri)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to check backend url", err)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to check backend url", err)
+		return
+	}
+}

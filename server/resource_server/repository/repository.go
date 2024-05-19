@@ -107,6 +107,14 @@ func (r *Repository) GetClientDataByBackendURL(backendURL string) (models.Client
 	return client, nil
 }
 
+func (r *Repository) BackendURIExists(backendURL string) (bool, error) {
+    var count int64
+    if err := r.connection.Model(&models.Client{}).Where("backend_uri = ?", backendURL).Count(&count).Error; err != nil {
+        return false, err
+    }
+    return count > 0, nil
+}
+
 func (r *Repository) LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string, error) {
 	var user models.User
 	if err := r.connection.Where("username = ?", req.Username).First(&user).Error; err != nil {

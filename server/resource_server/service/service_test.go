@@ -136,6 +136,10 @@ func (m *mockRepository) GetClientDataByBackendURL(backendURL string) (models.Cl
 	return models.Client{}, nil
 }
 
+func (m *mockRepository) CheckBackendURI(backendURL string) (bool, error) {
+	return true, nil
+}
+
 func TestRegisterUser(t *testing.T) {
 	// Create a new mock repository
 	mockRepo := new(mockRepository)
