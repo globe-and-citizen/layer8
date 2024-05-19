@@ -323,9 +323,13 @@ func GetUsageStats(w http.ResponseWriter, r *http.Request) {
 
 func CheckBackendURI(w http.ResponseWriter, r *http.Request) {
 	newService := r.Context().Value("service").(interfaces.IService)
-	backend_uri := r.Header.Get("BackendURI")
+	var req dto.CheckBackendURIDTO
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to register client", err)
+		return
+	}
 
-	response, err := newService.CheckBackendURI(backend_uri)
+	response, err := newService.CheckBackendURI(req.BackendURI)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to check backend url", err)
 		return

@@ -316,7 +316,7 @@ func (r *MemoryRepository) GetClientDataByBackendURL(backendUrl string) (models.
 	return models.Client{}, fmt.Errorf("client not found")
 }
 
-func (r *MemoryRepository) BackendURIExists(backendURL string) (bool, error) {
+func (r *MemoryRepository) IsBackendURIExists(backendURL string) (bool, error) {
     for _, data := range r.storage {
         backend, ok := data["backend_uri"]
         if ok && backend == backendURL {

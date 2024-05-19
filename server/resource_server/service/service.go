@@ -72,7 +72,7 @@ func (s *service) GetClientDataByBackendURL(backendURL string) (models.ClientRes
 }
 
 func (s *service) CheckBackendURI(backendURL string) (bool, error) {
-	response, err := s.repository.BackendURIExists(backendURL)
+	response, err := s.repository.IsBackendURIExists(backendURL)
 	if err != nil {
 		return false, err
 	}

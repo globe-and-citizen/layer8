@@ -208,8 +208,10 @@
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "BackendURI": backend_uri.value,
             },
+            body: JSON.stringify({
+              backend_uri: backend_uri.value,
+            }),
           });
           const data = await response.json();
           if (data == true) {
