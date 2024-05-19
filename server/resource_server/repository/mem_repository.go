@@ -38,6 +38,7 @@ func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO) error {
 		"last_name":      req.LastName,
 		"country":        req.Country,
 		"display_name":   req.DisplayName,
+		"salt":           rmSalt,
 		"email_verified": "false",
 	}
 	r.storage[req.Username] = map[string]string{
