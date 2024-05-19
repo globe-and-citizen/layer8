@@ -19,7 +19,7 @@ import (
 	utils "github.com/globe-and-citizen/layer8-utils"
 )
 
-func makeInitTunnelRequest(clientBackendUrl string) *http.Request {
+func prepareInitTunnelRequest(clientBackendUrl string) *http.Request {
 	repo := repository.NewMemoryRepository()
 	repo.RegisterClient(dto.RegisterClientDTO{
 		Name:        "name",
@@ -29,10 +29,14 @@ func makeInitTunnelRequest(clientBackendUrl string) *http.Request {
 		Password:    "password",
 	})
 
-	reqToInitTunnel := httptest.NewRequest("GET", "/api/tunnel", nil)
+	reqToInitTunnel := httptest.NewRequest("GET", "/init-tunnel", nil)
 	reqToInitTunnel = reqToInitTunnel.WithContext(
 		context.WithValue(reqToInitTunnel.Context(), "service", resourceService.NewService(repo)),
 	)
+
+	queryParams := reqToInitTunnel.URL.Query()
+	queryParams.Add("backend", clientBackendUrl)
+	reqToInitTunnel.URL.RawQuery = queryParams.Encode()
 
 	return reqToInitTunnel
 }
@@ -60,14 +64,7 @@ func Test_InitTunnel_OK(t *testing.T) {
 		w.Write([]byte(b64PubJWK))
 	}))
 
-	clientBackendUrl := mockedServiceProvider.URL
-
-	reqToInitTunnel := makeInitTunnelRequest(clientBackendUrl)
-
-	queryParams := reqToInitTunnel.URL.Query()
-	queryParams.Add("backend", clientBackendUrl)
-	reqToInitTunnel.URL.RawQuery = queryParams.Encode()
-
+	reqToInitTunnel := prepareInitTunnelRequest(mockedServiceProvider.URL)
 	responseRecorder := httptest.NewRecorder()
 
 	InitTunnel(responseRecorder, reqToInitTunnel)
@@ -103,6 +100,7 @@ func Test_InitTunnel_InvalidBackendURL(t *testing.T) {
 	responseRecorder := httptest.NewRecorder()
 
 	InitTunnel(responseRecorder, reqToInitTunnel)
+
 	resBody, err := io.ReadAll(responseRecorder.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -117,13 +115,7 @@ func Test_InitTunnel_InvalidBackendURL(t *testing.T) {
 }
 
 func Test_InitTunnel_UnavailableBackend(t *testing.T) {
-	clientBackendUrl := "http://localhost:8080"
-
-	reqToInitTunnel := makeInitTunnelRequest(clientBackendUrl)
-	queryParams := reqToInitTunnel.URL.Query()
-	queryParams.Add("backend", clientBackendUrl)
-	reqToInitTunnel.URL.RawQuery = queryParams.Encode()
-
+	reqToInitTunnel := prepareInitTunnelRequest("http://localhost:8080")
 	responseRecorder := httptest.NewRecorder()
 
 	InitTunnel(responseRecorder, reqToInitTunnel)
