@@ -58,12 +58,6 @@ func main() {
 
 	flag.Parse()
 
-	if err := opentelemetry.NewMeter(context.Background()); err != nil {
-		log.Fatalf("Failed to create meter: %v", err)
-	}
-
-	db.InitInfluxDBClient()
-
 	var resourceRepository interfaces.IRepository
 	var oauthService *oauthSvc.Service
 
@@ -96,6 +90,12 @@ func main() {
 		if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
 			config.InitDB()
 		}
+
+		if err := opentelemetry.NewMeter(context.Background()); err != nil {
+			log.Fatalf("Failed to create meter: %v", err)
+		}
+
+		db.InitInfluxDBClient()
 
 		resourceRepository = rsRepo.NewRepository(config.DB)
 		oauthService = &oauthSvc.Service{Repo: oauthRepo.NewOauthRepository(config.DB)}
