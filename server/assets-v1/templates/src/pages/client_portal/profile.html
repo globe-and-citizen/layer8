@@ -217,25 +217,25 @@
       }
     };
 
-    // const getStats = async () => {
-    //   try {
-    //     const resp = await window.fetch(
-    //       "[[ .ProxyURL ]]/api/v1/usage-stats",
-    //       {
-    //         method: "GET",
-    //         headers: {
-    //           "Content-Type": "Application/Json",
-    //           Authorization: `Bearer ${token.value}`,
-    //         },
-    //       }
-    //     );
-    //     const data = await resp.json();
+     const getStats = async () => {
+       try {
+         const resp = await window.fetch(
+           "[[ .ProxyURL ]]/api/v1/usage-stats",
+           {
+             method: "GET",
+             headers: {
+               "Content-Type": "Application/Json",
+               Authorization: `Bearer ${token.value}`,
+             },
+           }
+         );
+         const data = await resp.json();
 
-    //     return data.data
-    //   } catch (error) {
-    //     console.error(error);
-    //   }
-    // };
+         return data.data
+       } catch (error) {
+         console.error(error);
+       }
+     };
 
     const copyToClipboard = async (text) => {
       try {
