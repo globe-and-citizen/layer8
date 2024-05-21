@@ -1,12 +1,3 @@
----
-name: Generic PR
-about: Manual Test Suite
-title: ''
-labels: ''
-assignees: stravid87
-
----
-
 SECTION 1: RESOURCE SERVER (http://localhost:5001/)
 [ ] http://localhost:5001/ home page loads
 [ ] "LoginAsUser" button takes you to the user login page
