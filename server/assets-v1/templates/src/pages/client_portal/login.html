@@ -121,7 +121,6 @@
             }
           );
           const responseTwo = await respTwo.json();
-          console.log("RESPONSE", responseTwo)
           if (responseTwo.token) {
             localStorage.setItem("clientToken", responseTwo.token);
             showToastMessage("Login successful!", "success");

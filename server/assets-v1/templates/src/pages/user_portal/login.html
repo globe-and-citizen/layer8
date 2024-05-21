@@ -125,7 +125,6 @@
             }
           );
           const responseOne = await respOne.json();
-          console.log(responseOne.salt);
           const respTwo = await window.fetch(
             "[[ .ProxyURL ]]/api/v1/login-user",
             {
@@ -141,7 +140,6 @@
             }
           );
           const responseTwo = await respTwo.json();
-          console.log(responseTwo);
           if (responseTwo.token) {
             token.value = responseTwo.token;
             localStorage.setItem("token", responseTwo.token);
