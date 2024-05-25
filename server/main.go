@@ -58,16 +58,6 @@ func main() {
 
 	flag.Parse()
 
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	if err := opentelemetry.NewMeter(context.Background()); err != nil {
-		log.Fatalf("Failed to create meter: %v", err)
-	}
-
-	db.InitInfluxDBClient()
-
 	var resourceRepository interfaces.IRepository
 	var oauthService *oauthSvc.Service
 
@@ -93,10 +83,19 @@ func main() {
 
 		fmt.Println("Running app with in-memory repository")
 	} else {
+		if err := godotenv.Load(); err != nil {
+			log.Fatal("Error loading .env file")
+		}
 		// If the user has set a database user or password, init the database
 		if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
 			config.InitDB()
 		}
+
+		if err := opentelemetry.NewMeter(context.Background()); err != nil {
+			log.Fatalf("Failed to create meter: %v", err)
+		}
+
+		db.InitInfluxDBClient()
 
 		resourceRepository = rsRepo.NewRepository(config.DB)
 		oauthService = &oauthSvc.Service{Repo: oauthRepo.NewOauthRepository(config.DB)}

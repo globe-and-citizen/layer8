@@ -143,3 +143,20 @@ docker compose -f docker-compose-telegraf.yml up
 ```
 6. After Telegraf is up and running, any metrics collected by the OpenTelemetry SDK could be sent via the gRPC protocol to port 4317.
 7. For our case, set `OTEL_EXPORTER_OTLP_ENDPOINT` to localhost:4317 then add it to the layer8 server environment variable file.
+
+
+### NEW STEPS:
+
+- First run `make go_mod_tidy` and then start layer8 locally using `make run_server_local`
+
+- Do `make npm_install_imsharer` to install Imsharer dependencies
+
+- Do `make run_imsharer_frontend` to start Imsharer frontend
+
+- Do `make run_imsharer_backend` to start Imsharer backend
+
+- Navigate to `http://localhost:5173` to see the Imsharer frontend
+
+- To fix the tunnel and register your backend with layer8, navigate to `http://localhost:5001/client-register-page` and register as a client with your backend URL as `localhost:6001`
+
+- Navigate back to `http://localhost:5173` and you should see the tunnel working
