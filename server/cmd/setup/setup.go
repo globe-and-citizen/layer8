@@ -58,12 +58,14 @@ func ValidateDockerUpAndRunning() {
 	}
 
 	// Check if Docker Compose is installed
-	if _, err := exec.LookPath("docker-compose"); err != nil {
+	cmd := exec.Command("docker", "compose", "version")
+	_, err := cmd.CombinedOutput()
+	if err != nil {
 		logrus.Fatal("Docker Compose is not installed. Please install Docker Compose before running this script.")
 	}
 
 	// Check if Docker is running
-	cmd := exec.Command("docker", "info")
+	cmd = exec.Command("docker", "info")
 	if err := cmd.Run(); err != nil {
 		logrus.Fatal("Docker is not running. Please start Docker before running this script.")
 	}
@@ -184,7 +186,7 @@ func CopyFile(src, dst string) error {
 }
 
 func RunDockerCompose(dockerComposeFile string) error {
-	cmd := exec.Command("docker-compose", "-f", GetFullInfraPath(dockerComposeFile), "--env-file", "./server/.env", "up", "-d")
+	cmd := exec.Command("docker", "compose", "-f", GetFullInfraPath(dockerComposeFile), "--env-file", "./server/.env", "up", "-d")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

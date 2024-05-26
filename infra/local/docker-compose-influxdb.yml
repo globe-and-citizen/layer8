@@ -1,4 +1,3 @@
-version: '3.8'
 name: influxdb2
 services:
   influxdb2:
