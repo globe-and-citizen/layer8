@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"time"
@@ -77,7 +76,6 @@ func SetupPG() {
 	}
 
 	dsn := fmt.Sprintf("postgres://%s:%s@localhost:5432/%s?sslmode=disable", os.Getenv("DB_USER"), os.Getenv("DB_PASS"), os.Getenv("DB_NAME"))
-	log.Println(dsn)
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		logrus.Fatal("failed to create postgresql connection instance")
