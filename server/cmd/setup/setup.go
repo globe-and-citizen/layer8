@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"os/exec"
 	"time"
@@ -26,15 +28,14 @@ func main() {
 
 	logrus.Debug("copy default configuration from root path to .env file...")
 
-	cmd := exec.Command("cp", "../../.env.dev", ".env")
-	err := cmd.Run()
+	err := CopyFile("server/.env.dev", "server/.env")
 	if err != nil {
 		logrus.Fatal("failed to copy .dev.env file :", err)
 	}
 
 	logrus.Debug("the configuration was copied successfully.")
 
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load("./server/.env"); err != nil {
 		logrus.Fatal("failed to read configuration")
 	}
 
@@ -70,16 +71,13 @@ func ValidateDockerUpAndRunning() {
 }
 
 func SetupPG() {
-	cmd := exec.Command("docker-compose", "-f", "docker-compose-pg.yml", "up", "-d")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
+	err := RunDockerCompose("docker-compose-pg.yml")
 	if err != nil {
 		logrus.Fatal("failed to run postgresql database container", err)
 	}
 
 	dsn := fmt.Sprintf("postgres://%s:%s@localhost:5432/%s?sslmode=disable", os.Getenv("DB_USER"), os.Getenv("DB_PASS"), os.Getenv("DB_NAME"))
+	log.Println(dsn)
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		logrus.Fatal("failed to create postgresql connection instance")
@@ -103,12 +101,12 @@ func SetupPG() {
 	}
 
 	migration, err := migrate.New(
-		"file://../../migrations",
+		"file://migrations",
 		dsn,
 	)
 
 	if err != nil {
-		logrus.Fatal("failed to create postgresql migration instance")
+		logrus.Fatal("failed to create postgresql migration instance: ", err)
 	}
 
 	if err := migration.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
@@ -117,11 +115,7 @@ func SetupPG() {
 }
 
 func SetupInfluxDB() {
-	cmd := exec.Command("docker-compose", "-f", "docker-compose-influxdb.yml", "up", "-d")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
+	err := RunDockerCompose("docker-compose-influxdb.yml")
 	if err != nil {
 		logrus.Fatal("failed to run influxdb database container", err)
 	}
@@ -159,12 +153,51 @@ func SetupInfluxDB() {
 }
 
 func SetupTelegraf() {
-	cmd := exec.Command("docker-compose", "-f", "docker-compose-telegraf.yml", "up", "-d")
+	err := RunDockerCompose("docker-compose-telegraf.yml")
+	if err != nil {
+		logrus.Fatal("failed to run telegraf as sidecar container to collect metrics from opentelemetry - ", err)
+	}
+}
+
+func CopyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		return err
+	}
+
+	err = dstFile.Sync()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func RunDockerCompose(dockerComposeFile string) error {
+	cmd := exec.Command("docker-compose", "-f", GetFullInfraPath(dockerComposeFile), "--env-file", "./server/.env", "up", "-d")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	err := cmd.Run()
 	if err != nil {
-		logrus.Fatal("failed to run telegraf as sidecar container to collect metrics from opentelemetry - ", err)
+		return err
 	}
+
+	return nil
+}
+
+func GetFullInfraPath(fileName string) string {
+	return fmt.Sprintf("infra/local/" + fileName)
 }
