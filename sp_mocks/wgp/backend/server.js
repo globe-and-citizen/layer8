@@ -4,7 +4,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const app = express();
-const {poems, users} = require("./mock-database.js") 
+const { poems, users } = require("./mock-database.js");
 const SECRET_KEY = "my_very_secret_key";
 // TODO: For future, use a layer8 npm published package for initialising the client and variables
 const popsicle = require("popsicle");
@@ -28,7 +28,7 @@ const layer8Auth = new ClientOAuth2({
   scopes: ["read:user"],
 });
 
-const layer8_middleware = require("layer8_middleware")
+const layer8_middleware = require("layer8_middleware");
 
 const upload = layer8_middleware.multipart({ dest: "pictures/dynamic" });
 
@@ -44,9 +44,9 @@ app.get("/healthcheck", (req, res) => {
 app.use(layer8_middleware.tunnel);
 
 app.use(cors());
-app.use('/media', layer8_middleware.static('pictures'));
-app.use('/test', (req, res) => {
-  res.status(200).json({ message: 'Test endpoint' });
+app.use("/media", layer8_middleware.static("pictures"));
+app.use("/test", (req, res) => {
+  res.status(200).json({ message: "Test endpoint" });
 });
 
 app.post("/", (req, res) => {
@@ -64,6 +64,30 @@ app.get("/nextpoem", (req, res) => {
   console.log("Served: ", poems[marker].title);
   res.status(200).json(poems[marker]);
 });
+
+// Not needed now!
+// app.get("/poembybody", (req, res) => {
+//   console.log("Get Poem Req Body: ", req.body);
+//   poem_id = req.body.poem_id;
+//   console.log("Poem ID: ", poem_id);
+//   res.status(200).json(poems[poem_id]);
+// });
+
+// Doesn't work
+// app.get("/poembyquery", (req, res) => {
+//   console.log("Get Poem Req Query: ", req.query);
+//   poem_id = req.query.id;
+//   console.log("Poem ID: ", poem_id);
+//   res.status(200).json(poems[poem_id]);
+// });
+
+// To test query also for later
+// app.get("/poembyquery", (req, res) => {
+//   console.log("Get Poem Req Body: ", req.body);
+//   const query = req.body.query;
+//   const poem_id = query.split("=")[1];
+//   res.status(200).json(poems[poem_id]);
+// });
 
 app.post("/api/register", async (req, res) => {
   const { password, email, profile_image } = req.body;
@@ -160,19 +184,18 @@ app.post("/api/login/layer8/auth", async (req, res) => {
   res.status(200).json({ token });
 });
 
-app.post("/api/profile/upload", upload.single('file'), (req, res) => {
+app.post("/api/profile/upload", upload.single("file"), (req, res) => {
   const uploadedFile = req.file;
 
   if (!uploadedFile) {
-    return res.status(400).json({ error: 'No file uploaded' });
+    return res.status(400).json({ error: "No file uploaded" });
   }
 
-  res.status(200).json({ 
+  res.status(200).json({
     message: "File uploaded successfully!",
-    url: `${req.protocol}://${req.get('host')}/media/dynamic/${req.file?.name}`
+    url: `${req.protocol}://${req.get("host")}/media/dynamic/${req.file?.name}`,
   });
 });
-
 
 app.listen(port, () => {
   console.log(

@@ -29,9 +29,14 @@ const metaData = computed(() => {
   return "";
 });
 
-const getPoem = async () => {
+const getNextPoem = async () => {
   try {
-    const resp = await layer8_interceptor.fetch( BACKEND_URL + "/nextpoem");
+    const resp = await layer8_interceptor.fetch( BACKEND_URL + "/nextpoem", {
+      method: "GET",
+      headers: {
+        "Content-Type": "Application/Json",
+      },
+    });
     let poemObj = await resp.json();
 
     if (poemObj.title) {
@@ -43,6 +48,26 @@ const getPoem = async () => {
     console.error("error:", error);
   }
 };
+
+// const getPoemByQuery = async () => {
+//   try {
+//     const resp = await layer8_interceptor.fetch( BACKEND_URL + "/poembyquery?id=2", {
+//       method: "GET",
+//       headers: {
+//         "Content-Type": "Application/Json",
+//       },
+//     });
+//     let poemObj = await resp.json();
+
+//     if (poemObj.title) {
+//       nextPoem.value = poemObj;
+//     } else {
+//       console.error("The poemObj is malformed or other error....");
+//     }
+//   } catch (error) {
+//     console.error("error:", error);
+//   }
+// };
 
 const logoutUser = () => {
   SpToken.value = null;
@@ -88,7 +113,7 @@ onMounted(async()=>{
 
         <br />
         <div class="flex gap-6">
-          <button class="btn" @click="getPoem">Get Next Poem</button>
+          <button class="btn" @click="getNextPoem">Get Next Poem</button>
           <button class="btn btn-secondary" @click="logoutUser">Logout</button>
         </div>
         <div>
