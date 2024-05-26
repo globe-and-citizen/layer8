@@ -313,3 +313,7 @@ func TestGetClientData(t *testing.T) {
 	assert.Equal(t, clientData.Secret, "testsecret")
 	assert.Equal(t, clientData.RedirectURI, "https://gcitizen.com/callback")
 }
+
+func (m *mockRepository) CheckBackendURI(backendURL string) (bool, error) {
+	return true, nil
+}

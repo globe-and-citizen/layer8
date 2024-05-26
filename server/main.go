@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
-	"globe-and-citizen/layer8/server/opentelemetry"
+	// "globe-and-citizen/layer8/server/opentelemetry"
 	"io/fs"
 	"log"
 	"net/http"
@@ -62,9 +62,9 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	if err := opentelemetry.NewMeter(context.Background()); err != nil {
-		log.Fatalf("Failed to create meter: %v", err)
-	}
+	// if err := opentelemetry.NewMeter(context.Background()); err != nil {
+	// 	log.Fatalf("Failed to create meter: %v", err)
+	// }
 
 	db.InitInfluxDBClient()
 
@@ -196,6 +196,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.UpdateDisplayNameHandler(w, r)
 			case path == "/api/v1/usage-stats":
 				Ctl.GetUsageStats(w, r)
+			case path == "/api/v1/check-backend-uri":
+				Ctl.CheckBackendURI(w, r)
 			case path == "/favicon.ico":
 				faviconPath := workingDirectory + "/dist/favicon.ico"
 				http.ServeFile(w, r, faviconPath)
