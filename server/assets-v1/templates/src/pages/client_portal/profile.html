@@ -78,6 +78,7 @@
                 <ul class="col-span-1 flex flex-col space-y-3 md:space-y-6 my-auto">
                   <li class="font-bold text-lg text-black">Name:</li>
                   <li class="font-bold text-lg text-black">Redirect URI:</li>
+                  <li class="font-bold text-lg text-black">Backend URI:</li>
                   <li class="font-bold text-lg text-black">UUID:</li>
                   <li class="font-bold text-lg text-black">Secret:</li>
                 </ul>
@@ -86,6 +87,8 @@
                     :value="user.name" />
                   <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
                     :value="user.redirect_uri" />
+                  <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
+                    :value="user.backend_uri" />
                   <div class="flex items-center space-x-2">
                     <input readonly
                       class="bg-[#ECF4FD] border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium shadow appearance-none"
@@ -267,7 +270,7 @@
     const app = createApp({
       setup() {
         onMounted(async () => {
-          stats.value = await getStats()
+          // stats.value = await getStats()
           const ctx = document.getElementById("statisticChart")
 
           const mappedValue = stats.value.last_thirty_days_statistic.details.map(v => {
