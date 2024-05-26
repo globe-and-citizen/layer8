@@ -58,7 +58,7 @@ func main() {
 
 	flag.Parse()
 
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load("./server/.env"); err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
