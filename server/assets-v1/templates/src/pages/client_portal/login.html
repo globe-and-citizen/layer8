@@ -87,6 +87,9 @@
           />
         </div>
       </div>
+      <div :class="showToast ? 'opacity-100' : 'opacity-0 pointer-events-none'" class="fixed top-3 right-3 bg-red-500 text-white p-2 rounded-md transition-opacity ease-in-out duration-500 z-50">
+        {{ toastMessage }}
+      </div>
     </div>
 
     <script>
@@ -97,12 +100,8 @@
       const isRegistered = ref(false);
       const isUsernameFocused = ref(false);
       const isPasswordFocused = ref(false);
-      const client = ref({
-        id: "",
-        secret: "",
-        name: "",
-        redirect_uri: "",
-      });
+      const showToast = ref(false);
+      const toastMessage = ref("");
 
       const registerClient = async () => {
         try {
@@ -148,7 +147,7 @@
       const loginClient = async () => {
         try {
           if (username.value == "" || password.value == "") {
-            alert("Please enter a username and password!");
+            showToastMessage("Please enter a username and password!", "error");
             return;
           }
           const respTwo = await window.fetch("[[ .ProxyURL ]]/api/v1/login-client",{
@@ -166,19 +165,28 @@
           console.log("RESPONSE", responseTwo)
           if (responseTwo.token) {
             localStorage.setItem("clientToken", responseTwo.token);
-            alert("Login successful!");
+            showToastMessage("Login successful!", "success");
             window.location.href = "[[ .ProxyURL ]]/client-profile";
+          } else {
+            showToastMessage(responseTwo.message, "error");
           }
         } catch (error) {
           console.error(error);
-          alert("Login failed!");
+          showToastMessage("Login failed!", "error");
         }
+      }
+
+      const showToastMessage = (message, type) => {
+        toastMessage.value = message;
+        showToast.value = true;
+        setTimeout(() => {
+          showToast.value = false;
+        }, 3000);
       }
 
       const app = createApp({
         setup() {
           return {
-            client,
             username,
             password,
             registerClient,
@@ -187,6 +195,8 @@
             isUsernameFocused,
             isPasswordFocused,
             loginClient,
+            toastMessage,
+            showToast
           };
         },
       });
