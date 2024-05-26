@@ -27,15 +27,15 @@ func main() {
 
 	logrus.Debug("copy default configuration from root path to .env file...")
 
-	err := CopyFile("server/.env.dev", "server/.env")
+	err := CopyFile(".env.dev", ".env")
 	if err != nil {
 		logrus.Fatal("failed to copy .dev.env file :", err)
 	}
 
 	logrus.Debug("the configuration was copied successfully.")
 
-	if err := godotenv.Load("./server/.env"); err != nil {
-		logrus.Fatal("failed to read configuration")
+	if err := godotenv.Load(); err != nil {
+		logrus.Fatal("failed to read configuration: ", err)
 	}
 
 	logrus.Debug("setting up the PostgreSQL container...")
@@ -101,7 +101,7 @@ func SetupPG() {
 	}
 
 	migration, err := migrate.New(
-		"file://migrations",
+		"file://../migrations",
 		dsn,
 	)
 
@@ -186,7 +186,7 @@ func CopyFile(src, dst string) error {
 }
 
 func RunDockerCompose(dockerComposeFile string) error {
-	cmd := exec.Command("docker", "compose", "-f", GetFullInfraPath(dockerComposeFile), "--env-file", "./server/.env", "up", "-d")
+	cmd := exec.Command("docker", "compose", "-f", GetFullInfraPath(dockerComposeFile), "--env-file", ".env", "up", "-d")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -199,5 +199,5 @@ func RunDockerCompose(dockerComposeFile string) error {
 }
 
 func GetFullInfraPath(fileName string) string {
-	return fmt.Sprintf("infra/local/" + fileName)
+	return fmt.Sprintf("../infra/local/" + fileName)
 }

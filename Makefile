@@ -86,10 +86,10 @@ run_local_db:
 
 
 setup_local_dependency:
-	go run server/cmd/setup/setup.go
+	cd server && go run cmd/setup/setup.go
 
 run_layer8server_local:
-	go run server/cmd/app/main.go
+	cd server && go run cmd/app/main.go
 
 setup_and_run:
 	make setup_local_dependency && make run_layer8server_local
