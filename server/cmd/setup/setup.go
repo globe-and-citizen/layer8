@@ -77,7 +77,7 @@ func SetupPG() {
 		logrus.Fatal("failed to run postgresql database container", err)
 	}
 
-	dsn := fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable", os.Getenv("DB_USER"), os.Getenv("DB_PASS"), os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
+	dsn := fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable", os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		logrus.Fatal("failed to create postgresql connection instance")

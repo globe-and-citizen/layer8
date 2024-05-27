@@ -9,7 +9,7 @@ services:
     ports:
       - 4317:4317
     environment:
-      - INFLUXDB_URL=${INFLUXDB_URL}
+      - INFLUXDB_URL_TELEGRAF=${INFLUXDB_URL_TELEGRAF}
       - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
     extra_hosts:
       - "host.docker.internal:host-gateway"
