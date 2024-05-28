@@ -210,7 +210,6 @@
           }
         );
         const data = await resp.json();
-        console.log("resp", data);
         user.value = data;
       } catch (error) {
         console.error(error);
