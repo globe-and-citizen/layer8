@@ -31,7 +31,7 @@ const metaData = computed(() => {
 
 const getNextPoem = async () => {
   try {
-    const resp = await layer8_interceptor.fetch( BACKEND_URL + "/nextpoem", {
+    const resp = await layer8_interceptor.fetch( BACKEND_URL + "/nextpoem?id=2", {
       method: "GET",
       headers: {
         "Content-Type": "Application/Json",

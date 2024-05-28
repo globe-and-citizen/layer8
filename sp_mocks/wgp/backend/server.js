@@ -62,6 +62,12 @@ app.get("/nextpoem", (req, res) => {
   counter++;
   let marker = counter % 3;
   console.log("Served: ", poems[marker].title);
+  console.log("Req path:", req.path);
+  console.log("Req Query: ", req.query);
+  console.log("Req params:", req.params);
+  // console.log("Req: ", req);
+  poem_id = req.query.id;
+  console.log("Poem ID: ", poem_id);
   res.status(200).json(poems[marker]);
 });
 
