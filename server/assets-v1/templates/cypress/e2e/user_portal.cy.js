@@ -3,6 +3,10 @@ describe('Authentication Page', () => {
     cy.visit('http://localhost:5001/user-register-page')
   })
 
+  // afterEach(() => {
+  //   cy.deleteRegisteredUser();
+  // });
+
   it('displays the registration form', () => {
     cy.get('h1').should('contain', 'Register')
     cy.get('input[placeholder="Email"]').should('exist')
