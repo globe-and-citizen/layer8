@@ -63,37 +63,30 @@ app.get("/nextpoem", (req, res) => {
   let marker = counter % 3;
   console.log("Served: ", poems[marker].title);
   console.log("Req path:", req.path);
-  console.log("Req Query: ", req.query);
-  console.log("Req params:", req.params);
-  // console.log("Req: ", req);
-  poem_id = req.query.id;
-  console.log("Poem ID: ", poem_id);
   res.status(200).json(poems[marker]);
 });
 
-// Not needed now!
-// app.get("/poembybody", (req, res) => {
-//   console.log("Get Poem Req Body: ", req.body);
-//   poem_id = req.body.poem_id;
-//   console.log("Poem ID: ", poem_id);
-//   res.status(200).json(poems[poem_id]);
-// });
+  app.get("/poem", (req, res) => {
+    console.log("Req query: ", req.query);
+    console.log("ID in query: ", req.query.id);
 
-// Doesn't work
-// app.get("/poembyquery", (req, res) => {
-//   console.log("Get Poem Req Query: ", req.query);
-//   poem_id = req.query.id;
-//   console.log("Poem ID: ", poem_id);
-//   res.status(200).json(poems[poem_id]);
-// });
+    const poem_id = parseInt(req.query.id, 10);
+    console.log("Parsed Poem ID: ", poem_id);
 
-// To test query also for later
-// app.get("/poembyquery", (req, res) => {
-//   console.log("Get Poem Req Body: ", req.body);
-//   const query = req.body.query;
-//   const poem_id = query.split("=")[1];
-//   res.status(200).json(poems[poem_id]);
-// });
+    if (isNaN(poem_id)) {
+      console.log("Invalid or missing poem ID!");
+      return res.status(400).json({ error: "Invalid or missing poem ID!" });
+    }
+
+    const poem = poems.find((p) => p.id === poem_id);
+    if (poem) {
+      res.status(200).json(poem);
+    } else {
+      res.status(404).json({ error: "Poem not found!" });
+    }
+  });
+
+
 
 app.post("/api/register", async (req, res) => {
   const { password, email, profile_image } = req.body;
