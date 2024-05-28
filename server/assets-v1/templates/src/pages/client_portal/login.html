@@ -125,8 +125,10 @@
             localStorage.setItem("clientToken", loginResponseBody.token);
             showToastMessage("Login successful!", "success");
             window.location.href = "[[ .ProxyURL ]]/client-profile";
-          } else {
+          } else if (loginResponseBody.message) {
             showToastMessage(loginResponseBody.message, "error");
+          } else {
+            showToastMessage("Something went wrong!", "error");
           }
         } catch (error) {
           console.error(error);
