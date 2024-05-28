@@ -150,7 +150,7 @@
             showToastMessage("Please enter a username and password!", "error");
             return;
           }
-          const respTwo = await window.fetch("[[ .ProxyURL ]]/api/v1/login-client",{
+          const loginResult = await window.fetch("[[ .ProxyURL ]]/api/v1/login-client",{
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -161,13 +161,13 @@
               }),
             }
           );
-          const responseTwo = await respTwo.json();
-          if (responseTwo.token) {
-            localStorage.setItem("clientToken", responseTwo.token);
+          const loginResponseBody = await loginResult.json();
+          if (loginResponseBody.token) {
+            localStorage.setItem("clientToken", loginResponseBody.token);
             showToastMessage("Login successful!", "success");
             window.location.href = "[[ .ProxyURL ]]/client-profile";
           } else {
-            showToastMessage(responseTwo.message, "error");
+            showToastMessage(loginResponseBody.message, "error");
           }
         } catch (error) {
           console.error(error);
