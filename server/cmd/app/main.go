@@ -114,11 +114,6 @@ func main() {
 func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service) {
 	port := os.Getenv("SERVER_PORT")
 
-	_, err := oauthService.AddTestClient()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	getPwd()
 
 	server := http.Server{

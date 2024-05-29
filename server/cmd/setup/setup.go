@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"globe-and-citizen/layer8/server/config"
+	"globe-and-citizen/layer8/server/resource_server/dto"
+	"globe-and-citizen/layer8/server/resource_server/repository"
 	"io"
 	"os"
 	"os/exec"
@@ -85,7 +88,6 @@ func SetupPG() {
 
 	defer db.Close()
 	for {
-
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -111,6 +113,42 @@ func SetupPG() {
 
 	if err := migration.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		logrus.Fatal("failed to latest schema to postgresql instance: ", err)
+	}
+
+	config.InitDB()
+	resourceRepository := repository.NewRepository(config.DB)
+
+	if os.Getenv("CREATE_TEST_USER") == "true" {
+		logrus.Debug("creating test user...")
+
+		resourceRepository.RegisterUser(
+			dto.RegisterUserDTO{
+				Email:       os.Getenv("TEST_USER_EMAIL"),
+				Password:    os.Getenv("TEST_USER_PASSWORD"),
+				Username:    os.Getenv("TEST_USER_USERNAME"),
+				FirstName:   os.Getenv("TEST_USER_FIRST_NAME"),
+				LastName:    os.Getenv("TEST_USER_LAST_NAME"),
+				DisplayName: os.Getenv("TEST_USER_DISPLAY_NAME"),
+				Country:     os.Getenv("TEST_USER_COUNTRY"),
+			},
+		)
+
+		logrus.Debug("test user created successfully.")
+	}
+
+	if os.Getenv("CREATE_TEST_CLIENT") == "true" {
+		logrus.Debug("creating test client...")
+
+		resourceRepository.RegisterClient(
+			dto.RegisterClientDTO{
+				Password:    os.Getenv("TEST_CLIENT_PASSWORD"),
+				Username:    os.Getenv("TEST_CLIENT_USERNAME"),
+				RedirectURI: os.Getenv("TEST_CLIENT_REDIRECT_URI"),
+				BackendURI:  os.Getenv("TEST_CLIENT_BACKEND_URI"),
+			},
+		)
+
+		logrus.Debug("test client created successfully.")
 	}
 }
 
