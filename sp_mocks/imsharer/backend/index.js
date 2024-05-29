@@ -4,7 +4,7 @@ const fs = require('fs');
 const layer8 = require('layer8_middleware');
 
 const app = express();
-const port = 6001;
+const port = 8000;
 const upload = layer8.multipart({ dest: "uploads" });
 
 app.use(layer8.tunnel);

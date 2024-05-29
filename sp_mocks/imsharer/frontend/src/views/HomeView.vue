@@ -10,7 +10,7 @@ const modalImage = ref(null);
 const fetchImages = () => {
   isLoaded.value = false;
 
-  layer8.fetch('http://localhost:6001/api/gallery')
+  layer8.fetch('http://localhost:8000/api/gallery')
     .then((response) => response.json())
     .then(async (data) => {
       var imgs = []; 
@@ -30,7 +30,7 @@ const fetchImages = () => {
 
 onMounted(async () => {
   await layer8.initEncryptedTunnel({
-    providers: ["http://localhost:6001"],
+    providers: ["http://localhost:8000"],
     proxy: "http://localhost:5001" // works
   }, "dev")
 

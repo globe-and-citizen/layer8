@@ -6,7 +6,7 @@ import emitter from '@/plugins/mitt';
 
 onMounted(async () => {
   await layer8.initEncryptedTunnel({
-    providers: ["http://localhost:6001"],
+    providers: ["http://localhost:8000"],
     proxy: "http://localhost:5001" // works
   }, "dev")
 });
@@ -16,7 +16,7 @@ const uploadFile = (e) => {
   const formData = new FormData();
   formData.append('file', file);
 
-  layer8.fetch('http://localhost:6001/api/upload', {
+  layer8.fetch('http://localhost:8000/api/upload', {
     method: 'POST',
     headers: {
       'Content-Type': 'multipart/form-data'
