@@ -213,7 +213,6 @@
           }
         );
         const data = await resp.json();
-        console.log("resp", data);
         user.value = data;
       } catch (error) {
         console.error(error);
@@ -270,7 +269,7 @@
     const app = createApp({
       setup() {
         onMounted(async () => {
-          // stats.value = await getStats()
+          stats.value = await getStats()
           const ctx = document.getElementById("statisticChart")
 
           const mappedValue = stats.value.last_thirty_days_statistic.details.map(v => {
