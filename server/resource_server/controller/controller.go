@@ -240,7 +240,7 @@ func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func VerifyCode(w http.ResponseWriter, r *http.Request) {
+func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
 	service := r.Context().Value("service").(interfaces.IService)
 	tokenString := r.Header.Get("Authorization")
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
@@ -250,14 +250,14 @@ func VerifyCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request dto.VerifyCodeDTO
+	var request dto.CheckEmailVerificationCodeDTO
 	e = json.NewDecoder(r.Body).Decode(&request)
 	if e != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to decode request body", e)
 		return
 	}
 
-	e = service.VerifyCode(userID, request.Code)
+	e = service.CheckEmailVerificationCode(userID, request.Code)
 	if e != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to verify code", e)
 		return

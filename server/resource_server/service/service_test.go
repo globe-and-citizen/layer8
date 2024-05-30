@@ -191,7 +191,7 @@ func TestRegisterUser(t *testing.T) {
 	mockRepo := new(mockRepository)
 
 	// Create a new service by passing the mock repository
-	mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, 0)
 
 	// Create a new mock request
 	req := dto.RegisterUserDTO{
@@ -219,7 +219,7 @@ func TestLoginPreCheckUser(t *testing.T) {
 	mockRepo := new(mockRepository)
 
 	// Create a new service by passing the mock repository
-	mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, 0)
 
 	// Create a new mock request
 	req := dto.LoginPrecheckDTO{
@@ -243,7 +243,7 @@ func TestLoginUser(t *testing.T) {
 	mockRepo := new(mockRepository)
 
 	// Create a new service by passing the mock repository
-	mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, 0)
 
 	// Create a new mock request
 	req := dto.LoginUserDTO{
@@ -267,7 +267,7 @@ func TestProfileUser(t *testing.T) {
 	mockRepo := new(mockRepository)
 
 	// Create a new service by passing the mock repository
-	mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, 0)
 
 	// Call the ProfileUser method of the mock service
 	userDetails, err := mockService.ProfileUser(1)
@@ -285,7 +285,7 @@ func TestUpdateDisplayName(t *testing.T) {
 	mockRepo := new(mockRepository)
 
 	// Create a new service by passing the mock repository
-	mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, 0)
 
 	// Create a new mock request
 	req := dto.UpdateDisplayNameDTO{
@@ -307,7 +307,7 @@ func TestRegisterClient(t *testing.T) {
 	mockRepo := new(mockRepository)
 
 	// Create a new service by passing the mock repository
-	mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, 0)
 
 	// Create a new mock request
 	req := dto.RegisterClientDTO{
@@ -333,7 +333,7 @@ func TestGetClientData(t *testing.T) {
 	mockRepo := new(mockRepository)
 
 	// Create a new service by passing the mock repository
-	mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, 0)
 
 	// Call the GetClientData method of the mock service
 	clientData, err := mockService.GetClientData("testclient")
@@ -355,7 +355,7 @@ func TestVerifyEmail_UserDoesNotExist(t *testing.T) {
 	}
 	emailVerifier := &verification.EmailVerifier{}
 
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, time.Second)
 	e := currService.VerifyEmail(userId)
 
 	assert.NotNil(t, e)
@@ -378,7 +378,7 @@ func TestVerifyEmail_UserExists_EmailFailedToBeSent(t *testing.T) {
 		},
 	}
 	emailVerifier := verification.NewEmailVerifier(adminEmail, mockSenderService, mockCodeGenerator, now)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, time.Second)
 
 	e := currService.VerifyEmail(userId)
 
@@ -405,7 +405,7 @@ func TestVerifyEmail_UserExists_EmailSent_VerificationDataNotSaved(t *testing.T)
 		mockCodeGenerator,
 		now,
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, time.Second)
 
 	e := currService.VerifyEmail(userId)
 
@@ -432,14 +432,14 @@ func TestVerifyEmail_Success(t *testing.T) {
 		mockCodeGenerator,
 		now,
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, time.Second)
 
 	e := currService.VerifyEmail(userId)
 
 	assert.Nil(t, e)
 }
 
-func TestVerifyCode_VerificationDataDoesNotExist(t *testing.T) {
+func TestCheckEmailVerificationCode_VerificationDataDoesNotExist(t *testing.T) {
 	mockRepo := &mockRepository{
 		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{},
@@ -447,14 +447,14 @@ func TestVerifyCode_VerificationDataDoesNotExist(t *testing.T) {
 		},
 	}
 	emailVerifier := &verification.EmailVerifier{}
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, time.Second)
 
-	e := currService.VerifyCode(userId, verificationCode)
+	e := currService.CheckEmailVerificationCode(userId, verificationCode)
 
 	assert.NotNil(t, e)
 }
 
-func TestVerifyCode_VerificationCodeMismatch(t *testing.T) {
+func TestCheckEmailVerificationCode_VerificationCodeMismatch(t *testing.T) {
 	mockRepo := &mockRepository{
 		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{
@@ -470,14 +470,14 @@ func TestVerifyCode_VerificationCodeMismatch(t *testing.T) {
 		mockCodeGenerator,
 		now,
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, time.Second)
 
-	e := currService.VerifyCode(userId, "567890")
+	e := currService.CheckEmailVerificationCode(userId, "567890")
 
 	assert.NotNil(t, e)
 }
 
-func TestVerifyCode_VerificationCodeIsExpired(t *testing.T) {
+func TestCheckEmailVerificationCode_VerificationCodeIsExpired(t *testing.T) {
 	mockRepo := &mockRepository{
 		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{
@@ -495,14 +495,14 @@ func TestVerifyCode_VerificationCodeIsExpired(t *testing.T) {
 			return timestampPlusTwoSeconds
 		},
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, time.Second)
 
-	e := currService.VerifyCode(userId, verificationCode)
+	e := currService.CheckEmailVerificationCode(userId, verificationCode)
 
 	assert.NotNil(t, e)
 }
 
-func TestVerifyCode_VerificationCodeIsValid_ProofFailedToBeSaved(t *testing.T) {
+func TestCheckEmailVerificationCode_VerificationCodeIsValid_ProofFailedToBeSaved(t *testing.T) {
 	mockRepo := &mockRepository{
 		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{
@@ -521,14 +521,14 @@ func TestVerifyCode_VerificationCodeIsValid_ProofFailedToBeSaved(t *testing.T) {
 		mockCodeGenerator,
 		now,
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, time.Second)
 
-	e := currService.VerifyCode(userId, verificationCode)
+	e := currService.CheckEmailVerificationCode(userId, verificationCode)
 
 	assert.NotNil(t, e)
 }
 
-func TestVerifyCode_CouldNotDeleteVerificationData(t *testing.T) {
+func TestCheckEmailVerificationCode_CouldNotDeleteVerificationData(t *testing.T) {
 	mockRepo := &mockRepository{
 		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{
@@ -550,14 +550,14 @@ func TestVerifyCode_CouldNotDeleteVerificationData(t *testing.T) {
 		mockCodeGenerator,
 		now,
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, time.Second)
 
-	e := currService.VerifyCode(userId, verificationCode)
+	e := currService.CheckEmailVerificationCode(userId, verificationCode)
 
 	assert.NotNil(t, e)
 }
 
-func TestVerifyCode_FailedToSetUserEmailAsVerified(t *testing.T) {
+func TestCheckEmailVerificationCode_FailedToSetUserEmailAsVerified(t *testing.T) {
 	mockRepo := &mockRepository{
 		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{
@@ -582,14 +582,14 @@ func TestVerifyCode_FailedToSetUserEmailAsVerified(t *testing.T) {
 		mockCodeGenerator,
 		now,
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, time.Second)
 
-	e := currService.VerifyCode(userId, verificationCode)
+	e := currService.CheckEmailVerificationCode(userId, verificationCode)
 
 	assert.NotNil(t, e)
 }
 
-func TestVerifyCode_Success(t *testing.T) {
+func TestCheckEmailVerificationCode_Success(t *testing.T) {
 	mockRepo := &mockRepository{
 		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{
@@ -614,9 +614,9 @@ func TestVerifyCode_Success(t *testing.T) {
 		mockCodeGenerator,
 		now,
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, time.Second)
 
-	e := currService.VerifyCode(userId, verificationCode)
+	e := currService.CheckEmailVerificationCode(userId, verificationCode)
 
 	assert.Nil(t, e)
 }

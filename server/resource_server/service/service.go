@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
-	"globe-and-citizen/layer8/server/resource_server/constants"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
@@ -15,16 +14,20 @@ import (
 type service struct {
 	repository    interfaces.IRepository
 	emailVerifier *verification.EmailVerifier
+
+	verificationCodeValidityDuration time.Duration
 }
 
 // Newservice creates a new instance of service
 func NewService(
 	repo interfaces.IRepository,
 	emailVerifier *verification.EmailVerifier,
+	verificationCodeValidityDuration time.Duration,
 ) interfaces.IService {
 	return &service{
-		repository:    repo,
-		emailVerifier: emailVerifier,
+		repository:                       repo,
+		emailVerifier:                    emailVerifier,
+		verificationCodeValidityDuration: verificationCodeValidityDuration,
 	}
 }
 
@@ -195,14 +198,14 @@ func (s *service) VerifyEmail(userID uint) error {
 		models.EmailVerificationData{
 			UserId:           user.ID,
 			VerificationCode: verificationCode,
-			ExpiresAt:        time.Now().Add(constants.VerificationCodeValidityDuration),
+			ExpiresAt:        time.Now().Add(s.verificationCodeValidityDuration),
 		},
 	)
 
 	return e
 }
 
-func (s *service) VerifyCode(userId uint, code string) error {
+func (s *service) CheckEmailVerificationCode(userId uint, code string) error {
 	verificationData, e := s.repository.GetEmailVerificationData(userId)
 	if e != nil {
 		return e

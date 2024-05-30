@@ -108,20 +108,36 @@ func main() {
 		fmt.Println("Running the app with postgres repository")
 	}
 
-	adminEmailAddress := fmt.Sprintf("layer8@%s", os.Getenv("LAYER8_EMAIL_DOMAIN"))
+	adminEmailAddress := fmt.Sprintf(
+		"%s@%s",
+		os.Getenv("LAYER8_EMAIL_USERNAME"),
+		os.Getenv("LAYER8_EMAIL_DOMAIN"),
+	)
+
+	verificationCodeSize, e := strconv.Atoi(os.Getenv("VERIFICATION_CODE_SIZE"))
+	if e != nil {
+		log.Fatalf("could not read verification code size from .env: %e", e)
+	}
+
 	emailVerifier := verification.NewEmailVerifier(
 		adminEmailAddress,
 		sender.NewMailerSendService(
 			os.Getenv("MAILER_SEND_API_KEY"),
 			os.Getenv("MAILER_SEND_TEMPLATE_ID"),
 		),
-		&code.RandomCodeGenerator{},
+		code.NewRandomCodeGenerator(verificationCodeSize),
 		time.Now,
 	)
 
+	verificationCodeValidityDuration, e :=
+		time.ParseDuration(os.Getenv("VERIFICATION_CODE_VALIDITY_DURATION"))
+	if e != nil {
+		log.Fatalf("error parsing verification code validity duration: %e", e)
+	}
+
 	// Run server (which never returns)
 	Server(
-		svc.NewService(resourceRepository, emailVerifier),
+		svc.NewService(resourceRepository, emailVerifier, verificationCodeValidityDuration),
 		oauthService,
 	)
 }
@@ -204,8 +220,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.ClientProfileHandler(w, r)
 			case path == "/api/v1/verify-email":
 				Ctl.VerifyEmailHandler(w, r)
-			case path == "/api/v1/verify-code":
-				Ctl.VerifyCode(w, r)
+			case path == "/api/v1/check-email-verification-code":
+				Ctl.CheckEmailVerificationCode(w, r)
 			case path == "/api/v1/change-display-name":
 				Ctl.UpdateDisplayNameHandler(w, r)
 			case path == "/api/v1/usage-stats":

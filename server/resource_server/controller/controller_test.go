@@ -26,8 +26,8 @@ var authenticationToken, _ = utils.GenerateToken(
 
 // MockService implements interfaces.IService for testing purposes.
 type MockService struct {
-	verifyEmail func(userID uint) error
-	verifyCode  func(userID uint, code string) error
+	verifyEmail                func(userID uint) error
+	checkEmailVerificationCode func(userID uint, code string) error
 }
 
 func (ms *MockService) RegisterUser(req dto.RegisterUserDTO) error {
@@ -68,8 +68,8 @@ func (ms *MockService) VerifyEmail(userID uint) error {
 	return ms.verifyEmail(userID)
 }
 
-func (ms *MockService) VerifyCode(userID uint, code string) error {
-	return ms.verifyCode(userID, code)
+func (ms *MockService) CheckEmailVerificationCode(userID uint, code string) error {
+	return ms.checkEmailVerificationCode(userID, code)
 }
 
 func (ms *MockService) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
@@ -405,16 +405,16 @@ func TestVerifyEmailHandler_Success(t *testing.T) {
 	assert.Nil(t, response.Error)
 }
 
-func TestVerifyCode_FailedToVerifyCode(t *testing.T) {
+func TestCheckEmailVerificationCode_FailedToVerifyCode(t *testing.T) {
 	requestBody := []byte(`{"code": "123467"}`)
-	req, err := http.NewRequest("GET", "/api/v1/verify-code", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("GET", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
 	req.Header.Set("Authorization", "Bearer "+authenticationToken)
 
 	mockService := &MockService{
-		verifyCode: func(userID uint, code string) error {
+		checkEmailVerificationCode: func(userID uint, code string) error {
 			return fmt.Errorf("failed to verify code for user %d", userID)
 		},
 	}
@@ -422,7 +422,7 @@ func TestVerifyCode_FailedToVerifyCode(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	Ctl.VerifyCode(rr, req)
+	Ctl.CheckEmailVerificationCode(rr, req)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
@@ -436,16 +436,16 @@ func TestVerifyCode_FailedToVerifyCode(t *testing.T) {
 	assert.NotNil(t, response.Error)
 }
 
-func TestVerifyCode_Success(t *testing.T) {
+func TestCheckEmailVerificationCode_Success(t *testing.T) {
 	requestBody := []byte(`{"code": "123467"}`)
-	req, err := http.NewRequest("GET", "/api/v1/verify-code", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("GET", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
 	req.Header.Set("Authorization", "Bearer "+authenticationToken)
 
 	mockService := &MockService{
-		verifyCode: func(userID uint, code string) error {
+		checkEmailVerificationCode: func(userID uint, code string) error {
 			return nil
 		},
 	}
@@ -453,7 +453,7 @@ func TestVerifyCode_Success(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	Ctl.VerifyCode(rr, req)
+	Ctl.CheckEmailVerificationCode(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 

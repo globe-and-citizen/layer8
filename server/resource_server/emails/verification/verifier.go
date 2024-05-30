@@ -2,10 +2,10 @@ package verification
 
 import (
 	"fmt"
-	"globe-and-citizen/layer8/server/resource_server/constants"
 	"globe-and-citizen/layer8/server/resource_server/emails/sender"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
 	"globe-and-citizen/layer8/server/resource_server/models"
+	"os"
 	"time"
 )
 
@@ -43,7 +43,7 @@ func (v *EmailVerifier) SendVerificationEmail(user *models.User, verificationCod
 		&models.Email{
 			From:    v.adminEmailAddress,
 			To:      user.Email,
-			Subject: constants.VerificationEmailSubject,
+			Subject: os.Getenv("VERIFICATION_EMAIL_SUBJECT"),
 			Content: models.VerificationEmailContent{
 				Username: user.Username,
 				Code:     verificationCode,
