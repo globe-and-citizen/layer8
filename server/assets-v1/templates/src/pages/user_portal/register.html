@@ -32,7 +32,7 @@
             Register
           </h1>
           <p class="font-normal text-xl text-[#414141] text-start mb-5">
-            Enter registration registerResponseBody.
+            Enter registration details.
           </p>
           <div>
             <div class="mb-3">
@@ -150,8 +150,8 @@
 
       const registerUser = async () => {
         try {
-          if (registerUsername.value == "" || registerPassword.value == "") {
-            showToastMessage("Please enter a username and password!", "error");
+          if (registerUsername.value == "" || registerPassword.value == "" || registerEmail.value || registerFirstName.value || registerLastName.value || registerDisplayName.value || registerCountry.value) {
+            showToastMessage("Please enter all details!", "error");
             return;
           }
           const resp = await window.fetch("[[ .ProxyURL ]]/api/v1/register-user", {
