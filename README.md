@@ -175,9 +175,9 @@ Note: During routine usage, there are no special calls necessary to make use of 
 1) Using express.json() as middleware in main file is unnecessary. The layer8_middleware automatically parses the incoming request. If you include the line app.use(express.json()) requests will get "caught" in the express.json() middleware and not reach your other endpoints.
 
 
-## Testing with Mock Service Provider
+## Testing with Mock Service Providers
 
-We have two service providers mock who intend to provide an example of how our client will be using our Layer8 server. Here’s how to set it up:
+We have two mock service providers to demonstrate how our client will be using our Layer8 server. Here's how to set them up:
 
 ### We've Got Poems Mock
 
@@ -185,12 +185,12 @@ This mock project is stored in the `sp_mocks/wgp` path.
 
 #### Backend Setup
 
-1. Open `sp_mocks/wgp/backend` path
-2. Set `.env` value the same as what we have in `.dev.env`
-3. Login to Layer8 Client Portal via http://localhost:5001/client-login-page using `TEST_CLIENT_USERNAME` and `TEST_CLIENT_PASSWORD` provided in `/server/.env.dev` 
-3. In `server.js` file line 23-24, you need to put the `clientId` and `clientSecret` value from the Layer8 Client Dashboard (UUID and secret).
+1. Navigate to the `sp_mocks/wgp/backend` directory.
+2. Set the `.env` values to match those in `.dev.env`.
+3. Log in to the Layer8 Client Portal via `http://localhost:5001/client-login-page` using the `TEST_CLIENT_USERNAME` and `TEST_CLIENT_PASSWORD` provided in `/server/.env.dev`.
+4. In the `server.js` file, on lines 23-24, enter the `clientId` and `clientSecret` values from the Layer8 Client Dashboard (UUID and secret).
 
-after everything is set run the backend :
+After everything is set up, run the backend with:
 
 ```bash
 npm run dev
@@ -198,11 +198,10 @@ npm run dev
 
 #### Frontend Setup
 
-1. Open `sp_mocks/wgp/frontend` path
-2. Set `.env` value the same as what we have in `.dev.env`
+1. Navigate to the sp_mocks/wgp/frontend directory.
+2. Set the .env values to match those in .dev.env.
 
-
-after everything is set run the frontend :
+After everything is set up, run the frontend with:
 
 ```bash
 npm run dev
@@ -211,9 +210,14 @@ npm run dev
 
 ### Imsharer Mock
 
-Imsharer doesn't require setup, and can be run by running this following command
+Imsharer doesn't require additional setup. You can run it with the following commands:
 
+To run the frontend:
 ```bash
 make run_imsharer_frontend // run frontend
+```
+
+To run the backend:
+```bash
 make run_imsharer_backend // run backend
 ```
