@@ -1,7 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"globe-and-citizen/layer8/server/resource_server/dto"
+	"globe-and-citizen/layer8/server/resource_server/repository"
+	resourceService "globe-and-citizen/layer8/server/resource_server/service"
+	resourceUtils "globe-and-citizen/layer8/server/resource_server/utils"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,14 +19,36 @@ import (
 	utils "github.com/globe-and-citizen/layer8-utils"
 )
 
-func Test_InitTunnel_OK(t *testing.T) {
-	var (
-		MOCKED_MP_123_SECRET_KEY = "MOCKED_MP_123_SECRET_KEY"
-		MOCKED_UP_999_SECRET_KEY = "MOCKED_UP_999_SECRET_KEY"
+func prepareInitTunnelRequest(clientBackendUrl string) *http.Request {
+	repo := repository.NewMemoryRepository()
+	repo.RegisterClient(dto.RegisterClientDTO{
+		Name:        "name",
+		RedirectURI: "redirect_uri",
+		BackendURI:  resourceUtils.RemoveProtocolFromURL(clientBackendUrl),
+		Username:    "username",
+		Password:    "password",
+	})
+
+	reqToInitTunnel := httptest.NewRequest("GET", "/init-tunnel", nil)
+	reqToInitTunnel = reqToInitTunnel.WithContext(
+		context.WithValue(reqToInitTunnel.Context(), "service", resourceService.NewService(repo)),
 	)
 
-	os.Setenv("MP_123_SECRET_KEY", MOCKED_MP_123_SECRET_KEY)
-	os.Setenv("UP_999_SECRET_KEY", MOCKED_UP_999_SECRET_KEY)
+	queryParams := reqToInitTunnel.URL.Query()
+	queryParams.Add("backend", clientBackendUrl)
+	reqToInitTunnel.URL.RawQuery = queryParams.Encode()
+
+	return reqToInitTunnel
+}
+
+func Test_InitTunnel_OK(t *testing.T) {
+	var (
+		MockedMp123SecretKey = "MOCKED_MP_123_SECRET_KEY"
+		MockedUp999SecretKey = "MOCKED_UP_999_SECRET_KEY"
+	)
+
+	os.Setenv("MP_123_SECRET_KEY", MockedMp123SecretKey)
+	os.Setenv("UP_999_SECRET_KEY", MockedUp999SecretKey)
 
 	mockedServiceProvider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, pubJWK_ecdh, err := utils.GenerateKeyPair(utils.ECDH)
@@ -37,12 +64,7 @@ func Test_InitTunnel_OK(t *testing.T) {
 		w.Write([]byte(b64PubJWK))
 	}))
 
-	reqToInitTunnel := httptest.NewRequest("GET", "/api/tunnel", nil)
-
-	queryParams := reqToInitTunnel.URL.Query()
-	queryParams.Add("backend", mockedServiceProvider.URL)
-	reqToInitTunnel.URL.RawQuery = queryParams.Encode()
-
+	reqToInitTunnel := prepareInitTunnelRequest(mockedServiceProvider.URL)
 	responseRecorder := httptest.NewRecorder()
 
 	InitTunnel(responseRecorder, reqToInitTunnel)
@@ -67,7 +89,7 @@ func Test_InitTunnel_OK(t *testing.T) {
 		t.Fatal("up-JWT is not a string")
 	}
 
-	_, err = utils.VerifyStandardToken(upJWT, MOCKED_UP_999_SECRET_KEY)
+	_, err = resourceUtils.ValidateUPTokenJWT(upJWT, MockedUp999SecretKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,6 +100,7 @@ func Test_InitTunnel_InvalidBackendURL(t *testing.T) {
 	responseRecorder := httptest.NewRecorder()
 
 	InitTunnel(responseRecorder, reqToInitTunnel)
+
 	resBody, err := io.ReadAll(responseRecorder.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -92,14 +115,11 @@ func Test_InitTunnel_InvalidBackendURL(t *testing.T) {
 }
 
 func Test_InitTunnel_UnavailableBackend(t *testing.T) {
-	reqToInitTunnel := httptest.NewRequest("GET", "/api/tunnel", nil)
-	queryParams := reqToInitTunnel.URL.Query()
-	queryParams.Add("backend", "http://localhost:8080")
-	reqToInitTunnel.URL.RawQuery = queryParams.Encode()
-
+	reqToInitTunnel := prepareInitTunnelRequest("http://localhost:8080")
 	responseRecorder := httptest.NewRecorder()
 
 	InitTunnel(responseRecorder, reqToInitTunnel)
+
 	assert.Equal(t, http.StatusInternalServerError, responseRecorder.Code)
 }
 
@@ -113,7 +133,7 @@ func Test_TunnelAPI_OK(t *testing.T) {
 	os.Setenv("UP_999_SECRET_KEY", MOCKED_UP_999_SECRET_KEY)
 
 	mpJWT, _ := utils.GenerateStandardToken(os.Getenv("MP_123_SECRET_KEY"))
-	upJWT, _ := utils.GenerateStandardToken(os.Getenv("UP_999_SECRET_KEY"))
+	upJWT, _ := resourceUtils.GenerateUPTokenJWT(os.Getenv("UP_999_SECRET_KEY"), "client_id")
 
 	mockedServiceProvider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/ping" {
@@ -148,7 +168,7 @@ func Test_TunnelAPI_OK_BadRequest(t *testing.T) {
 	os.Setenv("UP_999_SECRET_KEY", MOCKED_UP_999_SECRET_KEY)
 
 	mpJWT, _ := utils.GenerateStandardToken(os.Getenv("MP_123_SECRET_KEY"))
-	upJWT, _ := utils.GenerateStandardToken(os.Getenv("UP_999_SECRET_KEY"))
+	upJWT, _ := resourceUtils.GenerateUPTokenJWT(os.Getenv("UP_999_SECRET_KEY"), "client_id")
 
 	mockedServiceProvider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/ping" {

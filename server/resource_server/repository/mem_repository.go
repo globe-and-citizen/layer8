@@ -38,6 +38,7 @@ func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO) error {
 		"last_name":      req.LastName,
 		"country":        req.Country,
 		"display_name":   req.DisplayName,
+		"salt":           rmSalt,
 		"email_verified": "false",
 	}
 	r.storage[req.Username] = map[string]string{
@@ -60,7 +61,7 @@ func (r *MemoryRepository) RegisterClient(req dto.RegisterClientDTO) error {
 		"id":           clientUUID,
 		"secret":       clientSecret,
 		"redirect_uri": req.RedirectURI,
-		"backend_uri": req.BackendURI,
+		"backend_uri":  req.BackendURI,
 		"username":     req.Username,
 		"password":     req.Password,
 	}
@@ -269,6 +270,10 @@ func (r *MemoryRepository) SetClient(client *serverModels.Client) error {
 		"secret":       client.Secret,
 		"name":         client.Name,
 		"redirect_uri": client.RedirectURI,
+		"backend_uri":  client.BackendURI,
+		"username":     client.Username,
+		"password":     client.Password,
+		"salt":         client.Salt,
 	}
 	return nil
 }
@@ -291,22 +296,25 @@ func (r *MemoryRepository) GetClient(id string) (*serverModels.Client, error) {
 	return &client, nil
 }
 
-func (r *MemoryRepository) GetClientDataByBackendURL(id string) (models.Client, error) {
-	if strings.Contains(id, ":") {
-		id = id[strings.LastIndex(id, ":")+1:]
-		// fmt.Println("ID check:", id)
+func (r *MemoryRepository) GetClientDataByBackendURL(backendUrl string) (models.Client, error) {
+	for _, data := range r.storage {
+		backend, ok := data["backend_uri"]
+		if ok && backend == backendUrl {
+			return models.Client{
+				ID:          data["id"],
+				Secret:      data["secret"],
+				Name:        data["name"],
+				RedirectURI: data["redirect_uri"],
+				BackendURI:  backend,
+				Username:    data["username"],
+				Password:    data["password"],
+				Salt:        data["salt"],
+			}, nil
+		}
 	}
-	if _, ok := r.storage[id]; !ok {
-		fmt.Println("client not found while using GetClient")
-		return models.Client{}, fmt.Errorf("client not found")
-	}
-	client := models.Client{
-		ID:          r.storage[id]["id"],
-		Secret:      r.storage[id]["secret"],
-		Name:        r.storage[id]["name"],
-		RedirectURI: r.storage[id]["redirect_uri"],
-	}
-	return client, nil
+
+	fmt.Printf("client not found for backend url %s\n", backendUrl)
+	return models.Client{}, fmt.Errorf("client not found")
 }
 
 func (r *MemoryRepository) SetTTL(key string, value []byte, ttl time.Duration) error {
