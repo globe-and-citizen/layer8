@@ -30,7 +30,7 @@ const fetchImages = () => {
 
 onMounted(async () => {
   await layer8.initEncryptedTunnel({
-    providers: ["http://localhost:8000"],
+    providers: ["http://localhost:6001"],
     proxy: "http://localhost:5001" // works
   }, "dev")
 
