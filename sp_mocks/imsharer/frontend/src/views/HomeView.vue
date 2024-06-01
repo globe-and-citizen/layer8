@@ -10,7 +10,7 @@ const modalImage = ref(null);
 const fetchImages = () => {
   isLoaded.value = false;
 
-  layer8.fetch('http://localhost:8000/api/gallery')
+  layer8.fetch('http://localhost:6001/api/gallery')
     .then((response) => response.json())
     .then(async (data) => {
       var imgs = []; 

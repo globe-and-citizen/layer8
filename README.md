@@ -1,4 +1,5 @@
-# layer8
+# Layer8
+
 This repo contains the Layer8 Resource/Authentication Server, Proxy, and Service Provider Mocks.
 
 In conjunction with the Layer8_Interceptor & the Layer8_Middleware (available throught npm), this repo forms the proof of concept for the Layer8 E2E encryption proxy to be made available through a WASM module in the browser.
@@ -7,23 +8,74 @@ The directories in the folder sp_mocks represent test cases and experimental pro
 
 Note: the tunnel is created everytime the page is reloaded. Therefore, Layer8 works best with single page applications. 
 
-Currently the proof of concept only works with node.js in the backend and is tightly coupled to the express.js package. 
+Currently the proof of concept only works with node.js in the backend and is tightly coupled to the express.js package.
 
-# To Run
-1) Download and install Golang
-2) Navigate to your project frontend directory (or the sp_mock you want to run). Run `npm install layer8_interceptor` (v0.0.17 at the time of writting). 
-3) Naviate to your project backend directory (or the sp_mock you want to run). Run `npm install layer8_middleware` (v0.0.17 at the time of writting).
-4) From the layer8 home directory, run:
-    - `$cd ./server && go mod tidy`
-    - `cd server && go run main.go -port=5001 -jwtKey=secret -MpKey=secret -UpKey=secret -ProxyURL=http://localhost:5001`
-5) Clone `.env.dev` to `.env` in the `frontend` and `backend` directories of the sp_mock you are using.
-6) Run your frontend / backend. If using that provided:
-    - "We've Got Poems":
-        - `cd sp_mocks/wgp/frontend && npm i && npm run dev`
-        - `cd sp_mocks/wgp/backend && npm i && npm run dev`
-    - "Image sharer":
-        - `cd sp_mocks/imsharer/frontend && npm run dev`
-        - `cd sp_mocks/imsharer/backend && npm run dev`
+
+## Requirements
+
+- Docker with Docker Compose installed
+- 2 GB Memory or more (to run PostgreSQL, InfluxDB, and Telegraf)
+- Golang v1.21.1+
+- NodeJS (for service provider mock)
+- Ability to run `make <command>` for simplicity
+
+## Get Started
+
+1. Run the setup script to set up all dependencies (PostgreSQL, InfluxDB, Telegraf):
+
+```bash
+make setup_local_dependency
+```
+
+
+2. Run the Layer8 server:
+
+```bash
+make run_layer8server_local
+```
+
+If everything is set up correctly, you should be able to access the Layer8 server at localhost:5001, and have one client and one user created for testing.
+
+## Setting Up the Configuration
+
+Layer8 server requires a configuration file stored in the `/server/.env` directory to run the application. We have provided a configuration example in the .env.dev file. After running the setup script, it will automatically copy the contents of `/server/.env.dev` to `/server/.env.`
+
+Configuration for the cloud deployment will be stored in GitHub Action variables with the names DEVELOPMENT_APP_ENV and PRODUCTION_APP_ENV.
+
+## Database Migration
+
+### Install required library
+
+```bash
+go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+```
+
+full documentation : 
+[Installing golang-migrate library](https://github.com/golang-migrate/migrate/tree/master/cmd/migrate).
+
+### Generate migration
+
+example :
+
+```bash
+$ migrate create -ext sql -dir migrations -seq create_users_table
+```
+
+### Running Migration
+
+Each migration has up and down migration stored in [migrations](https://gitlab.com/m7310/user-management-service/-/tree/develop/migrations)
+
+```bash
+$ migrate -database ${DB_URL} -path migrations up    Migration all in migrations
+$ migrate -database ${DB_URL} -path migrations down  Revert migration all in migrations
+$ migrate -database ${DB_URL} -path migrations up [N]    Apply N up migration
+$ migrate -database ${DB_URL} -path migrations down [N]  Apply N down migration
+$ migrate -database ${DB_URL} -path migrations version  Print current migration version
+$ migrate -database ${DB_URL} -path migrations force V  Set version V but not run any migration
+$ migrate -database ${DB_URL} -path migrations goto V  Migrate to version V
+```
+
+for full documentation see [migrate](https://github.com/golang-migrate/migrate)
 
 # To Use the E2E Encrypted Tunnel:
 ## Frontend Code
@@ -122,24 +174,46 @@ Note: During routine usage, there are no special calls necessary to make use of 
 ## Warnings and Gotcha's
 1) Using express.json() as middleware in main file is unnecessary. The layer8_middleware automatically parses the incoming request. If you include the line app.use(express.json()) requests will get "caught" in the express.json() middleware and not reach your other endpoints.
 
-## Setup Metrics Collector
 
-### Prerequisite
-- Docker up and running
-- Docker compose
+## Testing with Mock Service Provider
 
-### Setup
+We have two service providers mock who intend to provide an example of how our client will be using our Layer8 server. Here’s how to set it up:
 
-1. Start InfluxDB v2 as a Docker container by running the following command:
+### We've Got Poems Mock
+
+This mock project is stored in the `sp_mocks/wgp` path.
+
+#### Backend Setup
+
+1. Open `sp_mocks/wgp/backend` path
+2. Set `.env` value the same as what we have in `.dev.env`
+3. Login to Layer8 Client Portal via http://localhost:5001/client-login-page using `TEST_CLIENT_USERNAME` and `TEST_CLIENT_PASSWORD` provided in `/server/.env.dev` 
+3. In `server.js` file line 23-24, you need to put the `clientId` and `clientSecret` value from the Layer8 Client Dashboard (UUID and secret).
+
+after everything is set run the backend :
+
+```bash
+npm run dev
 ```
-docker compose -f docker-compose-influx.yml up 
+
+#### Frontend Setup
+
+1. Open `sp_mocks/wgp/frontend` path
+2. Set `.env` value the same as what we have in `.dev.env`
+
+
+after everything is set run the frontend :
+
+```bash
+npm run dev
 ```
-2. Open the InfluxDB dashboard via a browser using the defined credentials in docker-compose-influx.yml on port 8086.
-3. Create an access token in the InfluxDB UI (https://docs.influxdata.com/influxdb/v2/admin/tokens/create-token/).
-4. Add `INFLUXDB_URL` as `http://host.docker.internal:8086` and `INFLUXDB_TOKEN` value as based on the created token variable to `.env` file to run the telegraf container.
-5. Start Telegraf by running the following command:
+
+
+### Imsharer Mock
+
+Imsharer doesn't require setup, and can be run by running this following command
+
+```bash
+make run_imsharer_frontend // run frontend
+make run_imsharer_backend // run backend
 ```
-docker compose -f docker-compose-telegraf.yml up 
-```
-6. After Telegraf is up and running, any metrics collected by the OpenTelemetry SDK could be sent via the gRPC protocol to port 4317.
-7. For our case, set `OTEL_EXPORTER_OTLP_ENDPOINT` to localhost:4317 then add it to the layer8 server environment variable file.

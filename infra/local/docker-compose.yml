@@ -1,0 +1,38 @@
+name: layer8-infra
+services:
+  influxdb2:
+    container_name: layer8-influxdb2
+    image: influxdb:2
+    restart: always
+    ports:
+      - 8086:8086
+    volumes:
+      - influxdb2-data:/var/lib/influxdb2
+  telegraf:
+    image: telegraf:alpine
+    container_name: layer8-telegraf
+    restart: always
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    ports:
+      - 4317:4317
+    environment:
+      - INFLUXDB_URL_TELEGRAF=${INFLUXDB_URL_TELEGRAF}
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  postgres:
+    container_name: layer8-postgres
+    image: postgres:13
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    ports:
+      - ${DB_PORT}:5432
+volumes:
+  influxdb2-data:
+  pg-data:
