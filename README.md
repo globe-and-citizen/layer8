@@ -27,8 +27,10 @@ Currently the proof of concept only works with node.js in the backend and is tig
 make setup_local_dependency
 ```
 
+2. Add any secret configurations, such as credentials, to the `.env.secret` file located in the server directory.
 
-2. Run the Layer8 server:
+
+3. Run the Layer8 server:
 
 ```bash
 make run_layer8server_local
@@ -38,7 +40,7 @@ If everything is set up correctly, you should be able to access the Layer8 serve
 
 ## Setting Up the Configuration
 
-Layer8 server requires a configuration file stored in the `/server/.env` directory to run the application. We have provided a configuration example in the .env.dev file. After running the setup script, it will automatically copy the contents of `/server/.env.dev` to `/server/.env.`
+The Layer8 server requires a configuration file stored in the `/server/.env` directory to run the application. We have provided a configuration example in the `.env.dev` file. If additional configuration is needed that should not be shared on GitHub, it should be placed in the `.env.secret` file. After running the setup script, it will automatically copy the contents of `/server/.env.dev` and `/server/.env.secret` to `/server/.env`.
 
 Configuration for the cloud deployment will be stored in GitHub Action variables with the names DEVELOPMENT_APP_ENV and PRODUCTION_APP_ENV.
 
@@ -63,7 +65,7 @@ $ migrate create -ext sql -dir migrations -seq create_users_table
 
 ### Running Migration
 
-Each migration has up and down migration stored in [migrations](https://gitlab.com/m7310/user-management-service/-/tree/develop/migrations)
+Each migration has up and down migration stored in [migrations](https://github.com/globe-and-citizen/layer8/tree/development/migrations)
 
 ```bash
 $ migrate -database ${DB_URL} -path migrations up    Migration all in migrations
