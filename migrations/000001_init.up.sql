@@ -19,6 +19,8 @@ CREATE TABLE users (
     first_name character varying(50) NOT NULL,
     last_name character varying(50) NOT NULL,
     salt character varying(255) DEFAULT 'ThisIsARandomSalt123!@#'::character varying NOT NULL,
+    email_proof character varying(255) NOT NULL,
+    verification_code character varying(100) NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
 
@@ -32,6 +34,16 @@ CREATE TABLE user_metadata (
     value character varying(255) NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE email_verification_data (
+     id BIGSERIAL,
+     user_id integer NOT NULL,
+     verification_code character varying(100) NOT NULL,
+     expires_at timestamp without time zone NOT NULL,
 
     PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES users(id)

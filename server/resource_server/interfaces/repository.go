@@ -17,11 +17,9 @@ type IRepository interface {
 	LoginClient(req dto.LoginClientDTO) (models.Client, error)
 	ProfileUser(userID uint) (models.User, []models.UserMetadata, error)
 	ProfileClient(username string) (models.Client, error)
-	SetUserEmailVerified(userID uint) error
 	SaveProofOfEmailVerification(userID uint, verificationCode string, proof string) error
 	SaveEmailVerificationData(data models.EmailVerificationData) error
 	GetEmailVerificationData(userId uint) (models.EmailVerificationData, error)
-	DeleteEmailVerificationData(userId uint) error
 	UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error
 	RegisterClient(req dto.RegisterClientDTO) error
 	GetClientData(clientName string) (models.Client, error)

@@ -216,25 +216,19 @@ func (r *MemoryRepository) ProfileClient(username string) (models.Client, error)
 	return client, nil
 }
 
-func (r *MemoryRepository) SetUserEmailVerified(userID uint) error {
-	userData, e := r.getUserData(userID)
-	if e != nil {
-		return e
-	}
-
-	userData["email_verified"] = "true"
-
-	return nil
-}
-
-func (r *MemoryRepository) SaveProofOfEmailVerification(userID uint, verificationCode string, emailProof string) error {
-	userData, e := r.getUserData(userID)
+func (r *MemoryRepository) SaveProofOfEmailVerification(
+	userId uint, verificationCode string, emailProof string,
+) error {
+	userData, e := r.getUserData(userId)
 	if e != nil {
 		return e
 	}
 
 	userData["verification_code"] = verificationCode
 	userData["email_proof"] = emailProof
+	userData["email_verified"] = "true"
+
+	delete(r.verificationDataStorage, strconv.Itoa(int(userId)))
 
 	return nil
 }
@@ -252,11 +246,6 @@ func (r *MemoryRepository) GetEmailVerificationData(userId uint) (models.EmailVe
 	}
 
 	return data, nil
-}
-
-func (r *MemoryRepository) DeleteEmailVerificationData(userId uint) error {
-	delete(r.verificationDataStorage, strconv.Itoa(int(userId)))
-	return nil
 }
 
 func (r *MemoryRepository) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {

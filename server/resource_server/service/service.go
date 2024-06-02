@@ -198,7 +198,7 @@ func (s *service) VerifyEmail(userID uint) error {
 		models.EmailVerificationData{
 			UserId:           user.ID,
 			VerificationCode: verificationCode,
-			ExpiresAt:        time.Now().Add(s.verificationCodeValidityDuration),
+			ExpiresAt:        time.Now().Add(s.verificationCodeValidityDuration).UTC(),
 		},
 	)
 
@@ -220,16 +220,8 @@ func (s *service) CheckEmailVerificationCode(userId uint, code string) error {
 	proof := "mock_proof"
 
 	e = s.repository.SaveProofOfEmailVerification(userId, code, proof)
-	if e != nil {
-		return e
-	}
 
-	e = s.repository.DeleteEmailVerificationData(userId)
-	if e != nil {
-		return e
-	}
-
-	return s.repository.SetUserEmailVerified(userId)
+	return e
 }
 
 func (s *service) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {

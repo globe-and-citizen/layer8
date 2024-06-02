@@ -96,10 +96,6 @@ func (m *mockRepository) ProfileUser(userID uint) (models.User, []models.UserMet
 	return models.User{}, []models.UserMetadata{}, fmt.Errorf("User not found")
 }
 
-func (m *mockRepository) SetUserEmailVerified(userID uint) error {
-	return m.setUserEmailVerified(userID)
-}
-
 func (m *mockRepository) SaveProofOfEmailVerification(
 	userID uint, verificationCode string, proof string,
 ) error {
@@ -112,10 +108,6 @@ func (m *mockRepository) SaveEmailVerificationData(data models.EmailVerification
 
 func (m *mockRepository) GetEmailVerificationData(userId uint) (models.EmailVerificationData, error) {
 	return m.getEmailVerificationData(userId)
-}
-
-func (m *mockRepository) DeleteEmailVerificationData(userId uint) error {
-	return m.deleteEmailVerificationData(userId)
 }
 
 func (m *mockRepository) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
@@ -528,67 +520,6 @@ func TestCheckEmailVerificationCode_VerificationCodeIsValid_ProofFailedToBeSaved
 	assert.NotNil(t, e)
 }
 
-func TestCheckEmailVerificationCode_CouldNotDeleteVerificationData(t *testing.T) {
-	mockRepo := &mockRepository{
-		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
-			return models.EmailVerificationData{
-				UserId:           userId,
-				VerificationCode: verificationCode,
-				ExpiresAt:        timestampPlusTwoSeconds,
-			}, nil
-		},
-		saveProofOfEmailVerification: func(userID uint, verificationCode string, proof string) error {
-			return nil
-		},
-		deleteEmailVerificationData: func(userId uint) error {
-			return fmt.Errorf("could not delete verification data for user %d", userId)
-		},
-	}
-	emailVerifier := verification.NewEmailVerifier(
-		adminEmail,
-		defaultMockSenderService,
-		mockCodeGenerator,
-		now,
-	)
-	currService := service.NewService(mockRepo, emailVerifier, time.Second)
-
-	e := currService.CheckEmailVerificationCode(userId, verificationCode)
-
-	assert.NotNil(t, e)
-}
-
-func TestCheckEmailVerificationCode_FailedToSetUserEmailAsVerified(t *testing.T) {
-	mockRepo := &mockRepository{
-		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
-			return models.EmailVerificationData{
-				UserId:           userId,
-				VerificationCode: verificationCode,
-				ExpiresAt:        timestampPlusTwoSeconds,
-			}, nil
-		},
-		saveProofOfEmailVerification: func(userID uint, verificationCode string, proof string) error {
-			return nil
-		},
-		deleteEmailVerificationData: func(userId uint) error {
-			return nil
-		},
-		setUserEmailVerified: func(userID uint) error {
-			return fmt.Errorf("failed to set email as verified for user %d", userID)
-		},
-	}
-	emailVerifier := verification.NewEmailVerifier(
-		adminEmail,
-		defaultMockSenderService,
-		mockCodeGenerator,
-		now,
-	)
-	currService := service.NewService(mockRepo, emailVerifier, time.Second)
-
-	e := currService.CheckEmailVerificationCode(userId, verificationCode)
-
-	assert.NotNil(t, e)
-}
-
 func TestCheckEmailVerificationCode_Success(t *testing.T) {
 	mockRepo := &mockRepository{
 		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
@@ -599,12 +530,6 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 			}, nil
 		},
 		saveProofOfEmailVerification: func(userID uint, verificationCode string, proof string) error {
-			return nil
-		},
-		deleteEmailVerificationData: func(userId uint) error {
-			return nil
-		},
-		setUserEmailVerified: func(userID uint) error {
 			return nil
 		},
 	}
