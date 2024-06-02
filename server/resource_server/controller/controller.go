@@ -96,19 +96,19 @@ func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 	newService := r.Context().Value("service").(interfaces.IService)
 	var req dto.RegisterUserDTO
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
+		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
 		return
 	}
 
 	err := newService.RegisterUser(req)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
+		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
 		return
 	}
 
 	res := utils.BuildResponse(true, "OK!", "User registered successfully")
 	if err := json.NewEncoder(w).Encode(res); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
+		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
 		return
 	}
 }
@@ -123,7 +123,7 @@ func RegisterClientHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := newService.RegisterClient(req)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
+		utils.HandleError(w, http.StatusBadRequest, "Failed to register client", err)
 		return
 	}
 

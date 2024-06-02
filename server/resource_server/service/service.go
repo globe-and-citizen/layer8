@@ -51,6 +51,7 @@ func (s *service) GetClientData(clientName string) (models.ClientResponseOutput,
 		Secret:      clientData.Secret,
 		Name:        clientData.Name,
 		RedirectURI: clientData.RedirectURI,
+		BackendURI:  clientData.BackendURI,
 	}
 	return clientModel, nil
 }
@@ -165,6 +166,7 @@ func (s *service) ProfileClient(userName string) (models.ClientResponseOutput, e
 		Secret:      clientData.Secret,
 		Name:        clientData.Username,
 		RedirectURI: clientData.RedirectURI,
+		BackendURI:  clientData.BackendURI,
 	}
 	return clientModel, nil
 }
