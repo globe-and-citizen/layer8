@@ -83,3 +83,13 @@ run_local_db:
 		-e POSTGRES_PASSWORD=postgres \
 		-e POSTGRES_DBNAME=postgres \
 		-p 5434:5432 postgres:14.3
+
+
+setup_local_dependency:
+	cd server && go run cmd/setup/setup.go
+
+run_layer8server_local:
+	cd server && go run cmd/app/main.go
+
+setup_and_run:
+	make setup_local_dependency && make run_layer8server_local
