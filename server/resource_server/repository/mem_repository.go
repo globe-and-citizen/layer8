@@ -333,3 +333,12 @@ func (r *MemoryRepository) GetTTL(key string) ([]byte, error) {
 	}
 	return r.byteStorage[key], nil
 }
+
+func (r *MemoryRepository) DeleteUserByUsername(req dto.DeleteUserByUsername) error {
+	if _, ok := r.storage[req.Username]; !ok {
+		return fmt.Errorf("user not found")
+	}
+
+	delete(r.storage, req.Username)
+	return nil
+}

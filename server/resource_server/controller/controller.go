@@ -320,3 +320,24 @@ func GetUsageStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func DeleteUserByUsername(w http.ResponseWriter, r *http.Request) {
+	newService := r.Context().Value("service").(interfaces.IService)
+	var req dto.DeleteUserByUsername
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to delete user by username!", err)
+		return
+	}
+
+	err := newService.DeleteUserByUsername(req)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to delete user by username!", err)
+		return
+	}
+
+	resp := utils.BuildResponse(true, "OK!", "User has been deleted successfully!")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to delete user!", err)
+		return
+	}
+}

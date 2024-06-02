@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"fmt"
 )
 
 type Repository struct {
@@ -205,4 +206,27 @@ func (r *Repository) SetTTL(key string, value []byte, time time.Duration) error 
 
 func (r *Repository) GetTTL(key string) ([]byte, error) {
 	return []byte{}, nil
+}
+
+func (r *Repository) DeleteUserByUsername(req dto.DeleteUserByUsername) error {
+	var user interface{}
+	
+	switch req.Type {
+	case "client":
+		user = &models.Client{}
+	case "user":
+		user = &models.User{}
+	default:
+		return fmt.Errorf("invalid user type")
+	}
+
+	if err := r.connection.Where("username = ?", req.Username).Find(user).Error; err != nil {
+		return err
+	}
+
+	if err := r.connection.Delete(user).Error; err != nil {
+		return err
+	}
+
+	return nil
 }

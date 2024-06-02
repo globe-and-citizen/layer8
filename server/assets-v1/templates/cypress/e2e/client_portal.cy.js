@@ -1,3 +1,9 @@
+const project_name = 'Test Project';
+const username = 'testuser';
+const password = 'password123';
+const redirect_uri = 'https://redirecturl.com';
+const backend_uri = 'https://backendurl.com';
+
 describe('Register Client Page', () => {
   beforeEach(() => {
     cy.visit('http://localhost:5001/client-register-page')
@@ -14,10 +20,11 @@ describe('Register Client Page', () => {
   })
 
   it('allows clients to register with valid data', () => {
-    cy.get('input[id="name"]').type('Test Project')
-    cy.get('input[id="redirect_uri"]').type('https://example.com/callback')
-    cy.get('input[id="username"]').type('testuser')
-    cy.get('input[id="password"]').type('password123')
+    cy.get('input[id="name"]').type(project_name)
+    cy.get('input[id="redirect_uri"]').type(redirect_uri)
+    cy.get('input[id="backend_uri"]').type(backend_uri)
+    cy.get('input[id="username"]').type(username)
+    cy.get('input[id="password"]').type(password)
     cy.get('button').click()
     cy.url().should('include', 'http://localhost:5001/client-login-page')
   })
@@ -43,28 +50,33 @@ describe('Login Page', () => {
   })
 
   it('allows users to login with valid credentials', () => {
-    cy.get('input#username').type('hydrolife')
-    cy.get('input#password').type('1234')
+    cy.get('input#username').type(username)
+    cy.get('input#password').type(password)
     cy.get('button').click()
     cy.url().should('include', 'http://localhost:5001/client-profile')
-    cy.contains('Welcome “hydrolife!” Client Portal').should('be.visible');
+    cy.contains('Welcome “Test Project!” Client Portal').should('be.visible');
     cy.contains('Your data').should('be.visible');               
     
     cy.contains('.font-bold', 'Name:').next(). should('exist');
-    cy.get('input[placeholder="Name"]').should('have.value', 'hydrolife');
+    cy.get('input[placeholder="Name"]').should('have.value', project_name);
     
     cy.contains('.font-bold', 'Redirect URI:').next().should('exist');
-    cy.get('input[placeholder="Redirect URI"]').should('have.value', 'hydrolife.com');
+    cy.get('input[placeholder="Redirect URI"]').should('have.value', redirect_uri);
 
     cy.contains('.font-bold', 'UUID:').next().should('exist');
-    cy.get('input[placeholder="UUID"]').should('have.value', 'bd2422b6-2357-4f8f-ba46-c1e70c5f0173');
-
-    cy.get('input[placeholder="Secret"]').should('have.value', 'b333a024c425f1b250e9cd8084093220edbddc7f727ab31797232e48a3d57a59');
+    cy.get('input[placeholder="UUID"]').should('exist').should(($input) => {
+      expect($input.val()).not.to.be.empty;
+    });
+    
+    cy.contains('.font-bold', 'Secret:').should('exist');
+    cy.get('input[placeholder="Secret"]').should('exist').should(($input) => {
+      expect($input.val()).not.to.be.empty;
+    });
   })
 
   it('Copying UUID to clipboard', () => {
-    cy.get('input#username').type('hydrolife');
-    cy.get('input#password').type('1234');
+    cy.get('input#username').type(username);
+    cy.get('input#password').type(password);
     cy.get('button').click();
     cy.url().should('include', 'http://localhost:5001/client-profile');
   
@@ -87,8 +99,8 @@ describe('Login Page', () => {
   });
 
   it('Copying Secret to clipboard', () => {
-    cy.get('input#username').type('hydrolife');
-    cy.get('input#password').type('1234');
+    cy.get('input#username').type(username);
+    cy.get('input#password').type(password);
     cy.get('button').click();
     cy.url().should('include', 'http://localhost:5001/client-profile');
   
@@ -109,4 +121,8 @@ describe('Login Page', () => {
       expect(window.document.execCommand).to.have.been.calledOnceWith('copy');
     });
   });
+
+  it('delete client', () => {
+    cy.deleteRegisteredUser(username, "client")
+  })
 })

@@ -284,7 +284,7 @@ func TestRegisterClient(t *testing.T) {
 		Username:    "test_user",
 		Password:    "12345",
 	}
-
+	
 	// Call the RegisterClient method of the mock service
 	err := mockService.RegisterClient(req)
 	if err != nil {

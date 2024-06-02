@@ -196,6 +196,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.UpdateDisplayNameHandler(w, r)
 			case path == "/api/v1/usage-stats":
 				Ctl.GetUsageStats(w, r)
+			case path == "/api/v1/delete-user":
+				Ctl.DeleteUserByUsername(w, r)
 			case path == "/favicon.ico":
 				faviconPath := workingDirectory + "/dist/favicon.ico"
 				http.ServeFile(w, r, faviconPath)

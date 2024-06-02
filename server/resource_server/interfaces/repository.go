@@ -30,4 +30,5 @@ type IRepository interface {
 	GetClient(id string) (*serverModel.Client, error)
 	SetTTL(key string, value []byte, ttl time.Duration) error
 	GetTTL(key string) ([]byte, error)
+	DeleteUserByUsername(req dto.DeleteUserByUsername) error
 }

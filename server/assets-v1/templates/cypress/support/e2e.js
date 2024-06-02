@@ -18,16 +18,4 @@ import './commands'
 
 // Alternatively you can use CommonJS syntax:
 // require('./commands')
-
-Cypress.Commands.add('deleteRegisteredUser', () => {
-    cy.request({
-      method: 'DELETE',
-      url: 'http://localhost:5001/api/users',
-    }).then((response) => {
-      expect(response.status).to.eq(200);
-      cy.log('Registered user deleted successfully');
-    }).catch((error) => {
-      cy.log(`Error deleting registered user: ${error}`);
-    });
-  });
   

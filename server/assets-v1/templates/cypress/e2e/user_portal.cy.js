@@ -1,12 +1,16 @@
+const email = 'test@example.com';
+const username = 'testuser';
+const firstname = 'John';
+const lastname = 'Doe';
+const displayname = 'JohnDoe';
+const country = 'United States';
+const password = 'password123';
+
 describe('Authentication Page', () => {
   beforeEach(() => {
     cy.visit('http://localhost:5001/user-register-page')
   })
-
-  // afterEach(() => {
-  //   cy.deleteRegisteredUser();
-  // });
-
+  
   it('displays the registration form', () => {
     cy.get('h1').should('contain', 'Register')
     cy.get('input[placeholder="Email"]').should('exist')
@@ -20,13 +24,13 @@ describe('Authentication Page', () => {
   })
 
   it('allows users to register with valid data', () => {
-    cy.get('input[placeholder="Email"]').type('test@example.com')
-    cy.get('input[placeholder="Username"]').type('testuser')
-    cy.get('input[placeholder="First Name"]').type('John')
-    cy.get('input[placeholder="Last Name"]').type('Doe')
-    cy.get('input[placeholder="Display Name"]').type('JohnDoe')
-    cy.get('input[placeholder="Country"]').type('United States')
-    cy.get('input[type="password"]').type('password123')
+    cy.get('input[placeholder="Email"]').type(email)
+    cy.get('input[placeholder="Username"]').type(username)
+    cy.get('input[placeholder="First Name"]').type(firstname)
+    cy.get('input[placeholder="Last Name"]').type(lastname)
+    cy.get('input[placeholder="Display Name"]').type(displayname)
+    cy.get('input[placeholder="Country"]').type(country)
+    cy.get('input[type="password"]').type(password)
     cy.get('button').click()
     cy.url().should('include', 'http://localhost:5001/user-login-page')
   })
@@ -61,15 +65,29 @@ describe('Authentication Page', () => {
   })
 
   it('allows users to login with valid credentials', () => {
-    cy.get('input[placeholder="Username"]').type('testuser')
-    cy.get('input[placeholder="Password"]').type('password123')
+    cy.get('input[placeholder="Username"]').type(username)
+    cy.get('input[placeholder="Password"]').type(password)
     cy.get('button').click()
     cy.url().should('include', '/user')
 
-    cy.get('input[placeholder="Username"]').should('have.value', 'testuser');
-    cy.get('input[placeholder="First Name"]').should('have.value', 'John');
-    cy.get('input[placeholder="Last Name"]').should('have.value', 'Doe');
-    cy.get('input[placeholder="Country"]').should('have.value', 'United States');
-    cy.get('input[placeholder="Email"]').should('have.value', 'test@example.com');
+    cy.get('input[placeholder="Username"]').should('have.value', username);
+    cy.get('input[placeholder="First Name"]').should('have.value', firstname);
+    cy.get('input[placeholder="Last Name"]').should('have.value', lastname);
+    cy.get('input[placeholder="Country"]').should('have.value', country);
+    cy.get('input[placeholder="Email"]').should('have.value', email);
+  })
+
+  it('allows users to update display name and verify email', () => {
+    cy.get('input[placeholder="Username"]').type(username)
+    cy.get('input[placeholder="Password"]').type(password)
+    cy.get('button').click()
+    cy.url().should('include', '/user')
+    cy.get('input[placeholder="Display Name"]').type(displayname+'edited')
+    cy.get('button').should('contain', 'Save change')
+    cy.get('button').should('contain', 'Verify Email')
+  })
+
+  it('delete user', () => {
+    cy.deleteRegisteredUser(username, "user");
   })
 })

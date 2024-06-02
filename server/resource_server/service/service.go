@@ -164,7 +164,7 @@ func (s *service) ProfileClient(userName string) (models.ClientResponseOutput, e
 	clientModel := models.ClientResponseOutput{
 		ID:          clientData.ID,
 		Secret:      clientData.Secret,
-		Name:        clientData.Username,
+		Name:        clientData.Name,
 		RedirectURI: clientData.RedirectURI,
 		BackendURI:  clientData.BackendURI,
 	}
@@ -180,4 +180,11 @@ func (s *service) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) e
 		return err
 	}
 	return s.repository.UpdateDisplayName(userID, req)
+}
+
+func (s *service) DeleteUserByUsername(req dto.DeleteUserByUsername) error {
+	if err := validator.New().Struct(req); err != nil {
+		return err
+	}
+	return s.repository.DeleteUserByUsername(req)
 }

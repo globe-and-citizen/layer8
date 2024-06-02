@@ -23,3 +23,14 @@
 //
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
+
+Cypress.Commands.add('deleteRegisteredUser', (username, type) => {
+    return cy.request({
+        method: 'DELETE',
+        url: 'http://localhost:5001/api/v1/delete-user',
+        body: {
+            username: username,
+            type: type
+        },
+    })
+});
