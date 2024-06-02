@@ -33,4 +33,3 @@
 - [ ] Upload of image works
 - [ ] Reload leads to instant reload (demonstrating proper caching)
 - [ ] Clicking the newly loaded image shows it in a lightbox
-- [ ] Log in using tester and 12341234 should succeed
