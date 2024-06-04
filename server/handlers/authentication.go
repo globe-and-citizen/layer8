@@ -53,7 +53,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		next := r.URL.Query().Get("next")
 		username := r.FormValue("username")
 		password := r.FormValue("password")
-		fmt.Println("u & P: ", username, password)
+		fmt.Println("Username", username)
+		fmt.Println("Password", password)
 		// login the user
 		rUser, err := service.LoginUser(username, password)
 		if err != nil {
