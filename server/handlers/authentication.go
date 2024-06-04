@@ -1,13 +1,16 @@
 package handlers
 
 import (
+	"fmt"
 	svc "globe-and-citizen/layer8/server/internals/service"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 	"html/template"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
+// This is hit when the user would like to login with layer8
 func Login(w http.ResponseWriter, r *http.Request) {
 	service := r.Context().Value("Oauthservice").(*svc.Service)
 
@@ -27,18 +30,30 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		utils.ParseHTML(w, "assets-v1/templates/src/pages/oauth_portal/login.html",
+		ex, err := os.Executable()
+		if err != nil {
+			panic(err)
+		}
+		exPath := filepath.Dir(ex)
+		fmt.Println("example path", exPath)
+
+		// var realFilePath = "assets-v1/templates/src/pages/oauth_portal/login.html"
+		var testingFilePath = "C:\\Ottawa_DT_Dev\\Learning_Computers\\layer8\\server\\assets-v1\\templates\\src\\pages\\oauth_portal\\login.html"
+
+		utils.ParseHTML(w, testingFilePath,
 			map[string]interface{}{
 				"HasNext":  next != "",
 				"Next":     next,
 				"ProxyURL": os.Getenv("PROXY_URL"),
 			},
 		)
+
 		return
 	case "POST":
 		next := r.URL.Query().Get("next")
 		username := r.FormValue("username")
 		password := r.FormValue("password")
+		fmt.Println("u & P: ", username, password)
 		// login the user
 		rUser, err := service.LoginUser(username, password)
 		if err != nil {
@@ -83,6 +98,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
 func Register(w http.ResponseWriter, r *http.Request) {
 	service := r.Context().Value("OauthService").(*svc.Service)
 
