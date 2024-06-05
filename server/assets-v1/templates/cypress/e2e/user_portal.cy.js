@@ -88,6 +88,6 @@ describe('Authentication Page', () => {
   })
 
   it('delete user', () => {
-    cy.deleteRegisteredUser(username, "user");
+    cy.task("connectDB").then(cy.log)
   })
 })

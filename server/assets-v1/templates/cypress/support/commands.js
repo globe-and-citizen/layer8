@@ -24,13 +24,38 @@
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
 
-Cypress.Commands.add('deleteRegisteredUser', (username, type) => {
-    return cy.request({
-        method: 'DELETE',
-        url: 'http://localhost:5001/api/v1/delete-user',
-        body: {
-            username: username,
-            type: type
-        },
-    })
+
+// Cypress.Commands.add('deleteRegisteredUser', (username, type) => {
+//     return cy.request({
+//         method: 'DELETE',
+//         url: 'http://localhost:5001/api/v1/delete-user',
+//         body: {
+//             username: username,
+//             type: type
+//         },
+//     })
+// });
+
+const { Client } = require('pg');
+
+Cypress.Commands.add('deleteRegisteredUser', (username) => {
+    const client = new Client({
+        user: 'postgres',
+        host: 'localhost',
+        database: 'ResourceServer',
+        password: '1234',
+        port: 5432, // default PostgreSQL port
+    });
+
+    return client.connect()
+        .then(() => {
+            return client.query(`DELETE FROM users WHERE username = '${username}'`);
+        })
+        .then(() => {
+            client.end();
+        })
+        .catch(err => {
+            console.error('Error deleting user from database:', err);
+            client.end();
+        });
 });
