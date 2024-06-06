@@ -1,15 +1,14 @@
 package handlers
 
 import (
-	"context"
-	"globe-and-citizen/layer8/server/internals/service"
-	"globe-and-citizen/layer8/server/resource_server/dto"
-	"globe-and-citizen/layer8/server/resource_server/repository"
+	"globe-and-citizen/layer8/server/mocks"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-
+	"os"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 /* TESTS THAT I WILL NEED TO WRITE
@@ -19,55 +18,32 @@ import (
 * 4) etc...
  */
 
-func Test_Login(t *testing.T) {
-	// Step x: Create a mock service provider if necessary
-	mockedServiceProvider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func Test_GetLogin_NoToken_OK(t *testing.T) {
+	ctrl := gomock.NewController(t)
 
-		/*
-		* Custom logic that you would
-		* like the mock service provider to
-		* accomplish.
-		 */
+	var (
+		proxyUrl                  = "http://localhost:5001"
+		expectedLoginHTMLPath     = "assets-v1/templates/src/pages/oauth_portal/login.html"
+		expectedHTMLParsingParams = map[string]interface{}{
+			"HasNext":  true,
+			"Next":     "/",
+			"ProxyURL": proxyUrl,
+		}
+	)
 
-		w.Write([]byte("b64PubJWK"))
-	}))
+	os.Setenv("PROXY_URL", proxyUrl)
 
-	defer mockedServiceProvider.Close()
+	serviceMock := mocks.NewMockServiceInterface(ctrl)
+	htmlParserMock := func(w http.ResponseWriter, htmlFile string, params map[string]interface{}) {
+		assert.Equal(t, expectedLoginHTMLPath, htmlFile)
+		assert.Equal(t, expectedHTMLParsingParams, params)
+	}
 
-	// Step x, invoke an in_mem repository.Repository
-	memoryRepository := repository.NewMemoryRepository()
-	memoryRepository.RegisterUser(dto.RegisterUserDTO{
-		Email:       "auth@test.com",
-		Username:    "tester_chester",
-		FirstName:   "Tester",
-		LastName:    "Chester",
-		Password:    "12341234",
-		Country:     "North Pole",
-		DisplayName: "testa_chesta",
-	})
+	handler := NewAuthenticationHandler(serviceMock, htmlParserMock)
 
-	memoryService := service.NewService(memoryRepository)
-
-	form := url.Values{}
-	form.Add("username", "stravid")
-	form.Add("password", "12341234")
-	t.Log("why", form.Encode())
-	// Create a mockedRequest
-	reqToAuthentication := httptest.NewRequest("POST", "http://?"+form.Encode(), nil)
-
-	// Add the in_memory service to a request using context
-	reqToAuthentication = reqToAuthentication.WithContext(context.WithValue(reqToAuthentication.Context(), "Oauthservice", memoryService))
-
-	// the response should be this html "assets-v1/templates/src/pages/oauth_portal/login.html"
+	req := httptest.NewRequest("GET", "/login", nil)
 	responseRecorder := httptest.NewRecorder()
 
-	// NEXT UP: Dress up the request and change it to exercise all branches of this function and assert against them.
-	// Unit undertest
-
-	Login(responseRecorder, reqToAuthentication)
-
-	// Run assertions on the recorded response.
-	t.Log(responseRecorder.Code)
-	t.Log(responseRecorder.Body)
-	//assert.Equal(t, actual, expected)
+	handler.Login(responseRecorder, req)
+	assert.Equal(t, http.StatusOK, responseRecorder.Code)
 }
