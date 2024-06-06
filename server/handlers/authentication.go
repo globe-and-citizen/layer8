@@ -4,7 +4,6 @@ import (
 	"errors"
 	svc "globe-and-citizen/layer8/server/internals/service"
 	"globe-and-citizen/layer8/server/resource_server/utils"
-	"html/template"
 	"net/http"
 	"os"
 )
@@ -92,17 +91,14 @@ func (a *authenticationHandlerImpl) postLoginHandler(w http.ResponseWriter, r *h
 }
 
 func (a *authenticationHandlerImpl) parseLoginWithErr(w http.ResponseWriter, r *http.Request, err error) {
-	t, errT := template.ParseFiles("assets-v1/templates/src/pages/oauth_portal/login.html")
-	if errT != nil {
-		http.Error(w, errT.Error(), http.StatusInternalServerError)
-		return
-	}
+	a.parseHTML(w,
+		"assets-v1/templates/src/pages/oauth_portal/login.html",
+		map[string]interface{}{
+			"HasNext": true,
+			"Next":    r.URL.Query().Get("next"),
+			"Error":   err.Error(),
+		})
 
-	t.Execute(w, map[string]interface{}{
-		"HasNext": true,
-		"Next":    r.URL.Query().Get("next"),
-		"Error":   err.Error(),
-	})
 }
 
 func (a *authenticationHandlerImpl) Register(w http.ResponseWriter, r *http.Request) {
