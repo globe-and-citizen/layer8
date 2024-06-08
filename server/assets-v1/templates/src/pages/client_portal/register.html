@@ -165,16 +165,16 @@
       const isPasswordFocused = ref(false);
       const showToast = ref(false);
       const toastMessage = ref("");
-      const backend_uri_text = ref("");
-      const responseFromBackend = ref(false);
+      const backendUriText = ref("");
+      const isBackendUrlUsed = ref(false);
 
       const registerClient = async () => {
         try {
-          if(responseFromBackend.value) {
-            showToastMessage(backend_uri_text.value + " is already registered to the other user!", "error")
+          if(isBackendUrlUsed.value) {
+            showToastMessage(backendUriText.value + " is already registered to the other user!", "error")
             return;
           }
-          else if (name.value == "" || redirect_uri.value == "" || backend_uri.value == "" || username.value == "" || password.value == "") {
+          if (name.value == "" || redirect_uri.value == "" || backend_uri.value == "" || username.value == "" || password.value == "") {
             showToastMessage("Please enter all fields!", "error")
             return;
           }
@@ -219,10 +219,10 @@
               backend_uri: backend_uri.value,
             }),
           });
-          responseFromBackend.value = await response.json();
-          if (responseFromBackend.value == true) {
+          isBackendUrlUsed.value = await response.json();
+          if (isBackendUrlUsed.value == true) {
             showToastMessage(backend_uri.value + " is already registered to the other user!", "error")
-            backend_uri_text.value = backend_uri.value
+            backendUriText.value = backend_uri.value
             backend_uri.value = ""
           }
         } catch (error) {
@@ -250,8 +250,8 @@
             showToast,
             toastMessage,
             checkBackendUri,
-            backend_uri_text,
-            responseFromBackend
+            backendUriText,
+            isBackendUrlUsed
           };
         },
       });
