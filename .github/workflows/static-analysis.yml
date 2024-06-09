@@ -22,8 +22,15 @@ jobs:
           go-version: "1.21"
 
       - name: Run unit Tests
+        working-directory: ./server
         run: |
-          go test -coverprofile=./cov.out ./server/...
+          go test -coverprofile=./cov.out ./...
+
+      - name: Run Gosec Security Scanner
+        working-directory: ./server
+        run: |
+          go get github.com/securego/gosec/cmd/gosec
+          gosec -no-fail -fmt=sonarqube -out report.json ./...
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
