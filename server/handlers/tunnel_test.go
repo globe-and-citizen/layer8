@@ -35,7 +35,7 @@ func prepareInitTunnelRequest(clientBackendUrl string) *http.Request {
 		context.WithValue(
 			reqToInitTunnel.Context(),
 			"service",
-			resourceService.NewService(repo, &verification.EmailVerifier{}, 0),
+			resourceService.NewService(repo, &verification.EmailVerifier{}),
 		),
 	)
 

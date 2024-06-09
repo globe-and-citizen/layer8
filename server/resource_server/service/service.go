@@ -14,20 +14,16 @@ import (
 type service struct {
 	repository    interfaces.IRepository
 	emailVerifier *verification.EmailVerifier
-
-	verificationCodeValidityDuration time.Duration
 }
 
 // Newservice creates a new instance of service
 func NewService(
 	repo interfaces.IRepository,
 	emailVerifier *verification.EmailVerifier,
-	verificationCodeValidityDuration time.Duration,
 ) interfaces.IService {
 	return &service{
-		repository:                       repo,
-		emailVerifier:                    emailVerifier,
-		verificationCodeValidityDuration: verificationCodeValidityDuration,
+		repository:    repo,
+		emailVerifier: emailVerifier,
 	}
 }
 
@@ -198,7 +194,7 @@ func (s *service) VerifyEmail(userID uint) error {
 		models.EmailVerificationData{
 			UserId:           user.ID,
 			VerificationCode: verificationCode,
-			ExpiresAt:        time.Now().Add(s.verificationCodeValidityDuration).UTC(),
+			ExpiresAt:        time.Now().Add(s.emailVerifier.VerificationCodeValidityDuration).UTC(),
 		},
 	)
 
@@ -212,14 +208,16 @@ func (s *service) CheckEmailVerificationCode(userId uint, code string) error {
 	}
 
 	e = s.emailVerifier.VerifyCode(&verificationData, code)
-	if e != nil {
-		return e
-	}
 
-	// generate zk-proof of the verification procedure
-	proof := "mock_proof"
+	return e
+}
 
-	e = s.repository.SaveProofOfEmailVerification(userId, code, proof)
+func (s *service) GenerateZkProofOfEmailVerification(userID uint) (string, error) {
+	return "mock_proof", nil
+}
+
+func (s *service) SaveProofOfEmailVerification(userId uint, verificationCode string, zkProof string) error {
+	e := s.repository.SaveProofOfEmailVerification(userId, verificationCode, zkProof)
 
 	return e
 }

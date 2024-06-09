@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/go-playground/validator/v10"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -250,16 +252,40 @@ func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request dto.CheckEmailVerificationCodeDTO
-	e = json.NewDecoder(r.Body).Decode(&request)
+	body, e := io.ReadAll(r.Body)
 	if e != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to decode request body", e)
+		utils.HandleError(w, http.StatusBadRequest, "Error while reading request body", e)
+		return
+	}
+
+	var request dto.CheckEmailVerificationCodeDTO
+	e = json.Unmarshal(body, &request)
+	if e != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Error while unmarshalling json", e)
+		return
+	}
+
+	e = validator.New().Struct(request)
+	if e != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Input json is invalid", e)
 		return
 	}
 
 	e = service.CheckEmailVerificationCode(userID, request.Code)
 	if e != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to verify code", e)
+		return
+	}
+
+	zkProof, e := service.GenerateZkProofOfEmailVerification(userID)
+	if e != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to generate zk proof of email verification", e)
+		return
+	}
+
+	e = service.SaveProofOfEmailVerification(userID, request.Code, zkProof)
+	if e != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to save proof of the email verification procedure", e)
 		return
 	}
 

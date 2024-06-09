@@ -17,7 +17,8 @@ import (
 
 const id uint = 1
 const userId uint = 1
-const verificationCode = "12345"
+const userEmail = "example@test.com"
+const verificationCode = "123456"
 const emailProof = "AbcdfTs"
 
 var timestamp = time.Date(2024, time.May, 24, 14, 0, 0, 0, time.UTC)
@@ -307,36 +308,208 @@ func TestProfileClient(t *testing.T) {
 
 // Javokhir finished the testing
 
-func TestFindUser(t *testing.T) {
+func TestFindUser_UserDoesNotExist(t *testing.T) {
 	SetUp(t)
 	defer mockDB.Close()
-
-	var testUserId uint = 1
-	testUserEmail := "example@test.com"
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(`SELECT * FROM "users" WHERE id = $1 ORDER BY "users"."id" LIMIT 1`),
 	).WithArgs(
-		testUserId,
+		userId,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "email", "username", "password", "first_name",
 				"last_name", "salt", "email_proof", "verification_code"},
-		).AddRow(testUserId, testUserEmail, "username", "password", "first_name",
+		),
+	)
+
+	_, err := repository.FindUser(userId)
+
+	assert.NotNil(t, err)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestFindUser_Success(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(`SELECT * FROM "users" WHERE id = $1 ORDER BY "users"."id" LIMIT 1`),
+	).WithArgs(
+		userId,
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{"id", "email", "username", "password", "first_name",
+				"last_name", "salt", "email_proof", "verification_code"},
+		).AddRow(userId, userEmail, "username", "password", "first_name",
 			"last_name", "salt", "", "",
 		),
 	)
 
-	user, err := repository.FindUser(testUserId)
+	user, err := repository.FindUser(userId)
 
 	if err != nil {
 		t.Fatalf("Error while retrieving user: %v", err)
 	}
 
-	assert.Equal(t, testUserId, user.ID)
-	assert.Equal(t, testUserEmail, user.Email)
+	assert.Equal(t, userId, user.ID)
+	assert.Equal(t, userEmail, user.Email)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestGetEmailVerificationData_VerificationDataForTheGivenUserDoesNotExist(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`SELECT * FROM "email_verification_data" WHERE user_id = $1 ORDER BY "email_verification_data"."id" LIMIT 1`,
+		),
+	).WithArgs(
+		userId,
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{"id", "user_id", "verification_code", "expires_at"},
+		),
+	)
+
+	_, err := repository.GetEmailVerificationData(userId)
+
+	assert.NotNil(t, err)
+
+	if err = mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestGetEmailVerificationData_Success(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`SELECT * FROM "email_verification_data" WHERE user_id = $1 ORDER BY "email_verification_data"."id" LIMIT 1`,
+		),
+	).WithArgs(
+		userId,
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{"id", "user_id", "verification_code", "expires_at"},
+		).AddRow(
+			id, userId, verificationCode, timestamp,
+		),
+	)
+
+	data, err := repository.GetEmailVerificationData(userId)
+
+	if err != nil {
+		t.Fatalf("Error while getting email verification data: %v", err)
+	}
+	if err = mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+
+	assert.Equal(t, userId, data.UserId)
+	assert.Equal(t, verificationCode, data.VerificationCode)
+	assert.Equal(t, timestamp, data.ExpiresAt)
+}
+
+func TestSaveEmailVerificationData_RowWithUserIdDoesNotExist(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(`SELECT * FROM "email_verification_data" WHERE "email_verification_data"."user_id" = $1 ORDER BY "email_verification_data"."id" LIMIT 1`),
+	).WithArgs(
+		userId,
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{"id", "user_id", "verification_code", "expires_at"},
+		),
+	)
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`INSERT INTO "email_verification_data" ("user_id","verification_code","expires_at") VALUES ($1,$2,$3) RETURNING "id"`,
+		),
+	).WithArgs(
+		userId, verificationCode, timestamp,
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{"id", "user_id", "verification_code", "expires_at"},
+		).AddRow(
+			1, userId, verificationCode, timestamp,
+		),
+	)
+
+	mock.ExpectCommit()
+
+	err = repository.SaveEmailVerificationData(
+		models.EmailVerificationData{
+			UserId:           userId,
+			VerificationCode: verificationCode,
+			ExpiresAt:        timestamp,
+		},
+	)
+
+	if err != nil {
+		t.Fatalf("Error while saving email verification data: %v", err)
+	}
+	if err = mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestSaveEmailVerificationData_RowWithUserIdExists(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`SELECT * FROM "email_verification_data" WHERE "email_verification_data"."user_id" = $1 ORDER BY "email_verification_data"."id" LIMIT 1`,
+		),
+	).WithArgs(
+		userId,
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{"id", "user_id", "verification_code", "expires_at"},
+		).AddRow(
+			id, userId, verificationCode, timestamp,
+		),
+	)
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(
+			`UPDATE "email_verification_data" SET "expires_at"=$1,"user_id"=$2,"verification_code"=$3 WHERE "email_verification_data"."user_id" = $4 AND "id" = $5`,
+		),
+	).WithArgs(
+		timestamp, userId, verificationCode, userId, id,
+	).WillReturnResult(sqlmock.NewResult(2, 1))
+
+	mock.ExpectCommit()
+
+	err = repository.SaveEmailVerificationData(
+		models.EmailVerificationData{
+			UserId:           userId,
+			VerificationCode: verificationCode,
+			ExpiresAt:        timestamp,
+		},
+	)
+
+	if err != nil {
+		t.Fatalf("Error while saving email verification data: %v", err)
+	}
+	if err = mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("There were unfulfilled expectations: %s", err)
 	}
 }
@@ -485,130 +658,4 @@ func TestSaveProofOfEmailVerification_Success(t *testing.T) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("There were unfulfilled expectations: %s", err)
 	}
-}
-
-func TestSaveEmailVerificationData_RowWithUserIdDoesNotExist(t *testing.T) {
-	SetUp(t)
-	defer mockDB.Close()
-
-	mock.ExpectBegin()
-
-	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "email_verification_data" WHERE "email_verification_data"."user_id" = $1 ORDER BY "email_verification_data"."id" LIMIT 1`),
-	).WithArgs(
-		userId,
-	).WillReturnRows(
-		sqlmock.NewRows(
-			[]string{"id", "user_id", "verification_code", "expires_at"},
-		),
-	)
-
-	mock.ExpectQuery(
-		regexp.QuoteMeta(
-			`INSERT INTO "email_verification_data" ("user_id","verification_code","expires_at") VALUES ($1,$2,$3) RETURNING "id"`,
-		),
-	).WithArgs(
-		userId, verificationCode, timestamp,
-	).WillReturnRows(
-		sqlmock.NewRows(
-			[]string{"id", "user_id", "verification_code", "expires_at"},
-		).AddRow(
-			1, userId, verificationCode, timestamp,
-		),
-	)
-
-	mock.ExpectCommit()
-
-	err = repository.SaveEmailVerificationData(
-		models.EmailVerificationData{
-			UserId:           userId,
-			VerificationCode: verificationCode,
-			ExpiresAt:        timestamp,
-		},
-	)
-
-	if err != nil {
-		t.Fatalf("Error while saving email verification data: %v", err)
-	}
-	if err = mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("There were unfulfilled expectations: %s", err)
-	}
-}
-
-func TestSaveEmailVerificationData_RowWithUserIdExists(t *testing.T) {
-	SetUp(t)
-	defer mockDB.Close()
-
-	mock.ExpectBegin()
-
-	mock.ExpectQuery(
-		regexp.QuoteMeta(
-			`SELECT * FROM "email_verification_data" WHERE "email_verification_data"."user_id" = $1 ORDER BY "email_verification_data"."id" LIMIT 1`,
-		),
-	).WithArgs(
-		userId,
-	).WillReturnRows(
-		sqlmock.NewRows(
-			[]string{"id", "user_id", "verification_code", "expires_at"},
-		).AddRow(
-			id, userId, verificationCode, timestamp,
-		),
-	)
-
-	mock.ExpectExec(
-		regexp.QuoteMeta(
-			`UPDATE "email_verification_data" SET "expires_at"=$1,"user_id"=$2,"verification_code"=$3 WHERE "email_verification_data"."user_id" = $4 AND "id" = $5`,
-		),
-	).WithArgs(
-		timestamp, userId, verificationCode, userId, id,
-	).WillReturnResult(sqlmock.NewResult(2, 1))
-
-	mock.ExpectCommit()
-
-	err = repository.SaveEmailVerificationData(
-		models.EmailVerificationData{
-			UserId:           userId,
-			VerificationCode: verificationCode,
-			ExpiresAt:        timestamp,
-		},
-	)
-
-	if err != nil {
-		t.Fatalf("Error while saving email verification data: %v", err)
-	}
-	if err = mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("There were unfulfilled expectations: %s", err)
-	}
-}
-
-func TestGetEmailVerificationData(t *testing.T) {
-	SetUp(t)
-	defer mockDB.Close()
-
-	mock.ExpectQuery(
-		regexp.QuoteMeta(
-			`SELECT * FROM "email_verification_data" WHERE user_id = $1 ORDER BY "email_verification_data"."id" LIMIT 1`,
-		),
-	).WithArgs(
-		userId,
-	).WillReturnRows(
-		sqlmock.NewRows(
-			[]string{"id", "user_id", "verification_code", "expires_at"},
-		).AddRow(
-			id, userId, verificationCode, timestamp,
-		),
-	)
-
-	data, err := repository.GetEmailVerificationData(userId)
-
-	if err != nil {
-		t.Fatalf("Error while getting email verification data: %v", err)
-	}
-	if err = mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("There were unfulfilled expectations: %s", err)
-	}
-
-	assert.Equal(t, userId, data.UserId)
-	assert.Equal(t, verificationCode, data.VerificationCode)
-	assert.Equal(t, timestamp, data.ExpiresAt)
 }

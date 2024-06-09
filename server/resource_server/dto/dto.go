@@ -38,5 +38,5 @@ type RegisterClientDTO struct {
 }
 
 type CheckEmailVerificationCodeDTO struct {
-	Code string `json:"code"`
+	Code string `json:"code" validate:"required"`
 }

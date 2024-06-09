@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type Service interface {
+type EmailService interface {
 	SendEmail(email *models.Email) error
 }
 

@@ -119,6 +119,12 @@ func main() {
 		log.Fatalf("could not read verification code size from .env: %e", e)
 	}
 
+	verificationCodeValidityDuration, e :=
+		time.ParseDuration(os.Getenv("VERIFICATION_CODE_VALIDITY_DURATION"))
+	if e != nil {
+		log.Fatalf("error parsing verification code validity duration: %e", e)
+	}
+
 	emailVerifier := verification.NewEmailVerifier(
 		adminEmailAddress,
 		sender.NewMailerSendService(
@@ -126,18 +132,13 @@ func main() {
 			os.Getenv("MAILER_SEND_TEMPLATE_ID"),
 		),
 		code.NewRandomCodeGenerator(verificationCodeSize),
+		verificationCodeValidityDuration,
 		time.Now,
 	)
 
-	verificationCodeValidityDuration, e :=
-		time.ParseDuration(os.Getenv("VERIFICATION_CODE_VALIDITY_DURATION"))
-	if e != nil {
-		log.Fatalf("error parsing verification code validity duration: %e", e)
-	}
-
 	// Run server (which never returns)
 	Server(
-		svc.NewService(resourceRepository, emailVerifier, verificationCodeValidityDuration),
+		svc.NewService(resourceRepository, emailVerifier),
 		oauthService,
 	)
 }

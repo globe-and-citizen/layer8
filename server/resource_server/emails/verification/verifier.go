@@ -5,23 +5,25 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/emails/sender"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
 	"globe-and-citizen/layer8/server/resource_server/models"
-	"os"
 	"time"
 )
 
 type EmailVerifier struct {
 	adminEmailAddress string
 
-	emailSenderService sender.Service
+	emailSenderService sender.EmailService
 	codeGenerator      code.Generator
 
 	now func() time.Time
+
+	VerificationCodeValidityDuration time.Duration
 }
 
 func NewEmailVerifier(
 	adminEmailAddress string,
-	emailSenderService sender.Service,
+	emailSenderService sender.EmailService,
 	codeGenerator code.Generator,
+	verificationCodeValidityDuration time.Duration,
 	now func() time.Time,
 ) *EmailVerifier {
 	verifier := new(EmailVerifier)
@@ -30,6 +32,8 @@ func NewEmailVerifier(
 	verifier.emailSenderService = emailSenderService
 	verifier.codeGenerator = codeGenerator
 	verifier.now = now
+
+	verifier.VerificationCodeValidityDuration = verificationCodeValidityDuration
 
 	return verifier
 }
@@ -43,7 +47,7 @@ func (v *EmailVerifier) SendVerificationEmail(user *models.User, verificationCod
 		&models.Email{
 			From:    v.adminEmailAddress,
 			To:      user.Email,
-			Subject: os.Getenv("VERIFICATION_EMAIL_SUBJECT"),
+			Subject: "Verify your email at the Layer8 service",
 			Content: models.VerificationEmailContent{
 				Username: user.Username,
 				Code:     verificationCode,

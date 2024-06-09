@@ -24,10 +24,23 @@ var authenticationToken, _ = utils.GenerateToken(
 	},
 )
 
+const verificationCode = "123467"
+const emailProof = "email_proof"
+
+func decodeResponseBody(t *testing.T, rr *httptest.ResponseRecorder) utils.Response {
+	var response utils.Response
+	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+		t.Fatal(err)
+	}
+	return response
+}
+
 // MockService implements interfaces.IService for testing purposes.
 type MockService struct {
-	verifyEmail                func(userID uint) error
-	checkEmailVerificationCode func(userID uint, code string) error
+	verifyEmail                        func(userID uint) error
+	checkEmailVerificationCode         func(userID uint, code string) error
+	generateZkProofOfEmailVerification func(userID uint) (string, error)
+	saveProofOfEmailVerification       func(userID uint, verificationCode string, zkProof string) error
 }
 
 func (ms *MockService) RegisterUser(req dto.RegisterUserDTO) error {
@@ -70,6 +83,16 @@ func (ms *MockService) VerifyEmail(userID uint) error {
 
 func (ms *MockService) CheckEmailVerificationCode(userID uint, code string) error {
 	return ms.checkEmailVerificationCode(userID, code)
+}
+
+func (ms *MockService) GenerateZkProofOfEmailVerification(userID uint) (string, error) {
+	return ms.generateZkProofOfEmailVerification(userID)
+}
+
+func (ms *MockService) SaveProofOfEmailVerification(
+	userID uint, verificationCode string, zkProof string,
+) error {
+	return ms.saveProofOfEmailVerification(userID, verificationCode, zkProof)
 }
 
 func (ms *MockService) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
@@ -364,10 +387,7 @@ func TestVerifyEmailHandler_FailedToVerifyEmail(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	var response utils.Response
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
-		t.Fatal(err)
-	}
+	response := decodeResponseBody(t, rr)
 
 	assert.False(t, response.Status)
 	assert.Equal(t, "Failed to verify email", response.Message)
@@ -394,10 +414,7 @@ func TestVerifyEmailHandler_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	var response utils.Response
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
-		t.Fatal(err)
-	}
+	response := decodeResponseBody(t, rr)
 
 	assert.True(t, response.Status)
 	assert.Equal(t, "OK!", response.Message)
@@ -405,9 +422,81 @@ func TestVerifyEmailHandler_Success(t *testing.T) {
 	assert.Nil(t, response.Error)
 }
 
-func TestCheckEmailVerificationCode_FailedToVerifyCode(t *testing.T) {
+func TestCheckEmailVerificationCode_InvalidAuthenticationToken(t *testing.T) {
 	requestBody := []byte(`{"code": "123467"}`)
-	req, err := http.NewRequest("GET", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer invalid token")
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.CheckEmailVerificationCode(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Failed to verify user's token", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestCheckEmailVerificationCode_MalformedRequestBody(t *testing.T) {
+	requestBody := []byte(`{"code": "123467"`)
+	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.CheckEmailVerificationCode(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Error while unmarshalling json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestCheckEmailVerificationCode_RequestJSONDoesNotMatchTheScheme(t *testing.T) {
+	requestBody := []byte(`{"cod": "123467"}`)
+	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.CheckEmailVerificationCode(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Input json is invalid", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestCheckEmailVerificationCode_VerificationCodeIsInvalid(t *testing.T) {
+	requestBody := []byte(`{"code": "123467"}`)
+	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -415,6 +504,9 @@ func TestCheckEmailVerificationCode_FailedToVerifyCode(t *testing.T) {
 
 	mockService := &MockService{
 		checkEmailVerificationCode: func(userID uint, code string) error {
+			if code != verificationCode {
+				t.Fatalf("Verification code mismatch, expected %s, got %s", verificationCode, code)
+			}
 			return fmt.Errorf("failed to verify code for user %d", userID)
 		},
 	}
@@ -426,19 +518,16 @@ func TestCheckEmailVerificationCode_FailedToVerifyCode(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	var response utils.Response
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
-		t.Fatal(err)
-	}
+	response := decodeResponseBody(t, rr)
 
 	assert.False(t, response.Status)
 	assert.Equal(t, "Failed to verify code", response.Message)
 	assert.NotNil(t, response.Error)
 }
 
-func TestCheckEmailVerificationCode_Success(t *testing.T) {
+func TestCheckEmailVerificationCode_ZkEmailProofFailedToBeGenerated(t *testing.T) {
 	requestBody := []byte(`{"code": "123467"}`)
-	req, err := http.NewRequest("GET", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -446,6 +535,96 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 
 	mockService := &MockService{
 		checkEmailVerificationCode: func(userID uint, code string) error {
+			if code != verificationCode {
+				t.Fatalf("Verification code mismatch, expected %s, got %s", verificationCode, code)
+			}
+			return nil
+		},
+		generateZkProofOfEmailVerification: func(userID uint) (string, error) {
+			return "", fmt.Errorf("failed to generate the zk email proof")
+		},
+	}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.CheckEmailVerificationCode(rr, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Failed to generate zk proof of email verification", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestCheckEmailVerificationCode_FailedToSaveProofOfEmailVerification(t *testing.T) {
+	requestBody := []byte(`{"code": "123467"}`)
+	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{
+		checkEmailVerificationCode: func(userID uint, code string) error {
+			if code != verificationCode {
+				t.Fatalf("Verification code mismatch, expected %s, got %s", verificationCode, code)
+			}
+			return nil
+		},
+		generateZkProofOfEmailVerification: func(userID uint) (string, error) {
+			return emailProof, nil
+		},
+		saveProofOfEmailVerification: func(
+			userID uint, verificationCode string, zkProof string,
+		) error {
+			if zkProof != emailProof {
+				t.Fatalf("Email proof mismatch: expected %s, got %s", emailProof, zkProof)
+			}
+			return fmt.Errorf("failed to save proof of email verification")
+		},
+	}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.CheckEmailVerificationCode(rr, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Failed to save proof of the email verification procedure", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestCheckEmailVerificationCode_Success(t *testing.T) {
+	requestBody := []byte(`{"code": "123467"}`)
+	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{
+		checkEmailVerificationCode: func(userID uint, code string) error {
+			if code != verificationCode {
+				t.Fatalf("Verification code mismatch, expected %s, got %s", verificationCode, code)
+			}
+			return nil
+		},
+		generateZkProofOfEmailVerification: func(userID uint) (string, error) {
+			return emailProof, nil
+		},
+		saveProofOfEmailVerification: func(
+			userID uint, verificationCode string, zkProof string,
+		) error {
+			if zkProof != emailProof {
+				t.Fatalf("Email proof mismatch: expected %s, got %s", emailProof, zkProof)
+			}
 			return nil
 		},
 	}
@@ -457,10 +636,7 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	var response utils.Response
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
-		t.Fatal(err)
-	}
+	response := decodeResponseBody(t, rr)
 
 	assert.True(t, response.Status)
 	assert.Equal(t, "OK!", response.Message)

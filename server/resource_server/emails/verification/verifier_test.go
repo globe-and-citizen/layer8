@@ -16,7 +16,8 @@ const adminEmail = "layer8@email.com"
 const userId uint = 1
 const username = "user"
 const userEmail = "user@email.com"
-const verificationCode = "12345"
+const verificationCode = "123456"
+const verificationCodeValidityDuration = 2 * time.Minute
 
 var timestamp = time.Date(2024, time.May, 24, 14, 0, 0, 0, time.UTC)
 var timestampPlusTwoSeconds = timestamp.Add(time.Second * 2)
@@ -24,7 +25,7 @@ var now = func() time.Time {
 	return timestamp
 }
 
-var mockSenderService sender.Service
+var mockSenderService sender.EmailService
 var mockCodeGenerator code.Generator
 
 func SetUp() {
@@ -50,6 +51,7 @@ func TestGenerateVerificationCode(t *testing.T) {
 		adminEmail,
 		mockSenderService,
 		mockCodeGenerator,
+		verificationCodeValidityDuration,
 		now,
 	)
 
@@ -70,6 +72,7 @@ func TestSendVerificationEmail(t *testing.T) {
 		adminEmail,
 		mockSenderService,
 		mockCodeGenerator,
+		verificationCodeValidityDuration,
 		now,
 	)
 
@@ -91,6 +94,7 @@ func TestVerifyCode_VerificationCodeIsCorrect(t *testing.T) {
 		adminEmail,
 		mockSenderService,
 		mockCodeGenerator,
+		verificationCodeValidityDuration,
 		now,
 	)
 
@@ -112,6 +116,7 @@ func TestVerifyCode_VerificationCodeIsIncorrect(t *testing.T) {
 		adminEmail,
 		mockSenderService,
 		mockCodeGenerator,
+		verificationCodeValidityDuration,
 		now,
 	)
 
@@ -136,6 +141,7 @@ func TestVerifyCode_VerificationCodeIsExpired(t *testing.T) {
 		adminEmail,
 		mockSenderService,
 		mockCodeGenerator,
+		verificationCodeValidityDuration,
 		now,
 	)
 
