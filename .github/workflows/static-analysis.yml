@@ -29,7 +29,7 @@ jobs:
       - name: Run Gosec Security Scanner
         working-directory: ./server
         run: |
-          go get github.com/securego/gosec/cmd/gosec
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
           gosec -no-fail -fmt=sonarqube -out report.json ./...
 
       - name: SonarCloud Scan
