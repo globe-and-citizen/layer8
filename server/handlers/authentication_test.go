@@ -22,7 +22,7 @@ import (
 * 4) etc...
  */
 
-func Test_GetLogin_NoToken_OK(t *testing.T) {
+func Test_GetLoginHandler_NoToken_OK(t *testing.T) {
 	// Prepare the test
 	var (
 		proxyUrl                  = "http://localhost:5001"
@@ -55,7 +55,7 @@ func Test_GetLogin_NoToken_OK(t *testing.T) {
 	assert.Equal(t, http.StatusOK, responseRecorder.Code)
 }
 
-func Test_GetLogin_TokenExists_OK(t *testing.T) {
+func Test_GetLoginHandler_TokenExists_OK(t *testing.T) {
 
 	// Prepare the test
 	var (
@@ -80,7 +80,7 @@ func Test_GetLogin_TokenExists_OK(t *testing.T) {
 	assert.Equal(t, "/", responseRecorder.Header().Get("Location"))
 }
 
-func Test_PostLogin_ValidCredentials_OK(t *testing.T) {
+func Test_PostLoginHandler_ValidCredentials_OK(t *testing.T) {
 	// Prepare the test
 	var (
 		username     = "username"
@@ -128,7 +128,7 @@ func Test_PostLogin_ValidCredentials_OK(t *testing.T) {
 	assert.True(t, isCookieStored)
 }
 
-func Test_PostLogin_TokenNotExists_OK(t *testing.T) {
+func Test_PostLoginHandler_TokenNotExists_OK(t *testing.T) {
 	// Prepare the test
 	var (
 		username = "username"
@@ -175,7 +175,7 @@ func Test_PostLogin_TokenNotExists_OK(t *testing.T) {
 
 }
 
-func Test_PostLogin_InvalidCredentials_OK(t *testing.T) {
+func Test_PostLoginHandler_InvalidCredentials_OK(t *testing.T) {
 	// Prepare the test
 	var (
 		username = "username"
