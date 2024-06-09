@@ -143,6 +143,9 @@
           />
         </div>
       </div>
+      <div :class="showToast ? 'opacity-100' : 'opacity-0 pointer-events-none'" class="fixed top-3 right-3 bg-red-500 text-white p-2 rounded-md transition-opacity ease-in-out duration-500 z-50">
+        {{ toastMessage }}
+      </div>
     </div>
 
     <script>
@@ -153,7 +156,6 @@
       const backend_uri = ref("");
       const username = ref("");
       const password = ref("");
-
       const isRegistered = ref(false);
       const isNameFocused = ref(false);
       const isRUFocused = ref(false);
@@ -167,11 +169,13 @@
         redirect_uri: "",
         backend_uri: "",
       });
+      const showToast = ref(false);
+      const toastMessage = ref("");
 
       const registerClient = async () => {
         try {
-          if (name.value == "" || redirect_uri.value == "" || username.value == "" || password.value == "") {
-            alert("Please enter all fields!");
+          if (name.value == "" || redirect_uri.value == "" || backend_uri.value == "" || username.value == "" || password.value == "") {
+            showToastMessage("Please enter all fields!", "success");
             return;
           }
           await window.fetch("[[ .ProxyURL ]]/api/v1/register-client", {
@@ -187,13 +191,21 @@
               password: password.value,
             }),
           });
-          alert("Registration successful!");
+          showToastMessage("Registration successful!", "success");
           window.location.href = "[[ .ProxyURL ]]/client-login-page";
         } catch (error) {
           console.error(error);
-          alert("Registration failed!");
+          showToastMessage("Registration failed!", "error");
         }
       };
+      const showToastMessage = (message, type) => {
+        // Current param type is not used. But will be in the future
+        toastMessage.value = message;
+        showToast.value = true;
+        setTimeout(() => {
+          showToast.value = false;
+        }, 3000);
+      }
 
       const app = createApp({
         setup() {
@@ -210,7 +222,9 @@
             isBUFocused,
             isNameFocused,
             isUsernameFocused,
-            isPasswordFocused
+            isPasswordFocused,
+            toastMessage,
+            showToast
           };
         },
       });
