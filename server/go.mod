@@ -8,6 +8,7 @@ require (
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang-migrate/migrate/v4 v4.17.1
+	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.5.0
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/joho/godotenv v1.5.1
