@@ -93,3 +93,12 @@ run_layer8server_local:
 
 setup_and_run:
 	make setup_local_dependency && make run_layer8server_local
+
+run_smart_contract_test:
+	cd contract && npx hardhat test
+
+compile_smart_contract:
+	cd contract && npx hardhat compile
+
+deploy_smart_contract:
+	cd contract && npx hardhat run deploy.ts --network sepolia
