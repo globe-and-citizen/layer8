@@ -96,3 +96,12 @@ setup_and_run:
 
 mockgen:
 	mockgen -source=server/internals/service/service.go -destination=server/utils/mocks/internal_service_mock.go -package=mocks
+	
+run_smart_contract_test:
+	cd contract && npx hardhat test
+
+compile_smart_contract:
+	cd contract && npx hardhat compile
+
+deploy_smart_contract:
+	cd contract && npx hardhat run deploy.ts --network sepolia
