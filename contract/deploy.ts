@@ -1,9 +1,9 @@
 import { ethers } from "hardhat";
 
 async function main() {
-    const Langle = await ethers.getContractFactory("Langle");
-    const langle = await Langle.deploy();
-    console.log("Contract Deployed to Address:", await langle.getAddress());
+    const PayAsYouGo = await ethers.getContractFactory("PayAsYouGo");
+    const payAsYouGo = await PayAsYouGo.deploy("0x0dc02b96b0960400bcF02A0Fcb87aB0BE80A2264");
+    console.log("Contract Deployed to Address:", await payAsYouGo.getAddress());
   }
 
   main()
