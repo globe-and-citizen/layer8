@@ -3,8 +3,10 @@ import "@nomicfoundation/hardhat-toolbox";
 
 const config: HardhatUserConfig = {
   solidity: "0.8.24",
-  defaultNetwork: "sepolia",
+  defaultNetwork: "hardhat",
   networks: {
+    hardhat: {
+    },
     sepolia: {
       url: "https://eth-sepolia.g.alchemy.com/v2/pDkGIXxTZkhVJIrW01sJe4tVOO2oHtcj",
       accounts: [
