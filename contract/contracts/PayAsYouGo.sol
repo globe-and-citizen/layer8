@@ -40,6 +40,10 @@ contract PayAsYouGo {
         transactionAddress = _transactionAddress;
     }
 
+    event ContractCreated(bytes32 contractId, string clientId);
+    event BillAdded(bytes32 contractId, uint256 amount);
+    event BillPaid(bytes32 contractId, uint256 amount);
+
     function changeTransactionAddress(
         address payable _transactionAddress
     ) external onlyOwner {
@@ -49,7 +53,7 @@ contract PayAsYouGo {
     function newContract(
         uint8 rate,
         string memory clientId
-    ) external onlyOwner returns (bytes32) {
+    ) external onlyOwner {
         bytes32 contractId = keccak256(
             abi.encodePacked(clientId, block.timestamp)
         );
@@ -64,7 +68,7 @@ contract PayAsYouGo {
 
         contractIds.push(contractId);
 
-        return contractId;
+        emit ContractCreated(contractId, clientId); 
     }
 
     function addBillToContract(
@@ -84,6 +88,8 @@ contract PayAsYouGo {
         updatedContract.transactions.push(transaction);
         updatedContract.unpaidBill += amountToBePaid;
         updatedContract.lastUsageFetchTime = timestamp;
+
+        emit BillAdded(contractId, amountToBePaid);
     }
 
     function payBill(bytes32 contractId) external payable {
@@ -102,6 +108,8 @@ contract PayAsYouGo {
 
         (bool sent, ) = transactionAddress.call{value: msg.value}("");
         require(sent, "Failed to send payment to contract owner");
+        
+        emit BillPaid(contractId, msg.value);
     }
 
     function getContractById(bytes32 contractId)
