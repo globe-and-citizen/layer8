@@ -2,7 +2,8 @@
 pragma solidity ^0.8.24;
 
 contract PayAsYouGo {
-    address payable public owner;
+    address owner;
+    address payable transactionAddress;
 
     enum TransactionType {
         PAYMENT,
@@ -32,8 +33,17 @@ contract PayAsYouGo {
     bytes32[] public contractIds;
     mapping(bytes32 => Agreement) public contracts;
 
-    constructor() {
-        owner = payable(msg.sender);
+    constructor(
+        address payable _transactionAddress
+    ) {
+        owner = msg.sender;
+        transactionAddress = _transactionAddress;
+    }
+
+    function changeTransactionAddress(
+        address payable _transactionAddress
+    ) external onlyOwner {
+        transactionAddress = _transactionAddress;
     }
 
     function newContract(
@@ -90,7 +100,7 @@ contract PayAsYouGo {
 
         updatedContract.transactions.push(transaction);
 
-        (bool sent, ) = owner.call{value: msg.value}("");
+        (bool sent, ) = transactionAddress.call{value: msg.value}("");
         require(sent, "Failed to send payment to contract owner");
     }
 
