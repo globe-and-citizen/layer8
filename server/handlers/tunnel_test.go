@@ -192,3 +192,60 @@ func Test_TunnelAPI_OK_BadRequest(t *testing.T) {
 	assert.Equal(t, "trace-id-mock", responseRecorder.Header().Get("trace-id"))
 	assert.Equal(t, `{"error": "invalid value"}`, responseRecorder.Body.String())
 }
+
+func TestTunnelReturnsExactCodeFromSP(t *testing.T) {
+	os.Setenv("MP_123_SECRET_KEY", "mp_secret_key")
+	os.Setenv("UP_999_SECRET_KEY", "up_secret_key")
+
+	mpJWT, err := utils.GenerateStandardToken(os.Getenv("MP_123_SECRET_KEY"))
+	assert.Nil(t, err)
+	upJWT, err := resourceUtils.GenerateUPTokenJWT(os.Getenv("UP_999_SECRET_KEY"), "client_id")
+	assert.Nil(t, err)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths := []struct {
+			Path string
+			Code int
+			Body string
+		}{
+			{"/internal-error", http.StatusInternalServerError, `{"error": "internal server error"}`},
+			{"/forbidden", http.StatusForbidden, `{"error": "forbidden"}`},
+			{"/unauthorized", http.StatusUnauthorized, `{"error": "unauthorized"}`},
+		}
+
+		for _, path := range paths {
+			if r.URL.Path == path.Path {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("mp-jwt", mpJWT)
+				w.WriteHeader(path.Code)
+				w.Write([]byte(path.Body))
+				return
+			}
+		}
+
+		// default not found
+		http.Error(w, "not found", http.StatusNotFound)
+	}))
+
+	cases := []struct {
+		Path string
+		Code int
+	}{
+		{"/internal-error", http.StatusInternalServerError},
+		{"/forbidden", http.StatusForbidden},
+		{"/unauthorized", http.StatusUnauthorized},
+		{"/not-found", http.StatusNotFound},
+	}
+
+	for _, c := range cases {
+		req := httptest.NewRequest("GET", c.Path, nil)
+		req.Header.Set("X-Forwarded-Proto", "http")
+		req.Header.Set("X-Forwarded-Host", strings.Replace(server.URL, "http://", "", 1))
+		req.Header.Set("up-jwt", upJWT)
+		res := httptest.NewRecorder()
+
+		Tunnel(res, req)
+
+		assert.Equal(t, c.Code, res.Code)
+	}
+}

@@ -213,8 +213,8 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 
 	_, err = utilities.VerifyStandardToken(mpJWT, os.Getenv("MP_123_SECRET_KEY"))
 	if err != nil {
-		fmt.Println("MP JWT verify error: ", err.Error())
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		fmt.Printf("MP JWT verify error: %s. With status code: %d and text: %s", err.Error(), res.StatusCode, res.Status)
+		http.Error(w, res.Status, res.StatusCode)
 		return
 	}
 
