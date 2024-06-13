@@ -30,6 +30,11 @@ contract PayAsYouGo {
         TransactionType transactionType;
     }
 
+    struct BillingInput {
+        bytes32 contractId;
+        uint64 amount;
+    }
+
     bytes32[] public contractIds;
     mapping(bytes32 => Agreement) public contracts;
 
@@ -75,7 +80,7 @@ contract PayAsYouGo {
         bytes32 contractId,
         uint64 amount,
         uint64 timestamp
-    ) external onlyOwner {
+    ) public onlyOwner {
         Agreement storage updatedContract = contracts[contractId];
         uint256 amountToBePaid = amount * updatedContract.rate;
 
@@ -90,6 +95,15 @@ contract PayAsYouGo {
         updatedContract.lastUsageFetchTime = timestamp;
 
         emit BillAdded(contractId, amountToBePaid);
+    }
+
+    function bulkAddBillToContract(
+        uint64 timestamp,
+        BillingInput[] memory billings
+    ) external onlyOwner {
+        for (uint256 i = 0; i < billings.length; i++) {
+            addBillToContract(billings[i].contractId, billings[i].amount, timestamp);
+        }
     }
 
     function payBill(bytes32 contractId) external payable {
