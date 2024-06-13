@@ -107,6 +107,7 @@ deploy_smart_contract:
 	cd contract && npx hardhat run deploy.ts --network sepolia
 
 build_smart_contract:
+	rm -rf contract/build
 	solc --abi contract/contracts/PayAsYouGo.sol -o contract/build
 
 generate_go_from_abi:
