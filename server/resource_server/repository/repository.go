@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	serverModels "globe-and-citizen/layer8/server/models"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
@@ -63,6 +64,17 @@ func (r *Repository) RegisterUser(req dto.RegisterUserDTO) error {
 	}
 
 	return nil
+}
+
+func (r *Repository) FindUser(userId uint) (models.User, error) {
+	var user models.User
+	e := r.connection.Where("id = ?", userId).First(&user).Error
+
+	if e != nil {
+		return models.User{}, e
+	}
+
+	return user, e
 }
 
 func (r *Repository) RegisterClient(req dto.RegisterClientDTO) error {
@@ -167,8 +179,77 @@ func (r *Repository) ProfileClient(userID string) (models.Client, error) {
 	return client, nil
 }
 
-func (r *Repository) VerifyEmail(userID uint) error {
-	return r.connection.Model(&models.UserMetadata{}).Where("user_id = ? AND key = ?", userID, "email_verified").Update("value", "true").Error
+func (r *Repository) SaveProofOfEmailVerification(
+	userId uint, verificationCode string, emailProof string,
+) error {
+	tx := r.connection.Begin(&sql.TxOptions{Isolation: sql.LevelReadCommitted})
+
+	err := tx.Model(
+		&models.User{},
+	).Where(
+		"id = ?", userId,
+	).Updates(map[string]interface{}{
+		"verification_code": verificationCode,
+		"email_proof":       emailProof,
+	}).Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Where(
+		"user_id = ?", userId,
+	).Delete(
+		&models.EmailVerificationData{},
+	).Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Model(
+		&models.UserMetadata{},
+	).Where(
+		"user_id = ? AND key = ?",
+		userId,
+		"email_verified",
+	).Update("value", "true").Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (r *Repository) SaveEmailVerificationData(data models.EmailVerificationData) error {
+	tx := r.connection.Begin(&sql.TxOptions{Isolation: sql.LevelReadCommitted})
+
+	err := tx.Where(
+		models.EmailVerificationData{UserId: data.UserId},
+	).Assign(data).FirstOrCreate(&models.EmailVerificationData{}).Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (r *Repository) GetEmailVerificationData(userId uint) (models.EmailVerificationData, error) {
+	var data models.EmailVerificationData
+	e := r.connection.Where("user_id = ?", userId).First(&data).Error
+	if e != nil {
+		return models.EmailVerificationData{}, e
+	}
+
+	return data, nil
 }
 
 func (r *Repository) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
@@ -205,4 +286,12 @@ func (r *Repository) SetTTL(key string, value []byte, time time.Duration) error 
 
 func (r *Repository) GetTTL(key string) ([]byte, error) {
 	return []byte{}, nil
+}
+
+func (r *Repository) IsBackendURIExists(backendURL string) (bool, error) {
+    var count int64
+    if err := r.connection.Model(&models.Client{}).Where("backend_uri = ?", backendURL).Count(&count).Error; err != nil {
+        return false, err
+    }
+    return count > 0, nil
 }

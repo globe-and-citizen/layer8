@@ -69,7 +69,7 @@
                     name="backend_uri"
                     v-model="backend_uri"
                     @focus="isBUFocused = true"
-                    @blur="isBUFocused = false"
+                    @blur="checkBackendUri"
                     class="w-full px-4 pt-10 pb-3 border-l-4 focus:border-blue-500 focus:outline-none text-lg text-[#3751FE]"
                     placeholder=" "
                   />
@@ -162,20 +162,19 @@
       const isBUFocused = ref(false);
       const isUsernameFocused = ref(false);
       const isPasswordFocused = ref(false);
-      const client = ref({
-        id: "",
-        secret: "",
-        name: "",
-        redirect_uri: "",
-        backend_uri: "",
-      });
       const showToast = ref(false);
       const toastMessage = ref("");
+      const backendUriText = ref("");
+      const isBackendUrlUsed = ref(false);
 
       const registerClient = async () => {
         try {
+          if(isBackendUrlUsed.value) {
+            showToastMessage(backendUriText.value + " is already registered to the other user!", "error")
+            return;
+          }
           if (name.value == "" || redirect_uri.value == "" || backend_uri.value == "" || username.value == "" || password.value == "") {
-            showToastMessage("Please enter all fields!", "success");
+            showToastMessage("Please enter all fields!", "error")
             return;
           }
           await window.fetch("[[ .ProxyURL ]]/api/v1/register-client", {
@@ -191,11 +190,35 @@
               password: password.value,
             }),
           });
-          showToastMessage("Registration successful!", "success");
+          showToastMessage("Registration successful!", "success")
           window.location.href = "[[ .ProxyURL ]]/client-login-page";
         } catch (error) {
           console.error(error);
-          showToastMessage("Registration failed!", "error");
+          showToastMessage("Registration failed!", "error")
+        }
+      };
+
+      const checkBackendUri = async () => {
+        try {
+          isBUFocused.value = false
+          const response = await fetch("[[ .ProxyURL ]]/api/v1/check-backend-uri", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              backend_uri: backend_uri.value,
+            }),
+          });
+          isBackendUrlUsed.value = await response.json();
+          if (isBackendUrlUsed.value == true) {
+            showToastMessage(backend_uri.value + " is already registered to the other user!", "error")
+            backendUriText.value = backend_uri.value
+            backend_uri.value = ""
+          }
+        } catch (error) {
+          console.error(error);
+          return false;
         }
       };
       const showToastMessage = (message, type) => {
@@ -210,7 +233,6 @@
       const app = createApp({
         setup() {
           return {
-            client,
             name,
             username,
             password,
@@ -223,8 +245,12 @@
             isNameFocused,
             isUsernameFocused,
             isPasswordFocused,
+            showToastMessage,
+            showToast,
             toastMessage,
-            showToast
+            checkBackendUri,
+            backendUriText,
+            isBackendUrlUsed
           };
         },
       });
