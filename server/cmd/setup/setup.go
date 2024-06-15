@@ -104,7 +104,6 @@ func SetupPG() {
 	if os.Getenv("CREATE_TEST_USER") == "true" {
 		resourceRepository.RegisterUser(
 			dto.RegisterUserDTO{
-				Email:       os.Getenv("TEST_USER_EMAIL"),
 				Password:    os.Getenv("TEST_USER_PASSWORD"),
 				Username:    os.Getenv("TEST_USER_USERNAME"),
 				FirstName:   os.Getenv("TEST_USER_FIRST_NAME"),

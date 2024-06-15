@@ -40,8 +40,12 @@ func LoginClientPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/login.html")
 }
 
-func VerifyEmailPage(w http.ResponseWriter, r *http.Request) {
-	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/email-verification.html")
+func InputYourEmailPage(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/email/input-your-email.html")
+}
+
+func InputVerificationCodePage(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/email/input-verification-code.html")
 }
 
 func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
@@ -225,11 +229,30 @@ func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
 	userID, err := utils.ValidateToken(tokenString)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to verify email", err)
+		utils.HandleError(w, http.StatusBadRequest, "Request failed: invalid authorization token", err)
 		return
 	}
 
-	err = newService.VerifyEmail(userID)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Error while reading request body", err)
+		return
+	}
+
+	var request dto.VerifyEmailDTO
+	err = json.Unmarshal(body, &request)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Request malformed: error while parsing json", err)
+		return
+	}
+
+	err = validator.New().Struct(request)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Input json is invalid", err)
+		return
+	}
+
+	err = newService.VerifyEmail(userID, request.Email)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to verify email", err)
 		return

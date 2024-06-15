@@ -59,8 +59,8 @@ func TestGenerateVerificationCode(t *testing.T) {
 		&models.User{
 			ID:       userId,
 			Username: username,
-			Email:    userEmail,
 		},
+		userEmail,
 	)
 
 	assert.Equal(t, generatedCode, verificationCode)
@@ -80,8 +80,8 @@ func TestSendVerificationEmail(t *testing.T) {
 		&models.User{
 			ID:       userId,
 			Username: username,
-			Email:    userEmail,
 		},
+		userEmail,
 		verificationCode,
 	)
 

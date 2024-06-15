@@ -38,15 +38,17 @@ func NewEmailVerifier(
 	return verifier
 }
 
-func (v *EmailVerifier) GenerateVerificationCode(user *models.User) string {
-	return v.codeGenerator.GenerateCode(user.Email)
+func (v *EmailVerifier) GenerateVerificationCode(user *models.User, userEmail string) string {
+	return v.codeGenerator.GenerateCode(userEmail)
 }
 
-func (v *EmailVerifier) SendVerificationEmail(user *models.User, verificationCode string) error {
+func (v *EmailVerifier) SendVerificationEmail(
+	user *models.User, userEmail string, verificationCode string,
+) error {
 	return v.emailSenderService.SendEmail(
 		&models.Email{
 			From:    v.adminEmailAddress,
-			To:      user.Email,
+			To:      userEmail,
 			Subject: "Verify your email at the Layer8 service",
 			Content: models.VerificationEmailContent{
 				Username: user.Username,
