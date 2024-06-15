@@ -353,7 +353,7 @@ func TestGetClientData(t *testing.T) {
 func TestCheckBackendURI(t *testing.T) {
     mockRepo := new(mockRepository)
 
-    mockService := service.NewService(mockRepo)
+    mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
 
     backendURL := "example.com"
 
