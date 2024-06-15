@@ -228,3 +228,11 @@ func (s *service) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) e
 	}
 	return s.repository.UpdateDisplayName(userID, req)
 }
+
+func (s *service) CheckBackendURI(backendURL string) (bool, error) {
+	response, err := s.repository.IsBackendURIExists(backendURL)
+	if err != nil {
+		return false, err
+	}
+	return response, nil
+}

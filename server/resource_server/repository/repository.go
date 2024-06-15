@@ -287,3 +287,11 @@ func (r *Repository) SetTTL(key string, value []byte, time time.Duration) error 
 func (r *Repository) GetTTL(key string) ([]byte, error) {
 	return []byte{}, nil
 }
+
+func (r *Repository) IsBackendURIExists(backendURL string) (bool, error) {
+    var count int64
+    if err := r.connection.Model(&models.Client{}).Where("backend_uri = ?", backendURL).Count(&count).Error; err != nil {
+        return false, err
+    }
+    return count > 0, nil
+}

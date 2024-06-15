@@ -394,3 +394,13 @@ func (r *MemoryRepository) GetTTL(key string) ([]byte, error) {
 	}
 	return r.byteStorage[key], nil
 }
+
+func (r *MemoryRepository) IsBackendURIExists(backendURL string) (bool, error) {
+    for _, data := range r.storage {
+        backend, ok := data["backend_uri"]
+        if ok && backend == backendURL {
+            return true, nil
+        }
+    }
+    return false, nil
+}

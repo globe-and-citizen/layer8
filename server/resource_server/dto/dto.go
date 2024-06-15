@@ -37,6 +37,9 @@ type RegisterClientDTO struct {
 	Password    string `json:"password" validate:"required"`
 }
 
+type CheckBackendURIDTO struct {
+	BackendURI string `json:"backend_uri" validate:"required"`
+}
 type CheckEmailVerificationCodeDTO struct {
 	Code string `json:"code" validate:"required"`
 }

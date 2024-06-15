@@ -120,6 +120,15 @@ func (m *mockRepository) RegisterClient(req dto.RegisterClientDTO) error {
 	return nil
 }
 
+func (m *mockRepository) IsBackendURIExists(backendURL string) (bool, error) {
+    return true, nil
+}
+
+func (m *mockRepository) CheckBackendURI(backendURL string) (bool, error) {
+    // Your mock implementation of CheckBackendURI here
+    return true, nil
+}
+
 func (m *mockRepository) GetClientData(clientName string) (models.Client, error) {
 	if clientName == "testclient" {
 		return models.Client{
@@ -339,6 +348,27 @@ func TestGetClientData(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, clientData.Secret, "testsecret")
 	assert.Equal(t, clientData.RedirectURI, "https://gcitizen.com/callback")
+}
+
+func TestCheckBackendURI(t *testing.T) {
+    mockRepo := new(mockRepository)
+
+    mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+
+    backendURL := "example.com"
+
+    expectedResponse := true
+
+    response, err := mockService.CheckBackendURI(backendURL)
+    if err != nil {
+        t.Error("Expected nil error, got", err)
+    }
+
+    assert.Nil(t, err)
+
+    if response != expectedResponse {
+        t.Errorf("Expected response: %v, got: %v", expectedResponse, response)
+    }
 }
 
 func TestVerifyEmail_UserDoesNotExist(t *testing.T) {

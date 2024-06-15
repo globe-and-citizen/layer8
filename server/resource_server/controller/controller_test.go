@@ -134,6 +134,11 @@ func (ms *MockService) GetClientDataByBackendURL(backendURL string) (models.Clie
 	return models.ClientResponseOutput{}, nil
 }
 
+func (ms *MockService) CheckBackendURI(backendURL string) (bool, error) {
+    // Mock implementation for testing purposes.
+    return true, nil
+}
+
 func TestRegisterUserHandler(t *testing.T) {
 	// Mock request body
 	requestBody := []byte(`{
@@ -737,10 +742,37 @@ func TestLoginClientHandler(t *testing.T) {
 	assert.Equal(t, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw", tokenResp.Token)
 }
 
+func TestCheckBackendURIHandler(t *testing.T) {
+	checkReq := dto.CheckBackendURIDTO{
+		BackendURI: "https://example.com",
+	}
+	reqBody, err := json.Marshal(checkReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest("POST", "/api/v1/check-backend-uri", bytes.NewBuffer(reqBody))
+
+	req = setMockServiceInContext(req)
+
+	w := httptest.NewRecorder()
+
+	Ctl.CheckBackendURI(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response bool
+	err = json.NewDecoder(w.Body).Decode(&response)
+	if err != nil {
+		t.Fatalf("failed to decode response body: %v", err)
+	}
+
+	assert.True(t, response)
+}
+
 func setMockServiceInContext(req *http.Request) *http.Request {
 	mockSvc := &MockService{}
 	ctx := context.WithValue(req.Context(), "service", mockSvc)
 	return req.WithContext(ctx)
 }
-
 // Javokhir finished the testing
