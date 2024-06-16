@@ -160,10 +160,6 @@
                   <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" readonly :value="user.country" />
                 </div>
                 <div>
-                  <label class="font-normal text-black text-sm text-start mb-2 block">Email</label>
-                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" readonly :value="user.email" />
-                </div>
-                <div>
                   <label class="font-normal text-black text-sm text-start mb-2 block">Display Name</label>
                   <input class="border border-[#BDC3CA] rounded-lg px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" type="text" v-model="newDisplayName" />
                 </div>
@@ -197,7 +193,6 @@
 
       const token = ref(localStorage.getItem("token") || null);
       const user = ref({
-        email: "",
         username: "",
         first_name: "",
         last_name: "",
@@ -235,27 +230,7 @@
       };
 
       const verifyEmail = async () => {
-        try {
-            const response = await window.fetch(
-            "[[ .ProxyURL ]]/api/v1/verify-email",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "Application/Json",
-                Authorization: `Bearer ${token.value}`,
-              },
-            }
-            );
-            const data = await response.json();
-
-            if (data.message === "OK!") {
-                window.location.href = "[[ .ProxyURL ]]/verify-email-page"
-            } else {
-                alert("Error happened: " + data.errors)
-            }
-        } catch (error) {
-          console.error(error);
-        }
+          window.location.href = "[[ .ProxyURL ]]/input-your-email-page";
       };
 
       const changeDisplayName = async () => {

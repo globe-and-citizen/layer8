@@ -84,7 +84,6 @@ func main() {
 
 		resourceRepository = rsRepo.NewMemoryRepository()
 		resourceRepository.RegisterUser(dto.RegisterUserDTO{
-			Email:       "user@test.com",
 			Username:    "tester",
 			FirstName:   "Test",
 			LastName:    "User",
@@ -195,8 +194,10 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.LoginUserPage(w, r)
 			case path == "/user-register-page":
 				Ctl.RegisterUserPage(w, r)
-			case path == "/verify-email-page":
-				Ctl.VerifyEmailPage(w, r)
+			case path == "/input-your-email-page":
+				Ctl.InputYourEmailPage(w, r)
+			case path == "/input-verification-code-page":
+				Ctl.InputVerificationCodePage(w, r)
 			case path == "/client-register-page":
 				Ctl.ClientHandler(w, r)
 			case path == "/client-login-page":

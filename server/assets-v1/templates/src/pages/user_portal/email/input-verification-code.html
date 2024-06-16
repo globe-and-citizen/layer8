@@ -58,6 +58,12 @@
             const token = ref(localStorage.getItem("token") || null);
 
             const checkEmailVerificationCode = async () => {
+                if (verificationCode.value === "") {
+                    alert("Verification code is mandatory");
+                    return;
+                }
+                const email = localStorage.getItem("email");
+
                 const response = await window.fetch(
                     "[[ .ProxyURL ]]/api/v1/check-email-verification-code",
                     {
@@ -67,11 +73,14 @@
                             Authorization: `Bearer ${token.value}`,
                         },
                         body: JSON.stringify({
+                            email: email,
                             code: verificationCode.value,
                         }),
-                    }
+                    },
                 );
                 const result = await response.json();
+
+                localStorage.removeItem("email");
 
                 alert(result.message);
 

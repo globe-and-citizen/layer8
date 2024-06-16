@@ -23,12 +23,10 @@ func NewRepository(db *gorm.DB) interfaces.IRepository {
 }
 
 func (r *Repository) RegisterUser(req dto.RegisterUserDTO) error {
-
 	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
 	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
 
 	user := models.User{
-		Email:     req.Email,
 		Username:  req.Username,
 		Password:  HashedAndSaltedPass,
 		FirstName: req.FirstName,

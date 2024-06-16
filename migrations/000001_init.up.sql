@@ -13,7 +13,6 @@ CREATE TABLE clients (
 
 CREATE TABLE users (
     id BIGSERIAL,
-    email character varying(255) NOT NULL UNIQUE,
     username character varying(50) NOT NULL UNIQUE,
     password character varying(255) NOT NULL,
     first_name character varying(50) NOT NULL,
