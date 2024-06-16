@@ -314,8 +314,8 @@ func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
 
 	response := utils.BuildResponse(
 		true,
-		"OK!",
 		"Your email was successfully verified!",
+		"Email verified!",
 	)
 	e = json.NewEncoder(w).Encode(response)
 	if e != nil {

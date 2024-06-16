@@ -135,8 +135,8 @@ func (ms *MockService) GetClientDataByBackendURL(backendURL string) (models.Clie
 }
 
 func (ms *MockService) CheckBackendURI(backendURL string) (bool, error) {
-    // Mock implementation for testing purposes.
-    return true, nil
+	// Mock implementation for testing purposes.
+	return true, nil
 }
 
 func TestRegisterUserHandler(t *testing.T) {
@@ -741,8 +741,8 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 	response := decodeResponseBody(t, rr)
 
 	assert.True(t, response.Status)
-	assert.Equal(t, "OK!", response.Message)
-	assert.Equal(t, "Your email was successfully verified!", response.Data)
+	assert.Equal(t, "Your email was successfully verified!", response.Message)
+	assert.Equal(t, "Email verified!", response.Data)
 	assert.Nil(t, response.Error)
 }
 
@@ -872,4 +872,5 @@ func setMockServiceInContext(req *http.Request) *http.Request {
 	ctx := context.WithValue(req.Context(), "service", mockSvc)
 	return req.WithContext(ctx)
 }
+
 // Javokhir finished the testing
