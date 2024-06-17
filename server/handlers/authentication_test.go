@@ -15,13 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-/* TESTS THAT I WILL NEED TO WRITE
-* 1) Query param next == ""
-* 2) Query param next == "<?>"
-* 3) request.Cookie("token") != nil
-* 4) etc...
- */
-
 func Test_GetLoginHandler_NoToken_OK(t *testing.T) {
 	// Prepare the test
 	var (
