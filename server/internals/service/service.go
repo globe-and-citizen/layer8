@@ -19,11 +19,21 @@ import (
 	rs_utils "globe-and-citizen/layer8/server/resource_server/utils"
 )
 
+type ServiceInterface interface {
+	GetUserByToken(token string) (*models.User, error)
+	LoginUser(username, password string) (map[string]interface{}, error)
+	GenerateAuthorizationURL(config *oauth2.Config, userID int64, headerMap map[string]string) (*entities.AuthURL, error)
+	ExchangeCodeForToken(config *oauth2.Config, code string) (*oauth2.Token, error)
+	AccessResourcesWithToken(token string) (map[string]interface{}, error)
+	GetClient(id string) (*models.Client, error)
+	AddTestClient() (*models.Client, error)
+}
+
 type Service struct {
 	Repo repository.Repository
 }
 
-func NewService(repo repository.Repository) *Service {
+func NewService(repo repository.Repository) ServiceInterface {
 	return &Service{
 		Repo: repo,
 	}

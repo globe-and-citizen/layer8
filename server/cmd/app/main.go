@@ -23,6 +23,7 @@ import (
 	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
+	"globe-and-citizen/layer8/server/resource_server/utils"
 
 	oauthRepo "globe-and-citizen/layer8/server/internals/repository"
 
@@ -147,6 +148,11 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 
 	getPwd()
 
+	authHandler := handlers.NewAuthenticationHandler(
+		oauthService,
+		utils.ParseHTML,
+	)
+
 	server := http.Server{
 		Addr: fmt.Sprintf(":%s", port),
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -173,7 +179,7 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 
 			// Authorization Server endpoints
 			case path == "/login":
-				handlers.Login(w, r)
+				authHandler.Login(w, r)
 			case path == "/authorize":
 				handlers.Authorize(w, r)
 			case path == "/error":
