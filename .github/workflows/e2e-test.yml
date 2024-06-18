@@ -80,11 +80,11 @@ jobs:
       - name: Run cypress tests
         uses: cypress-io/github-action@v6
         with:
-          # wait-on: 'http://localhost:5173, http://localhost:6002, http://localhost:5001'
           start: |
             make run-server
             make run-wgp-backend
             make run-wgp-frontend
+          wait-on: 'http://localhost:5173, http://localhost:6002, http://localhost:5001'
           browser: chrome
           spec: ./cypress/e2e/wgp/*.cy.js
           working-directory: ./test/cypress
