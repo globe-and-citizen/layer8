@@ -67,7 +67,7 @@ jobs:
           echo "LAYER8_URL=http://localhost:5001" >> .env
           echo "BACKEND_URL=http://localhost:6002" >> .env
           npm install
-          node server.js &
+          node server.js >> log.txt 2>&1 &
           for attempt in {1..20}; do sleep 2; if curl -s http://localhost:6002/ > /dev/null; then break; fi; done
 
       - name: Run WGP frontend
@@ -76,6 +76,7 @@ jobs:
           npm install
           npm run dev &
           for attempt in {1..20}; do sleep 2; if curl -s http://localhost:5173/ > /dev/null; then break; fi; done
+          cat ../backend/log.txt
 
       - name: Run cypress tests
         uses: cypress-io/github-action@v6
