@@ -73,6 +73,8 @@ jobs:
       - name: Run WGP frontend
         run: |
           cd ./sp_mocks/wgp/frontend
+          echo "VITE_BACKEND_URL = http://localhost:6002" > .env
+          echo "VITE_PROXY_URL = http://localhost:5001" >> .env
           npm install
           npm run dev &
           for attempt in {1..20}; do sleep 2; if curl -s http://localhost:5173/ > /dev/null; then break; fi; done
