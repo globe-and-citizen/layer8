@@ -54,7 +54,6 @@ jobs:
 
       - name: Run layer8 server
         run: |
-          cd layer8
           sed -i "s/TEST_CLIENT_BACKEND_URL=localhost:8000/TEST_CLIENT_BACKEND_URL=localhost:6002/g" server/.env.dev
           sed -i "s/TEST_CLIENT_BACKEND_URI=http:\/\/localhost:8000/TEST_CLIENT_BACKEND_URI=http:\/\/localhost:6002/g" server/.env.dev
           make setup_and_run &
