@@ -1,0 +1,87 @@
+name: E2E Test On Imsharer And WGP
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run the tests on'
+        required: false
+        default: 'development'
+        type: string
+
+jobs:
+  test-imsharer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run server
+        run: |
+          sed -i "s/TEST_CLIENT_BACKEND_URL=localhost:8000/TEST_CLIENT_BACKEND_URL=localhost:6001/g" server/.env.dev
+          sed -i "s/TEST_CLIENT_BACKEND_URI=http:\/\/localhost:8000/TEST_CLIENT_BACKEND_URI=http:\/\/localhost:6001/g" server/.env.dev
+          make setup_and_run &
+          for attempt in {1..30}; do sleep 2; if curl -s http://localhost:5001/ > /dev/null; then break; fi; done
+
+      - name: Run imsharer backend
+        run: |
+          cd ./sp_mocks/imsharer/backend
+          npm install
+          node index.js &
+          for attempt in {1..20}; do sleep 2; if curl -s http://localhost:6001/ > /dev/null; then break; fi; done
+
+      - name: Run imsharer frontend
+        run: |
+          cd ./sp_mocks/imsharer/frontend
+          npm install
+          npm run dev &
+          for attempt in {1..20}; do sleep 2; if curl -s http://localhost:5173/ > /dev/null; then break; fi; done
+
+      - name: Run cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          project: ./test/cypress
+          wait-on: 'http://localhost:5173'
+          browser: chrome
+          spec: ./cypress/e2e/imsharer/*.cy.js
+
+    test-wgp:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+
+        - name: Run layer8 server
+          run: |
+            cd layer8
+            sed -i "s/TEST_CLIENT_BACKEND_URL=localhost:8000/TEST_CLIENT_BACKEND_URL=localhost:6002/g" server/.env.dev
+            sed -i "s/TEST_CLIENT_BACKEND_URI=http:\/\/localhost:8000/TEST_CLIENT_BACKEND_URI=http:\/\/localhost:6002/g" server/.env.dev
+            make setup_and_run &
+            for attempt in {1..30}; do sleep 2; if curl -s http://localhost:5001/ > /dev/null; then break; fi; done
+
+        - name: Run WGP backend
+          run: |
+            cd ./sp_mocks/wgp/backend
+            echo "PORT=6002" > .env
+            echo "FRONTEND_URL=http://localhost:5173" >> .env
+            echo "LAYER8_URL=http://localhost:5001" >> .env
+            echo "BACKEND_URL=http://localhost:6002" >> .env
+            npm install
+            node server.js &
+            for attempt in {1..20}; do sleep 2; if curl -s http://localhost:6002/ > /dev/null; then break; fi; done
+
+        - name: Run WGP frontend
+          run: |
+            cd ./sp_mocks/wgp/frontend
+            npm install
+            npm run dev &
+            for attempt in {1..20}; do sleep 2; if curl -s http://localhost:5173/ > /dev/null; then break; fi; done
+
+        - name: Run cypress tests
+          uses: cypress-io/github-action@v6
+          with:
+            project: ./test/cypress
+            wait-on: 'http://localhost:5173'
+            browser: chrome
+            spec: ./cypress/e2e/wgp/*.cy.js
