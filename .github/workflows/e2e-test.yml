@@ -41,10 +41,10 @@ jobs:
       - name: Run cypress tests
         uses: cypress-io/github-action@v6
         with:
-          project: ./test/cypress
           wait-on: 'http://localhost:5173'
           browser: chrome
           spec: ./cypress/e2e/imsharer/*.cy.js
+          working-directory: ./test/cypress
 
   test-wgp:
     runs-on: ubuntu-latest
@@ -80,7 +80,7 @@ jobs:
       - name: Run cypress tests
         uses: cypress-io/github-action@v6
         with:
-          project: ./test/cypress
           wait-on: 'http://localhost:5173'
           browser: chrome
           spec: ./cypress/e2e/wgp/*.cy.js
+          working-directory: ./test/cypress
