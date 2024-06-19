@@ -23,6 +23,7 @@ import (
 	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
+	"globe-and-citizen/layer8/server/resource_server/utils"
 
 	oauthRepo "globe-and-citizen/layer8/server/internals/repository"
 
@@ -84,7 +85,6 @@ func main() {
 
 		resourceRepository = rsRepo.NewMemoryRepository()
 		resourceRepository.RegisterUser(dto.RegisterUserDTO{
-			Email:       "user@test.com",
 			Username:    "tester",
 			FirstName:   "Test",
 			LastName:    "User",
@@ -148,6 +148,11 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 
 	getPwd()
 
+	authHandler := handlers.NewAuthenticationHandler(
+		oauthService,
+		utils.ParseHTML,
+	)
+
 	server := http.Server{
 		Addr: fmt.Sprintf(":%s", port),
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -174,7 +179,7 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 
 			// Authorization Server endpoints
 			case path == "/login":
-				handlers.Login(w, r)
+				authHandler.Login(w, r)
 			case path == "/authorize":
 				handlers.Authorize(w, r)
 			case path == "/error":
@@ -195,8 +200,10 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.LoginUserPage(w, r)
 			case path == "/user-register-page":
 				Ctl.RegisterUserPage(w, r)
-			case path == "/verify-email-page":
-				Ctl.VerifyEmailPage(w, r)
+			case path == "/input-your-email-page":
+				Ctl.InputYourEmailPage(w, r)
+			case path == "/input-verification-code-page":
+				Ctl.InputVerificationCodePage(w, r)
 			case path == "/client-register-page":
 				Ctl.ClientHandler(w, r)
 			case path == "/client-login-page":

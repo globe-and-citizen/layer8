@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"github.com/go-playground/validator/v10"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
@@ -28,9 +27,6 @@ func NewService(
 }
 
 func (s *service) RegisterUser(req dto.RegisterUserDTO) error {
-	if req.Email == "" {
-		return fmt.Errorf("email is required")
-	}
 	if err := validator.New().Struct(req); err != nil {
 		return err
 	}
@@ -144,7 +140,6 @@ func (s *service) ProfileUser(userID uint) (models.ProfileResponseOutput, error)
 		return models.ProfileResponseOutput{}, err
 	}
 	profileResp := models.ProfileResponseOutput{
-		Email:     user.Email,
 		Username:  user.Username,
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
@@ -177,15 +172,15 @@ func (s *service) ProfileClient(userName string) (models.ClientResponseOutput, e
 	return clientModel, nil
 }
 
-func (s *service) VerifyEmail(userID uint) error {
+func (s *service) VerifyEmail(userID uint, userEmail string) error {
 	user, e := s.repository.FindUser(userID)
 	if e != nil {
 		return e
 	}
 
-	verificationCode := s.emailVerifier.GenerateVerificationCode(&user)
+	verificationCode := s.emailVerifier.GenerateVerificationCode(&user, userEmail)
 
-	e = s.emailVerifier.SendVerificationEmail(&user, verificationCode)
+	e = s.emailVerifier.SendVerificationEmail(&user, userEmail, verificationCode)
 	if e != nil {
 		return e
 	}

@@ -26,6 +26,7 @@ var authenticationToken, _ = utils.GenerateToken(
 
 const verificationCode = "123467"
 const emailProof = "email_proof"
+const userEmail = "user@email.com"
 
 func decodeResponseBody(t *testing.T, rr *httptest.ResponseRecorder) utils.Response {
 	var response utils.Response
@@ -37,7 +38,7 @@ func decodeResponseBody(t *testing.T, rr *httptest.ResponseRecorder) utils.Respo
 
 // MockService implements interfaces.IService for testing purposes.
 type MockService struct {
-	verifyEmail                        func(userID uint) error
+	verifyEmail                        func(userID uint, userEmail string) error
 	checkEmailVerificationCode         func(userID uint, code string) error
 	generateZkProofOfEmailVerification func(userID uint) (string, error)
 	saveProofOfEmailVerification       func(userID uint, verificationCode string, zkProof string) error
@@ -66,7 +67,6 @@ func (ms *MockService) LoginUser(req dto.LoginUserDTO) (models.LoginUserResponse
 func (ms *MockService) ProfileUser(userID uint) (models.ProfileResponseOutput, error) {
 	if userID == 1 {
 		return models.ProfileResponseOutput{
-			Email:       "test@gcitizen.com",
 			Username:    "test_user",
 			FirstName:   "Test",
 			LastName:    "User",
@@ -77,8 +77,8 @@ func (ms *MockService) ProfileUser(userID uint) (models.ProfileResponseOutput, e
 	return models.ProfileResponseOutput{}, fmt.Errorf("user not found")
 }
 
-func (ms *MockService) VerifyEmail(userID uint) error {
-	return ms.verifyEmail(userID)
+func (ms *MockService) VerifyEmail(userID uint, userEmail string) error {
+	return ms.verifyEmail(userID, userEmail)
 }
 
 func (ms *MockService) CheckEmailVerificationCode(userID uint, code string) error {
@@ -135,8 +135,8 @@ func (ms *MockService) GetClientDataByBackendURL(backendURL string) (models.Clie
 }
 
 func (ms *MockService) CheckBackendURI(backendURL string) (bool, error) {
-    // Mock implementation for testing purposes.
-    return true, nil
+	// Mock implementation for testing purposes.
+	return true, nil
 }
 
 func TestRegisterUserHandler(t *testing.T) {
@@ -328,7 +328,6 @@ func TestProfileHandler(t *testing.T) {
 	}
 
 	// Now assert the fields directly
-	assert.Equal(t, "test@gcitizen.com", response.Email)
 	assert.Equal(t, "test_user", response.Username)
 	assert.Equal(t, "Test", response.FirstName)
 	assert.Equal(t, "User", response.LastName)
@@ -372,15 +371,88 @@ func TestGetClientData(t *testing.T) {
 	assert.Equal(t, "https://gcitizen.com/callback", response.RedirectURI)
 }
 
+func TestVerifyEmailHandler_InvalidAuthorizationToken(t *testing.T) {
+	requestBody := []byte(`{"email": "user@email.com"}`)
+	req, err := http.NewRequest("POST", "/api/v1/verify-email", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer invalid token")
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", &MockService{}))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.VerifyEmailHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request failed: invalid authorization token", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestVerifyEmailHandler_MalformedRequestBodyJson(t *testing.T) {
+	requestBody := []byte(`{"email": "user@email.com";}`)
+	req, err := http.NewRequest("POST", "/api/v1/verify-email", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", &MockService{}))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.VerifyEmailHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestVerifyEmailHandler_RequestJsonSchemeIsInvalid(t *testing.T) {
+	requestBody := []byte(`{"emal": "user@email.com"}`)
+	req, err := http.NewRequest("POST", "/api/v1/verify-email", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", &MockService{}))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.VerifyEmailHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Input json is invalid", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
 func TestVerifyEmailHandler_FailedToVerifyEmail(t *testing.T) {
-	req, err := http.NewRequest("GET", "/api/v1/verify-email", nil)
+	requestBody := []byte(`{"email": "user@email.com"}`)
+	req, err := http.NewRequest("POST", "/api/v1/verify-email", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
 	req.Header.Set("Authorization", "Bearer "+authenticationToken)
 
 	mockService := &MockService{
-		verifyEmail: func(userID uint) error {
+		verifyEmail: func(userID uint, email string) error {
+			if email != userEmail {
+				t.Fatalf("User email mismatch: expected %s, got %s", userEmail, email)
+			}
 			return fmt.Errorf("failed to verify email for user %d", userID)
 		},
 	}
@@ -400,14 +472,18 @@ func TestVerifyEmailHandler_FailedToVerifyEmail(t *testing.T) {
 }
 
 func TestVerifyEmailHandler_Success(t *testing.T) {
-	req, err := http.NewRequest("GET", "/api/v1/verify-email", nil)
+	requestBody := []byte(`{"email": "user@email.com"}`)
+	req, err := http.NewRequest("POST", "/api/v1/verify-email", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
 	req.Header.Set("Authorization", "Bearer "+authenticationToken)
 
 	mockService := &MockService{
-		verifyEmail: func(userID uint) error {
+		verifyEmail: func(userID uint, email string) error {
+			if email != userEmail {
+				t.Fatalf("User email mismatch: expected %s, got %s", userEmail, email)
+			}
 			return nil
 		},
 	}
@@ -428,7 +504,10 @@ func TestVerifyEmailHandler_Success(t *testing.T) {
 }
 
 func TestCheckEmailVerificationCode_InvalidAuthenticationToken(t *testing.T) {
-	requestBody := []byte(`{"code": "123467"}`)
+	requestBody := []byte(`{
+		"email": "user@email.com",
+		"code": "123467"
+	}`)
 	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
@@ -452,7 +531,10 @@ func TestCheckEmailVerificationCode_InvalidAuthenticationToken(t *testing.T) {
 }
 
 func TestCheckEmailVerificationCode_MalformedRequestBody(t *testing.T) {
-	requestBody := []byte(`{"code": "123467"`)
+	requestBody := []byte(`{
+		"email": "user@email.com",
+		"code": "123467"
+	`)
 	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
@@ -476,7 +558,10 @@ func TestCheckEmailVerificationCode_MalformedRequestBody(t *testing.T) {
 }
 
 func TestCheckEmailVerificationCode_RequestJSONDoesNotMatchTheScheme(t *testing.T) {
-	requestBody := []byte(`{"cod": "123467"}`)
+	requestBody := []byte(`{
+		"email": "user@email.com",
+		"cod": "123467"
+	}`)
 	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
@@ -500,7 +585,10 @@ func TestCheckEmailVerificationCode_RequestJSONDoesNotMatchTheScheme(t *testing.
 }
 
 func TestCheckEmailVerificationCode_VerificationCodeIsInvalid(t *testing.T) {
-	requestBody := []byte(`{"code": "123467"}`)
+	requestBody := []byte(`{
+		"email": "user@email.com", 
+		"code": "123467"
+	}`)
 	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
@@ -531,7 +619,10 @@ func TestCheckEmailVerificationCode_VerificationCodeIsInvalid(t *testing.T) {
 }
 
 func TestCheckEmailVerificationCode_ZkEmailProofFailedToBeGenerated(t *testing.T) {
-	requestBody := []byte(`{"code": "123467"}`)
+	requestBody := []byte(`{
+		"email": "user@email.com", 
+		"code": "123467"
+	}`)
 	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
@@ -565,7 +656,10 @@ func TestCheckEmailVerificationCode_ZkEmailProofFailedToBeGenerated(t *testing.T
 }
 
 func TestCheckEmailVerificationCode_FailedToSaveProofOfEmailVerification(t *testing.T) {
-	requestBody := []byte(`{"code": "123467"}`)
+	requestBody := []byte(`{
+		"email": "user@email.com", 
+		"code": "123467"
+	}`)
 	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
@@ -607,7 +701,10 @@ func TestCheckEmailVerificationCode_FailedToSaveProofOfEmailVerification(t *test
 }
 
 func TestCheckEmailVerificationCode_Success(t *testing.T) {
-	requestBody := []byte(`{"code": "123467"}`)
+	requestBody := []byte(`{
+		"email": "user@email.com", 
+		"code": "123467"
+	}`)
 	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
@@ -644,8 +741,8 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 	response := decodeResponseBody(t, rr)
 
 	assert.True(t, response.Status)
-	assert.Equal(t, "OK!", response.Message)
-	assert.Equal(t, "Your email was successfully verified!", response.Data)
+	assert.Equal(t, "Your email was successfully verified!", response.Message)
+	assert.Equal(t, "Email verified!", response.Data)
 	assert.Nil(t, response.Error)
 }
 
@@ -775,4 +872,5 @@ func setMockServiceInContext(req *http.Request) *http.Request {
 	ctx := context.WithValue(req.Context(), "service", mockSvc)
 	return req.WithContext(ctx)
 }
+
 // Javokhir finished the testing

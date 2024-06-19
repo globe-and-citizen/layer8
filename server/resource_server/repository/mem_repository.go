@@ -33,7 +33,6 @@ func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO) error {
 	key := fmt.Sprintf("%s:%s", req.Username, req.Password)
 	r.storage[key] = map[string]string{
 		"user_id":           userID,
-		"email":             req.Email,
 		"username":          req.Username,
 		"password":          HashedAndSaltedPass,
 		"first_name":        req.FirstName,
@@ -95,7 +94,6 @@ func (r *MemoryRepository) FindUser(userId uint) (models.User, error) {
 
 	return models.User{
 		ID:               userId,
-		Email:            userData["email"],
 		Username:         userData["username"],
 		Password:         userData["password"],
 		FirstName:        userData["first_name"],
@@ -141,7 +139,6 @@ func (r *MemoryRepository) LoginUser(req dto.LoginUserDTO) (models.User, error) 
 	}
 	user := models.User{
 		ID:        uint(userIdUint),
-		Email:     r.storage[key]["email"],
 		Username:  r.storage[key]["username"],
 		Password:  r.storage[key]["password"],
 		FirstName: r.storage[key]["first_name"],
@@ -178,7 +175,6 @@ func (r *MemoryRepository) ProfileUser(userID uint) (models.User, []models.UserM
 	password := r.storage[fmt.Sprintf("%d", userID)]["password"]
 	user := models.User{
 		ID:        userID,
-		Email:     r.storage[password]["email"],
 		Username:  r.storage[password]["username"],
 		Password:  r.storage[password]["password"],
 		FirstName: r.storage[password]["first_name"],

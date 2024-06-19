@@ -17,7 +17,7 @@ import (
 
 const id uint = 1
 const userId uint = 1
-const userEmail = "example@test.com"
+const username = "username"
 const verificationCode = "123456"
 const emailProof = "AbcdfTs"
 
@@ -68,7 +68,6 @@ func TestRegisterUser(t *testing.T) {
 
 	// Define a test user DTO
 	testUser := dto.RegisterUserDTO{
-		Email:       "test@gcitizen.com",
 		Username:    "test_user",
 		FirstName:   "Test",
 		LastName:    "User",
@@ -160,7 +159,17 @@ func TestLoginPreCheckUser(t *testing.T) {
 	}
 
 	// Expect a query to be executed and return a row
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT 1`)).WithArgs(testLoginPrecheck.Username).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "username", "first_name", "last_name", "password", "salt"}).AddRow(1, "user@test.com", "test_user", "Test", "User", "testpass", "testsalt"))
+	mock.ExpectQuery(
+		regexp.QuoteMeta(`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT 1`),
+	).WithArgs(
+		testLoginPrecheck.Username,
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{"id", "username", "first_name", "last_name", "password", "salt"},
+		).AddRow(
+			1, "test_user", "Test", "User", "testpass", "testsalt",
+		),
+	)
 
 	// Call the LoginPreCheckUser function
 	repo.LoginPreCheckUser(testLoginPrecheck)
@@ -188,7 +197,17 @@ func TestProfileUser(t *testing.T) {
 	repo := NewRepository(db)
 
 	// Expect a query to be executed and return a row
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "users" WHERE id = $1 ORDER BY "users"."id" LIMIT 1`)).WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "username", "first_name", "last_name", "password", "salt"}).AddRow(1, "user@test.com", "test_user", "Test", "User", "testpass", "testsalt"))
+	mock.ExpectQuery(
+		regexp.QuoteMeta(`SELECT * FROM "users" WHERE id = $1 ORDER BY "users"."id" LIMIT 1`),
+	).WithArgs(
+		1,
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{"id", "username", "first_name", "last_name", "password", "salt"},
+		).AddRow(
+			1, "test_user", "Test", "User", "testpass", "testsalt",
+		),
+	)
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "user_metadata" WHERE user_id = $1`)).WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"id", "user_id", "key", "value"}).AddRow(1, 1, "email_verified", "true").AddRow(2, 1, "display_name", "user").AddRow(3, 1, "country", "Unknown"))
 
 	// Call the ProfileUser function
@@ -318,7 +337,7 @@ func TestFindUser_UserDoesNotExist(t *testing.T) {
 		userId,
 	).WillReturnRows(
 		sqlmock.NewRows(
-			[]string{"id", "email", "username", "password", "first_name",
+			[]string{"id", "username", "password", "first_name",
 				"last_name", "salt", "email_proof", "verification_code"},
 		),
 	)
@@ -342,9 +361,9 @@ func TestFindUser_Success(t *testing.T) {
 		userId,
 	).WillReturnRows(
 		sqlmock.NewRows(
-			[]string{"id", "email", "username", "password", "first_name",
+			[]string{"id", "username", "password", "first_name",
 				"last_name", "salt", "email_proof", "verification_code"},
-		).AddRow(userId, userEmail, "username", "password", "first_name",
+		).AddRow(userId, username, "password", "first_name",
 			"last_name", "salt", "", "",
 		),
 	)
@@ -356,7 +375,7 @@ func TestFindUser_Success(t *testing.T) {
 	}
 
 	assert.Equal(t, userId, user.ID)
-	assert.Equal(t, userEmail, user.Email)
+	assert.Equal(t, username, user.Username)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("There were unfulfilled expectations: %s", err)

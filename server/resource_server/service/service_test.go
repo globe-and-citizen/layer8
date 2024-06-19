@@ -59,7 +59,6 @@ func (m *mockRepository) LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, st
 
 func (m *mockRepository) LoginUser(req dto.LoginUserDTO) (models.User, error) {
 	return models.User{
-		Email:     "test@gcitizen.com",
 		Username:  "test_user",
 		FirstName: "Test",
 		LastName:  "User",
@@ -71,7 +70,6 @@ func (m *mockRepository) LoginUser(req dto.LoginUserDTO) (models.User, error) {
 func (m *mockRepository) ProfileUser(userID uint) (models.User, []models.UserMetadata, error) {
 	if userID == 1 {
 		return models.User{
-				Email:     "test@gcitizen.com",
 				Username:  "test_user",
 				FirstName: "Test",
 				LastName:  "User",
@@ -198,7 +196,6 @@ func TestRegisterUser(t *testing.T) {
 
 	// Create a new mock request
 	req := dto.RegisterUserDTO{
-		Email:       "test@gcitizen.com",
 		Username:    "test_user",
 		FirstName:   "Test",
 		LastName:    "User",
@@ -280,7 +277,7 @@ func TestProfileUser(t *testing.T) {
 
 	// Use assert to check if the error is nil
 	assert.Nil(t, err)
-	assert.Equal(t, userDetails.Email, "test@gcitizen.com")
+	assert.Equal(t, userDetails.Username, "test_user")
 }
 
 func TestUpdateDisplayName(t *testing.T) {
@@ -380,7 +377,7 @@ func TestVerifyEmail_UserDoesNotExist(t *testing.T) {
 	emailVerifier := &verification.EmailVerifier{}
 
 	currService := service.NewService(mockRepo, emailVerifier)
-	e := currService.VerifyEmail(userId)
+	e := currService.VerifyEmail(userId, userEmail)
 
 	assert.NotNil(t, e)
 }
@@ -391,7 +388,6 @@ func TestVerifyEmail_UserExists_EmailFailedToBeSent(t *testing.T) {
 			return models.User{
 				ID:               userId,
 				Username:         username,
-				Email:            userEmail,
 				VerificationCode: "",
 			}, nil
 		},
@@ -410,7 +406,7 @@ func TestVerifyEmail_UserExists_EmailFailedToBeSent(t *testing.T) {
 	)
 	currService := service.NewService(mockRepo, emailVerifier)
 
-	e := currService.VerifyEmail(userId)
+	e := currService.VerifyEmail(userId, userEmail)
 
 	assert.NotNil(t, e)
 }
@@ -421,7 +417,6 @@ func TestVerifyEmail_UserExists_EmailSent_VerificationDataNotSaved(t *testing.T)
 			return models.User{
 				ID:               userId,
 				Username:         username,
-				Email:            userEmail,
 				VerificationCode: "",
 			}, nil
 		},
@@ -438,7 +433,7 @@ func TestVerifyEmail_UserExists_EmailSent_VerificationDataNotSaved(t *testing.T)
 	)
 	currService := service.NewService(mockRepo, emailVerifier)
 
-	e := currService.VerifyEmail(userId)
+	e := currService.VerifyEmail(userId, userEmail)
 
 	assert.NotNil(t, e)
 }
@@ -449,7 +444,6 @@ func TestVerifyEmail_Success(t *testing.T) {
 			return models.User{
 				ID:               userId,
 				Username:         username,
-				Email:            userEmail,
 				VerificationCode: "",
 			}, nil
 		},
@@ -466,7 +460,7 @@ func TestVerifyEmail_Success(t *testing.T) {
 	)
 	currService := service.NewService(mockRepo, emailVerifier)
 
-	e := currService.VerifyEmail(userId)
+	e := currService.VerifyEmail(userId, userEmail)
 
 	assert.Nil(t, e)
 }
