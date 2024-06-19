@@ -21,7 +21,8 @@ type IRepository interface {
 	SaveEmailVerificationData(data models.EmailVerificationData) error
 	GetEmailVerificationData(userId uint) (models.EmailVerificationData, error)
 	UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error
-	RegisterClient(req dto.RegisterClientDTO) error
+	RegisterClient(c *models.Client) error
+	UpdateClientBlockchainContractID(clientID string, contractID *string) error
 	GetClientData(clientName string) (models.Client, error)
 	GetClientDataByBackendURL(backendURL string) (models.Client, error)
 	IsBackendURIExists(backendURL string) (bool, error)

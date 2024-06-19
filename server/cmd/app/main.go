@@ -5,6 +5,7 @@ import (
 	"embed"
 	"flag"
 	"fmt"
+	"globe-and-citizen/layer8/server/blockchain"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
 	"globe-and-citizen/layer8/server/opentelemetry"
@@ -136,9 +137,25 @@ func main() {
 		time.Now,
 	)
 
+	rpcClient, err := blockchain.NewSepholiaClient()
+	if err != nil {
+		log.Fatalf("Failed to create Ethereum client %s", err)
+	}
+
+	signer, err := blockchain.NewTransactionSigner(os.Getenv("ETH_PRIVATE_KEY"))
+	if err != nil {
+		log.Fatalf("Failed to create transaction signer %s", err)
+	}
+
+	wrapper := blockchain.NewPayAsYouGoWrapper(
+		os.Getenv("PAYASYOUGO_CONTRACT_ADDRESS"),
+		rpcClient,
+		signer,
+	)
+
 	// Run server (which never returns)
 	Server(
-		svc.NewService(resourceRepository, emailVerifier),
+		svc.NewService(resourceRepository, emailVerifier, wrapper),
 		oauthService,
 	)
 }

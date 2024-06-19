@@ -54,15 +54,13 @@ func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO) error {
 	return nil
 }
 
-func (r *MemoryRepository) RegisterClient(req dto.RegisterClientDTO) error {
+func (r *MemoryRepository) RegisterClient(req *models.Client) error {
 	if _, ok := r.storage[req.Username]; ok {
 		return fmt.Errorf("Client username already registered.")
 	}
-	clientUUID := utils.GenerateUUID()
-	clientSecret := utils.GenerateSecret(utils.SecretSize)
 	r.storage[req.Username] = map[string]string{
-		"id":           clientUUID,
-		"secret":       clientSecret,
+		"id":           req.ID,
+		"secret":       req.Secret,
 		"redirect_uri": req.RedirectURI,
 		"backend_uri":  req.BackendURI,
 		"username":     req.Username,
@@ -392,11 +390,16 @@ func (r *MemoryRepository) GetTTL(key string) ([]byte, error) {
 }
 
 func (r *MemoryRepository) IsBackendURIExists(backendURL string) (bool, error) {
-    for _, data := range r.storage {
-        backend, ok := data["backend_uri"]
-        if ok && backend == backendURL {
-            return true, nil
-        }
-    }
-    return false, nil
+	for _, data := range r.storage {
+		backend, ok := data["backend_uri"]
+		if ok && backend == backendURL {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (r *MemoryRepository) UpdateClientBlockchainContractID(clientID string, contractID *string) error {
+	return nil
 }

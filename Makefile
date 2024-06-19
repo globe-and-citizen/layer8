@@ -112,3 +112,6 @@ build_smart_contract:
 
 generate_go_from_abi:
 	abigen --abi contract/build/PayAsYouGo.abi --pkg blockchain --type PayAsYouGo --out server/blockchain/payasyougo.go
+
+mockgen:
+	mockgen -source=server/blockchain/wrapper.go -destination=server/resource_server/utils/mocks/bockchain_wrapper_mock.go -package=mocks

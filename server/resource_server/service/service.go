@@ -1,28 +1,36 @@
 package service
 
 import (
-	"github.com/go-playground/validator/v10"
+	"context"
+	"fmt"
+	"globe-and-citizen/layer8/server/blockchain"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
+	"strconv"
 	"time"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type service struct {
-	repository    interfaces.IRepository
-	emailVerifier *verification.EmailVerifier
+	repository        interfaces.IRepository
+	emailVerifier     *verification.EmailVerifier
+	payAsYouGoWrapper blockchain.PayAsYouGoWrapper
 }
 
 // Newservice creates a new instance of service
 func NewService(
 	repo interfaces.IRepository,
 	emailVerifier *verification.EmailVerifier,
+	payAsYouGoWrapper blockchain.PayAsYouGoWrapper,
 ) interfaces.IService {
 	return &service{
-		repository:    repo,
-		emailVerifier: emailVerifier,
+		repository:        repo,
+		emailVerifier:     emailVerifier,
+		payAsYouGoWrapper: payAsYouGoWrapper,
 	}
 }
 
@@ -38,9 +46,49 @@ func (s *service) RegisterClient(req dto.RegisterClientDTO) error {
 		return err
 	}
 
-	req.BackendURI = utils.RemoveProtocolFromURL(req.BackendURI)
+	clientUUID := utils.GenerateUUID()
+	clientSecret := utils.GenerateSecret(utils.SecretSize)
 
-	return s.repository.RegisterClient(req)
+	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
+	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
+
+	client := &models.Client{
+		ID:          clientUUID,
+		Secret:      clientSecret,
+		Name:        req.Name,
+		RedirectURI: req.RedirectURI,
+		BackendURI:  utils.RemoveProtocolFromURL(req.BackendURI),
+		Username:    req.Username,
+		Password:    HashedAndSaltedPass,
+		Salt:        rmSalt,
+	}
+
+	if err := s.repository.RegisterClient(client); err != nil {
+		return err
+	}
+
+	go func() {
+		billRate, err := strconv.Atoi("BLOCKCHAIN_BILL_RATE")
+		if err != nil {
+			fmt.Println("Error converting bill rate to int: ", err)
+			return
+		}
+
+		contractID, err := s.payAsYouGoWrapper.CreateContract(context.Background(), uint8(billRate), clientUUID)
+		if err != nil {
+			fmt.Println("Error creating contract: ", err)
+			return
+		}
+
+		err = s.repository.UpdateClientBlockchainContractID(clientUUID, contractID)
+		if err != nil {
+			fmt.Println("Error updating client contract ID: ", err)
+			return
+		}
+
+	}()
+
+	return nil
 }
 
 func (s *service) GetClientData(clientName string) (models.ClientResponseOutput, error) {
