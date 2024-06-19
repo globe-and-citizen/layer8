@@ -9,6 +9,7 @@ import (
 	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
+	"os"
 	"strconv"
 	"time"
 
@@ -68,7 +69,7 @@ func (s *service) RegisterClient(req dto.RegisterClientDTO) error {
 	}
 
 	go func() {
-		billRate, err := strconv.Atoi("BLOCKCHAIN_BILL_RATE")
+		billRate, err := strconv.Atoi(os.Getenv("BLOCKCHAIN_BILL_RATE"))
 		if err != nil {
 			fmt.Println("Error converting bill rate to int: ", err)
 			return

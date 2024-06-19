@@ -7,6 +7,7 @@ import (
 	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
+	"log"
 	"time"
 
 	"gorm.io/gorm"
@@ -277,5 +278,6 @@ func (r *Repository) IsBackendURIExists(backendURL string) (bool, error) {
 }
 
 func (r *Repository) UpdateClientBlockchainContractID(clientID string, contractID *string) error {
+	log.Println(clientID, contractID)
 	return r.connection.Model(&models.Client{}).Where("id = ?", clientID).Update("blockchain_contract_id", contractID).Error
 }

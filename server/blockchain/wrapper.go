@@ -2,7 +2,9 @@ package blockchain
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -12,6 +14,7 @@ import (
 
 type PayAsYouGoWrapper interface {
 	CreateContract(ctx context.Context, rate uint8, clientId string) (*string, error)
+	GetContractByID(ctx context.Context, contractID string) (PayAsYouGoAgreement, error)
 }
 
 type PayAsYouGoWrapperImpl struct {
@@ -80,8 +83,37 @@ func (w *PayAsYouGoWrapperImpl) CreateContract(ctx context.Context, rate uint8, 
 		return nil, err
 	}
 
-	contractId := string(parsedLog.ContractId[:])
+	contractId := fmt.Sprintf("%x", parsedLog.ContractId[:])
 
 	return &contractId, nil
+}
 
+func (w *PayAsYouGoWrapperImpl) GetContractByID(ctx context.Context, contractID string) (PayAsYouGoAgreement, error) {
+	chainId, err := w.rpcClient.ChainID(ctx)
+	if err != nil {
+		log.Fatalf("Failed to get chain id %s", err)
+		return PayAsYouGoAgreement{}, err
+	}
+
+	sign, err := w.signer.CreateSign(chainId)
+	if err != nil {
+		log.Fatalf("Failed to sign transaction %s", err)
+		return PayAsYouGoAgreement{}, err
+	}
+
+	decodedContractId, err := hex.DecodeString(contractID)
+	if err != nil {
+		log.Fatalf("Failed to decode contract id %s", err)
+		return PayAsYouGoAgreement{}, err
+	}
+
+	contract, err := w.c.GetContractById(&bind.CallOpts{
+		From: sign.From,
+	}, [32]byte(decodedContractId))
+	if err != nil {
+		log.Fatalf("Failed to get contract %s", err)
+		return PayAsYouGoAgreement{}, err
+	}
+
+	return contract, nil
 }
