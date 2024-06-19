@@ -30,11 +30,11 @@ func main() {
 		signer,
 	)
 
-	contractId, err := wrapper.CreateContract(context.Background(), 1, "client_testing")
+	c, err := wrapper.GetContractByID(context.Background(), "352023bed1da998bfdbe5607e32683a5898659c7705e1516dd7e82bdb5fbfe73")
 	if err != nil {
 		log.Fatalf("Failed to create contract %s", err)
 	}
 
-	log.Printf("Contract created with id %v", contractId)
+	log.Println("contract : ", c.Rate)
 
 }
