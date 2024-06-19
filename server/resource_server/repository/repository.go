@@ -75,26 +75,8 @@ func (r *Repository) FindUser(userId uint) (models.User, error) {
 	return user, e
 }
 
-func (r *Repository) RegisterClient(req dto.RegisterClientDTO) error {
-
-	clientUUID := utils.GenerateUUID()
-	clientSecret := utils.GenerateSecret(utils.SecretSize)
-
-	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
-	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
-
-	client := models.Client{
-		ID:          clientUUID,
-		Secret:      clientSecret,
-		Name:        req.Name,
-		RedirectURI: req.RedirectURI,
-		BackendURI:  req.BackendURI,
-		Username:    req.Username,
-		Password:    HashedAndSaltedPass,
-		Salt:        rmSalt,
-	}
-
-	if err := r.connection.Create(&client).Error; err != nil {
+func (r *Repository) RegisterClient(c *models.Client) error {
+	if err := r.connection.Create(c).Error; err != nil {
 		return err
 	}
 
@@ -287,9 +269,13 @@ func (r *Repository) GetTTL(key string) ([]byte, error) {
 }
 
 func (r *Repository) IsBackendURIExists(backendURL string) (bool, error) {
-    var count int64
-    if err := r.connection.Model(&models.Client{}).Where("backend_uri = ?", backendURL).Count(&count).Error; err != nil {
-        return false, err
-    }
-    return count > 0, nil
+	var count int64
+	if err := r.connection.Model(&models.Client{}).Where("backend_uri = ?", backendURL).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (r *Repository) UpdateClientBlockchainContractID(clientID string, contractID *string) error {
+	return r.connection.Model(&models.Client{}).Where("id = ?", clientID).Update("blockchain_contract_id", contractID).Error
 }
