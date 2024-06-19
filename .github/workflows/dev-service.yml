@@ -21,6 +21,19 @@ jobs:
           region: ${{ vars.AWS_REGION }}
           tags: latest,${{ github.sha }}
           create_repo: true
+  database-migration:
+    name: Database Migration
+    runs-on: go:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Database Migration CLI
+        run: |
+          go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+      - name: Run Database Migration
+        run: |
+          migrate -path migrations -database ${{ secrets.DEVELOPMENT_POSTGRESQL_URL }} up
   deploy-layer8-server-development:
     name: "Deploy Layer 8 to Development"
     environment: "development"
