@@ -1,6 +1,6 @@
 ALTER TABLE users 
-    ADD COLUMN email_proof character varying(255) NOT NULL,
-    ADD COLUMN verification_code character varying(10) NOT NULL,
+    ADD COLUMN email_proof character varying(255),
+    ADD COLUMN verification_code character varying(10),
     DROP COLUMN email;
 
 CREATE TABLE email_verification_data (
