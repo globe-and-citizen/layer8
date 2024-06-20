@@ -278,6 +278,9 @@
     const app = createApp({
       setup() {
         onMounted(async () => {
+          if (!token.value) {
+            window.location.href = "[[ .ProxyURL ]]/client-login-page";
+          }
           stats.value = await getStats()
           const ctx = document.getElementById("statisticChart")
 
