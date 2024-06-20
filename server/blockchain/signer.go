@@ -26,7 +26,7 @@ func NewTransactionSigner(privateKeyStr string) (TransactionSigner, error) {
 		log.Fatalf("Failed to load private key: %v", err)
 	}
 
-	maxGasFee, err := strconv.Atoi(os.Getenv("MAX_GAS_FEE"))
+	maxGasFee, err := strconv.Atoi(os.Getenv("BLOCKCHAIN_MAX_GAS_FEE"))
 	if err != nil {
 		log.Fatalf("Failed to load max gas fee: %v", err)
 	}
