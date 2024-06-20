@@ -19,13 +19,13 @@ func main() {
 		log.Fatalf("Failed to create Ethereum client %s", err)
 	}
 
-	signer, err := blockchain.NewTransactionSigner(os.Getenv("ETH_PRIVATE_KEY"))
+	signer, err := blockchain.NewTransactionSigner(os.Getenv("BLOCKCHAIN_PRIVATE_KEY"))
 	if err != nil {
 		log.Fatalf("Failed to create transaction signer %s", err)
 	}
 
 	wrapper := blockchain.NewPayAsYouGoWrapper(
-		os.Getenv("PAYASYOUGO_CONTRACT_ADDRESS"),
+		os.Getenv("BLOCKCHAIN_PAYASYOUGO_CONTRACT_ADDRESS"),
 		rpcClient,
 		signer,
 	)
