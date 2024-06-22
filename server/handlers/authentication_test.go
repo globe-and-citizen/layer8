@@ -1,8 +1,9 @@
-package handlers
+package handlers_test
 
 import (
 	"bytes"
 	"errors"
+	"globe-and-citizen/layer8/server/handlers"
 	"globe-and-citizen/layer8/server/models"
 	"globe-and-citizen/layer8/server/utils/mocks"
 	"net/http"
@@ -35,7 +36,7 @@ func Test_GetLoginHandler_NoToken_OK(t *testing.T) {
 		assert.Equal(t, expectedHTMLParsingParams, params)
 	}
 
-	handler := NewAuthenticationHandler(serviceMock, htmlParserMock)
+	handler := handlers.NewAuthenticationHandler(serviceMock, htmlParserMock)
 
 	os.Setenv("PROXY_URL", proxyUrl)
 
@@ -60,7 +61,7 @@ func Test_GetLoginHandler_TokenExists_OK(t *testing.T) {
 	serviceMock := mocks.NewMockServiceInterface(ctrl)
 	serviceMock.EXPECT().GetUserByToken(fakeJwtToken).Return(&models.User{}, nil)
 
-	handler := NewAuthenticationHandler(serviceMock, nil)
+	handler := handlers.NewAuthenticationHandler(serviceMock, nil)
 
 	// Execute the test
 	req := httptest.NewRequest("GET", "/login", nil)
@@ -92,7 +93,7 @@ func Test_PostLoginHandler_ValidCredentials_OK(t *testing.T) {
 	serviceMock := mocks.NewMockServiceInterface(ctrl)
 	serviceMock.EXPECT().LoginUser(username, password).Return(loginResult, nil)
 
-	handler := NewAuthenticationHandler(serviceMock, nil)
+	handler := handlers.NewAuthenticationHandler(serviceMock, nil)
 
 	// Execute the test
 	params := url.Values{}
@@ -149,7 +150,7 @@ func Test_PostLoginHandler_TokenNotExists_OK(t *testing.T) {
 	serviceMock := mocks.NewMockServiceInterface(ctrl)
 	serviceMock.EXPECT().LoginUser(username, password).Return(loginResult, nil)
 
-	handler := NewAuthenticationHandler(serviceMock, htmlParserMock)
+	handler := handlers.NewAuthenticationHandler(serviceMock, htmlParserMock)
 
 	// Execute the test
 	params := url.Values{}
@@ -194,7 +195,7 @@ func Test_PostLoginHandler_InvalidCredentials_OK(t *testing.T) {
 	serviceMock := mocks.NewMockServiceInterface(ctrl)
 	serviceMock.EXPECT().LoginUser(username, password).Return(nil, loginError)
 
-	handler := NewAuthenticationHandler(serviceMock, htmlParserMock)
+	handler := handlers.NewAuthenticationHandler(serviceMock, htmlParserMock)
 
 	// Execute the test
 	params := url.Values{}
