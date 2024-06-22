@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -119,12 +120,12 @@ func (m *mockRepository) RegisterClient(req dto.RegisterClientDTO) error {
 }
 
 func (m *mockRepository) IsBackendURIExists(backendURL string) (bool, error) {
-    return true, nil
+	return true, nil
 }
 
 func (m *mockRepository) CheckBackendURI(backendURL string) (bool, error) {
-    // Your mock implementation of CheckBackendURI here
-    return true, nil
+	// Your mock implementation of CheckBackendURI here
+	return true, nil
 }
 
 func (m *mockRepository) GetClientData(clientName string) (models.Client, error) {
@@ -188,11 +189,12 @@ func (m *mockRepository) GetClientDataByBackendURL(backendURL string) (models.Cl
 }
 
 func TestRegisterUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
 	// Create a new mock repository
 	mockRepo := new(mockRepository)
 
 	// Create a new service by passing the mock repository
-	mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, mocks.NewMockPayAsYouGoWrapper(ctrl))
 
 	// Create a new mock request
 	req := dto.RegisterUserDTO{
@@ -215,11 +217,12 @@ func TestRegisterUser(t *testing.T) {
 }
 
 func TestLoginPreCheckUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
 	// Create a new mock repository
 	mockRepo := new(mockRepository)
 
 	// Create a new service by passing the mock repository
-	mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, mocks.NewMockPayAsYouGoWrapper(ctrl))
 
 	// Create a new mock request
 	req := dto.LoginPrecheckDTO{
@@ -239,11 +242,12 @@ func TestLoginPreCheckUser(t *testing.T) {
 }
 
 func TestLoginUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
 	// Create a new mock repository
 	mockRepo := new(mockRepository)
 
 	// Create a new service by passing the mock repository
-	mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, mocks.NewMockPayAsYouGoWrapper(ctrl))
 
 	// Create a new mock request
 	req := dto.LoginUserDTO{
@@ -263,11 +267,12 @@ func TestLoginUser(t *testing.T) {
 }
 
 func TestProfileUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
 	// Create a new mock repository
 	mockRepo := new(mockRepository)
 
 	// Create a new service by passing the mock repository
-	mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, mocks.NewMockPayAsYouGoWrapper(ctrl))
 
 	// Call the ProfileUser method of the mock service
 	userDetails, err := mockService.ProfileUser(1)
@@ -281,11 +286,12 @@ func TestProfileUser(t *testing.T) {
 }
 
 func TestUpdateDisplayName(t *testing.T) {
+	ctrl := gomock.NewController(t)
 	// Create a new mock repository
 	mockRepo := new(mockRepository)
 
 	// Create a new service by passing the mock repository
-	mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, mocks.NewMockPayAsYouGoWrapper(ctrl))
 
 	// Create a new mock request
 	req := dto.UpdateDisplayNameDTO{
@@ -303,11 +309,12 @@ func TestUpdateDisplayName(t *testing.T) {
 }
 
 func TestRegisterClient(t *testing.T) {
+	ctrl := gomock.NewController(t)
 	// Create a new mock repository
 	mockRepo := new(mockRepository)
 
 	// Create a new service by passing the mock repository
-	mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, mocks.NewMockPayAsYouGoWrapper(ctrl))
 
 	// Create a new mock request
 	req := dto.RegisterClientDTO{
@@ -329,11 +336,12 @@ func TestRegisterClient(t *testing.T) {
 }
 
 func TestGetClientData(t *testing.T) {
+	ctrl := gomock.NewController(t)
 	// Create a new mock repository
 	mockRepo := new(mockRepository)
 
 	// Create a new service by passing the mock repository
-	mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, mocks.NewMockPayAsYouGoWrapper(ctrl))
 
 	// Call the GetClientData method of the mock service
 	clientData, err := mockService.GetClientData("testclient")
@@ -348,27 +356,32 @@ func TestGetClientData(t *testing.T) {
 }
 
 func TestCheckBackendURI(t *testing.T) {
-    mockRepo := new(mockRepository)
+	ctrl := gomock.NewController(t)
+	// Create a new mock repository
+	mockRepo := new(mockRepository)
 
-    mockService := service.NewService(mockRepo, &verification.EmailVerifier{})
+	// Create a new service by passing the mock repository
+	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, mocks.NewMockPayAsYouGoWrapper(ctrl))
 
-    backendURL := "example.com"
+	backendURL := "example.com"
 
-    expectedResponse := true
+	expectedResponse := true
 
-    response, err := mockService.CheckBackendURI(backendURL)
-    if err != nil {
-        t.Error("Expected nil error, got", err)
-    }
+	response, err := mockService.CheckBackendURI(backendURL)
+	if err != nil {
+		t.Error("Expected nil error, got", err)
+	}
 
-    assert.Nil(t, err)
+	assert.Nil(t, err)
 
-    if response != expectedResponse {
-        t.Errorf("Expected response: %v, got: %v", expectedResponse, response)
-    }
+	if response != expectedResponse {
+		t.Errorf("Expected response: %v, got: %v", expectedResponse, response)
+	}
 }
 
 func TestVerifyEmail_UserDoesNotExist(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
 	mockRepo := &mockRepository{
 		findUser: func(userId uint) (models.User, error) {
 			return models.User{}, fmt.Errorf("user %d does not exist", userId)
@@ -376,13 +389,16 @@ func TestVerifyEmail_UserDoesNotExist(t *testing.T) {
 	}
 	emailVerifier := &verification.EmailVerifier{}
 
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, mocks.NewMockPayAsYouGoWrapper(ctrl))
 	e := currService.VerifyEmail(userId, userEmail)
 
 	assert.NotNil(t, e)
 }
 
 func TestVerifyEmail_UserExists_EmailFailedToBeSent(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	payAsYouGoWrapper := mocks.NewMockPayAsYouGoWrapper(ctrl)
+
 	mockRepo := &mockRepository{
 		findUser: func(userId uint) (models.User, error) {
 			return models.User{
@@ -404,7 +420,7 @@ func TestVerifyEmail_UserExists_EmailFailedToBeSent(t *testing.T) {
 		verificationCodeValidityDuration,
 		now,
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, payAsYouGoWrapper)
 
 	e := currService.VerifyEmail(userId, userEmail)
 
@@ -412,6 +428,9 @@ func TestVerifyEmail_UserExists_EmailFailedToBeSent(t *testing.T) {
 }
 
 func TestVerifyEmail_UserExists_EmailSent_VerificationDataNotSaved(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	payAsYouGoWrapper := mocks.NewMockPayAsYouGoWrapper(ctrl)
+
 	mockRepo := &mockRepository{
 		findUser: func(userId uint) (models.User, error) {
 			return models.User{
@@ -431,7 +450,7 @@ func TestVerifyEmail_UserExists_EmailSent_VerificationDataNotSaved(t *testing.T)
 		verificationCodeValidityDuration,
 		now,
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, payAsYouGoWrapper)
 
 	e := currService.VerifyEmail(userId, userEmail)
 
@@ -439,6 +458,9 @@ func TestVerifyEmail_UserExists_EmailSent_VerificationDataNotSaved(t *testing.T)
 }
 
 func TestVerifyEmail_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	payAsYouGoWrapper := mocks.NewMockPayAsYouGoWrapper(ctrl)
+
 	mockRepo := &mockRepository{
 		findUser: func(userId uint) (models.User, error) {
 			return models.User{
@@ -458,7 +480,7 @@ func TestVerifyEmail_Success(t *testing.T) {
 		verificationCodeValidityDuration,
 		now,
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, payAsYouGoWrapper)
 
 	e := currService.VerifyEmail(userId, userEmail)
 
@@ -466,6 +488,9 @@ func TestVerifyEmail_Success(t *testing.T) {
 }
 
 func TestCheckEmailVerificationCode_VerificationDataDoesNotExist(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	payAsYouGoWrapper := mocks.NewMockPayAsYouGoWrapper(ctrl)
+
 	mockRepo := &mockRepository{
 		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{},
@@ -473,7 +498,7 @@ func TestCheckEmailVerificationCode_VerificationDataDoesNotExist(t *testing.T) {
 		},
 	}
 	emailVerifier := &verification.EmailVerifier{}
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, payAsYouGoWrapper)
 
 	e := currService.CheckEmailVerificationCode(userId, verificationCode)
 
@@ -481,6 +506,9 @@ func TestCheckEmailVerificationCode_VerificationDataDoesNotExist(t *testing.T) {
 }
 
 func TestCheckEmailVerificationCode_VerificationCodeMismatch(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	payAsYouGoWrapper := mocks.NewMockPayAsYouGoWrapper(ctrl)
+
 	mockRepo := &mockRepository{
 		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{
@@ -497,7 +525,7 @@ func TestCheckEmailVerificationCode_VerificationCodeMismatch(t *testing.T) {
 		verificationCodeValidityDuration,
 		now,
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, payAsYouGoWrapper)
 
 	e := currService.CheckEmailVerificationCode(userId, "567890")
 
@@ -505,6 +533,9 @@ func TestCheckEmailVerificationCode_VerificationCodeMismatch(t *testing.T) {
 }
 
 func TestCheckEmailVerificationCode_VerificationCodeIsExpired(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	payAsYouGoWrapper := mocks.NewMockPayAsYouGoWrapper(ctrl)
+
 	mockRepo := &mockRepository{
 		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{
@@ -523,7 +554,7 @@ func TestCheckEmailVerificationCode_VerificationCodeIsExpired(t *testing.T) {
 			return timestampPlusTwoSeconds
 		},
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, payAsYouGoWrapper)
 
 	e := currService.CheckEmailVerificationCode(userId, verificationCode)
 
@@ -531,6 +562,9 @@ func TestCheckEmailVerificationCode_VerificationCodeIsExpired(t *testing.T) {
 }
 
 func TestCheckEmailVerificationCode_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	payAsYouGoWrapper := mocks.NewMockPayAsYouGoWrapper(ctrl)
+
 	mockRepo := &mockRepository{
 		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{
@@ -547,7 +581,7 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 		verificationCodeValidityDuration,
 		now,
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, payAsYouGoWrapper)
 
 	e := currService.CheckEmailVerificationCode(userId, verificationCode)
 
@@ -555,6 +589,9 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 }
 
 func TestSaveProofOfEmailVerification_ProofFailedToBeSaved(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	payAsYouGoWrapper := mocks.NewMockPayAsYouGoWrapper(ctrl)
+
 	mockRepo := &mockRepository{
 		saveProofOfEmailVerification: func(userID uint, verificationCode string, proof string) error {
 			return fmt.Errorf("could not save proof of verification for user %d", userID)
@@ -567,7 +604,7 @@ func TestSaveProofOfEmailVerification_ProofFailedToBeSaved(t *testing.T) {
 		verificationCodeValidityDuration,
 		now,
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, payAsYouGoWrapper)
 
 	e := currService.SaveProofOfEmailVerification(userId, verificationCode, emailProof)
 
@@ -575,6 +612,9 @@ func TestSaveProofOfEmailVerification_ProofFailedToBeSaved(t *testing.T) {
 }
 
 func TestSaveProofOfEmailVerification_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	payAsYouGoWrapper := mocks.NewMockPayAsYouGoWrapper(ctrl)
+
 	mockRepo := &mockRepository{
 		saveProofOfEmailVerification: func(userID uint, verificationCode string, proof string) error {
 			return nil
@@ -587,7 +627,7 @@ func TestSaveProofOfEmailVerification_Success(t *testing.T) {
 		verificationCodeValidityDuration,
 		now,
 	)
-	currService := service.NewService(mockRepo, emailVerifier)
+	currService := service.NewService(mockRepo, emailVerifier, payAsYouGoWrapper)
 
 	e := currService.SaveProofOfEmailVerification(userId, verificationCode, emailProof)
 

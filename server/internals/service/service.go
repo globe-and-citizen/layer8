@@ -33,7 +33,9 @@ type Service struct {
 	Repo repository.Repository
 }
 
-func NewService(repo repository.Repository) ServiceInterface {
+func NewService(
+	repo repository.Repository,
+) ServiceInterface {
 	return &Service{
 		Repo: repo,
 	}

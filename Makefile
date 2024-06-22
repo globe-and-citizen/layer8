@@ -93,3 +93,22 @@ run_layer8server_local:
 
 setup_and_run:
 	make setup_local_dependency && make run_layer8server_local
+
+run_smart_contract_test:
+	cd contract && npx hardhat test
+
+compile_smart_contract:
+	cd contract && npx hardhat compile
+
+deploy_smart_contract:
+	cd contract && npx hardhat run deploy.ts --network sepolia
+
+build_smart_contract:
+	rm -rf contract/build
+	solc --abi contract/contracts/PayAsYouGo.sol -o contract/build
+
+generate_go_from_abi:
+	abigen --abi contract/build/PayAsYouGo.abi --pkg blockchain --type PayAsYouGo --out server/blockchain/payasyougo.go
+
+mockgen:
+	mockgen -source=server/blockchain/wrapper.go -destination=server/resource_server/utils/mocks/bockchain_wrapper_mock.go -package=mocks

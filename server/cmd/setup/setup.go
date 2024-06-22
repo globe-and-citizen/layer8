@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/resource_server/dto"
+	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/repository"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 	"io"
@@ -127,12 +128,21 @@ func SetupPG() {
 	}
 
 	if os.Getenv("CREATE_TEST_CLIENT") == "true" {
+		clientUUID := utils.GenerateUUID()
+		clientSecret := utils.GenerateSecret(utils.SecretSize)
+
+		rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
+		HashedAndSaltedPass := utils.SaltAndHashPassword(os.Getenv("TEST_CLIENT_PASSWORD"), rmSalt)
+
 		resourceRepository.RegisterClient(
-			dto.RegisterClientDTO{
-				Password:    os.Getenv("TEST_CLIENT_PASSWORD"),
+			&models.Client{
+				ID:          clientUUID,
+				Secret:      clientSecret,
+				Password:    HashedAndSaltedPass,
 				Username:    os.Getenv("TEST_CLIENT_USERNAME"),
 				RedirectURI: os.Getenv("TEST_CLIENT_REDIRECT_URI"),
 				BackendURI:  utils.RemoveProtocolFromURL(os.Getenv("TEST_CLIENT_BACKEND_URI")),
+				Salt:        rmSalt,
 			},
 		)
 	}
