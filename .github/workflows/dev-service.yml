@@ -38,7 +38,7 @@ jobs:
 
       - name: Run Database Migration
         run: |
-          migrate -path migrations -database ${{ secrets.DEVELOPMENT_POSTGRESQL_URL }} up
+          migrate -path migrations -database "${{ secrets.DEVELOPMENT_POSTGRESQL_URL }}" up
   deploy-layer8-server-development:
     name: "Deploy Layer 8 to Development"
     environment: "development"
