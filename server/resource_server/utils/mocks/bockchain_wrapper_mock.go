@@ -6,6 +6,7 @@ package mocks
 
 import (
 	context "context"
+	blockchain "globe-and-citizen/layer8/server/blockchain"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -47,4 +48,19 @@ func (m *MockPayAsYouGoWrapper) CreateContract(ctx context.Context, rate uint8, 
 func (mr *MockPayAsYouGoWrapperMockRecorder) CreateContract(ctx, rate, clientId interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateContract", reflect.TypeOf((*MockPayAsYouGoWrapper)(nil).CreateContract), ctx, rate, clientId)
+}
+
+// GetContractByID mocks base method.
+func (m *MockPayAsYouGoWrapper) GetContractByID(ctx context.Context, contractID string) (blockchain.PayAsYouGoAgreement, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetContractByID", ctx, contractID)
+	ret0, _ := ret[0].(blockchain.PayAsYouGoAgreement)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetContractByID indicates an expected call of GetContractByID.
+func (mr *MockPayAsYouGoWrapperMockRecorder) GetContractByID(ctx, contractID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContractByID", reflect.TypeOf((*MockPayAsYouGoWrapper)(nil).GetContractByID), ctx, contractID)
 }
