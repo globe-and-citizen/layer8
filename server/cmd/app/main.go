@@ -148,7 +148,12 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 
 	getPwd()
 
-	authHandler := handlers.NewAuthenticationHandler(
+	authenticationHandler := handlers.NewAuthenticationHandler(
+		oauthService,
+		utils.ParseHTML,
+	)
+
+	authorizationHandler := handlers.NewAuthorizationHandler(
 		oauthService,
 		utils.ParseHTML,
 	)
@@ -179,13 +184,13 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 
 			// Authorization Server endpoints
 			case path == "/login":
-				authHandler.Login(w, r)
+				authenticationHandler.Login(w, r)
 			case path == "/authorize":
-				handlers.Authorize(w, r)
+				authorizationHandler.Authorize(w, r)
 			case path == "/error":
-				handlers.Error(w, r)
+				authorizationHandler.Error(w, r)
 			case path == "/api/oauth":
-				handlers.OAuthToken(w, r)
+				authorizationHandler.OAuthToken(w, r)
 			case path == "/api/user":
 				handlers.UserInfo(w, r)
 			case strings.HasPrefix(path, "/assets-v1"):
