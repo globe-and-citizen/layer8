@@ -166,7 +166,7 @@ func Test_PostLoginHandler_TokenNotExists_OK(t *testing.T) {
 
 	// Verify the results
 	assert.Equal(t, http.StatusOK, responseRecorder.Code)
-
+	assert.Len(t, responseRecorder.Result().Cookies(), 0)
 }
 
 func Test_PostLoginHandler_InvalidCredentials_OK(t *testing.T) {
