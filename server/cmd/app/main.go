@@ -67,9 +67,9 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	// if err := opentelemetry.NewMeter(context.Background()); err != nil {
-	// 	log.Fatalf("Failed to create meter: %v", err)
-	// }
+	if err := opentelemetry.NewMeter(context.Background()); err != nil {
+		log.Fatalf("Failed to create meter: %v", err)
+	}
 
 	db.InitInfluxDBClient()
 
