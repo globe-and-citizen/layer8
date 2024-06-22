@@ -156,7 +156,6 @@
       const backend_uri = ref("");
       const username = ref("");
       const password = ref("");
-
       const isRegistered = ref(false);
       const isNameFocused = ref(false);
       const isRUFocused = ref(false);
@@ -199,14 +198,6 @@
         }
       };
 
-      const showToastMessage = (message, type) => {
-        toastMessage.value = message;
-        showToast.value = true;
-        setTimeout(() => {
-          showToast.value = false;
-        }, 3000);
-      };
-
       const checkBackendUri = async () => {
         try {
           isBUFocused.value = false
@@ -230,6 +221,14 @@
           return false;
         }
       };
+      const showToastMessage = (message, type) => {
+        // Current param type is not used. But will be in the future
+        toastMessage.value = message;
+        showToast.value = true;
+        setTimeout(() => {
+          showToast.value = false;
+        }, 3000);
+      }
 
       const app = createApp({
         setup() {
