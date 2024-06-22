@@ -129,6 +129,12 @@ func CompleteLogin(req dto.LoginUserDTO, user models.User) (models.LoginUserResp
 }
 
 func CompleteClientLogin(req dto.LoginClientDTO, client models.Client) (models.LoginUserResponseOutput, error) {
+	HashedAndSaltedPass := SaltAndHashPassword(req.Password, client.Salt)
+
+	if client.Password != HashedAndSaltedPass {
+		return models.LoginUserResponseOutput{}, fmt.Errorf("invalid password")
+	}
+
 	JWT_SECRET_STR := os.Getenv("JWT_SECRET_KEY")
 	JWT_SECRET_BYTE := []byte(JWT_SECRET_STR)
 
@@ -150,7 +156,6 @@ func CompleteClientLogin(req dto.LoginClientDTO, client models.Client) (models.L
 	resp := models.LoginUserResponseOutput{
 		Token: tokenString,
 	}
-	fmt.Println(resp)
 
 	return resp, nil
 }

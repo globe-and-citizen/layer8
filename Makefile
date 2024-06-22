@@ -31,10 +31,10 @@ go_test:
 	cd server && go test ./... -v -cover
 
 run_server: # Port 5001
-	cd server && go run main.go
+	cd server/cmd/app && go run main.go
 
 run_server_local: # Port 5001 with in-memory db
-	cd server && go run main.go -port=5001 -jwtKey=secret -MpKey=secret -UpKey=secret -ProxyURL=http://localhost:5001 -InMemoryDb=true
+	cd server && go run cmd/app/main.go -port=5001 -jwtKey=secret -MpKey=secret -UpKey=secret -ProxyURL=http://localhost:5001 -InMemoryDb=true
 
 
 # Build and Push Docker Images
@@ -83,3 +83,13 @@ run_local_db:
 		-e POSTGRES_PASSWORD=postgres \
 		-e POSTGRES_DBNAME=postgres \
 		-p 5434:5432 postgres:14.3
+
+
+setup_local_dependency:
+	cd server && go run cmd/setup/setup.go
+
+run_layer8server_local:
+	cd server && go run cmd/app/main.go
+
+setup_and_run:
+	make setup_local_dependency && make run_layer8server_local

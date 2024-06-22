@@ -1,7 +1,6 @@
 package dto
 
 type RegisterUserDTO struct {
-	Email       string `json:"email" validate:"required,email"`
 	Username    string `json:"username" validate:"required,min=3,max=50"`
 	Password    string `json:"password" validate:"required"`
 	FirstName   string `json:"first_name" validate:"required"`
@@ -32,10 +31,24 @@ type UpdateDisplayNameDTO struct {
 type RegisterClientDTO struct {
 	Name        string `json:"name" validate:"required"`
 	RedirectURI string `json:"redirect_uri" validate:"required"`
-	BackendURI  string `json:"backend_uri" validate:"required"`
+	BackendURI   string `json:"backend_uri" validate:"required"`
 	Username    string `json:"username" validate:"required,min=3,max=50"`
 	Password    string `json:"password" validate:"required"`
 }
+
+type CheckBackendURIDTO struct {
+	BackendURI string `json:"backend_uri" validate:"required"`
+}
+
+type VerifyEmailDTO struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type CheckEmailVerificationCodeDTO struct {
+	Email string `json:"email" validate:"required,email"`
+	Code  string `json:"code" validate:"required"`
+}
+
 
 type DeleteUserByUsername struct {
 	Username string `json:"username"`

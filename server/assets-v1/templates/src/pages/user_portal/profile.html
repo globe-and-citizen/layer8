@@ -197,7 +197,6 @@
 
       const token = ref(localStorage.getItem("token") || null);
       const user = ref({
-        email: "",
         username: "",
         first_name: "",
         last_name: "",
@@ -235,27 +234,7 @@
       };
 
       const verifyEmail = async () => {
-        try {
-          const resp = await window.fetch(
-            "[[ .ProxyURL ]]/api/v1/verify-email",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "Application/Json",
-                Authorization: `Bearer ${token.value}`,
-              },
-            }
-          );
-          const data = await resp.json();
-          if (data.message === "OK!") {
-            alert("Email verified!");
-            user.value.email_verified = true;
-          } else {
-            alert("Email verification failed!");
-          }
-        } catch (error) {
-          console.error(error);
-        }
+          window.location.href = "[[ .ProxyURL ]]/input-your-email-page";
       };
 
       const changeDisplayName = async () => {

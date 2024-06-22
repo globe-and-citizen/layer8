@@ -32,17 +32,9 @@
             Register
           </h1>
           <p class="font-normal text-xl text-[#414141] text-start mb-5">
-            Enter registration data.
+            Enter registration details.
           </p>
           <div>
-            <div class="mb-3">
-              <label class="text-sm text-[#414141] mb-1 block">Email</label>
-              <input
-                class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
-                v-model="registerEmail"
-                placeholder="Email"
-              />
-            </div>
             <div class="mb-3">
               <label class="text-sm text-[#414141] mb-1 block">Username</label>
               <input
@@ -131,31 +123,34 @@
           </div>
         </div>
       </div>
+      <div :class="showToast ? 'opacity-100' : 'opacity-0 pointer-events-none'" class="fixed top-3 right-3 bg-red-500 text-white p-2 rounded-md transition-opacity ease-in-out duration-500 z-50">
+        {{ toastMessage }}
+      </div>
     </div>
 
     <script>
       const { createApp, computed, ref } = Vue;
-      const registerEmail = ref("");
       const registerUsername = ref("");
       const registerPassword = ref("");
       const registerFirstName = ref("");
       const registerLastName = ref("");
       const registerDisplayName = ref("");
       const registerCountry = ref("");
+      const showToast = ref(false);
+      const toastMessage = ref("");
 
       const registerUser = async () => {
         try {
-          if (registerUsername.value == "" || registerPassword.value == "") {
-            alert("Please enter a username and password!");
+          if (registerUsername.value == "" || registerPassword.value == "" || registerFirstName.value == "" || registerLastName.value == "" || registerDisplayName.value == "" || registerCountry.value  == "") {
+            showToastMessage("Please enter all details!", "error");
             return;
           }
-          await window.fetch("[[ .ProxyURL ]]/api/v1/register-user", {
+          const resp = await window.fetch("[[ .ProxyURL ]]/api/v1/register-user", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              email: registerEmail.value,
               username: registerUsername.value,
               first_name: registerFirstName.value,
               last_name: registerLastName.value,
@@ -164,25 +159,41 @@
               country: registerCountry.value,
             }),
           });
-          alert("Registration successful!");
-          window.location.href = "[[ .ProxyURL ]]/user-login-page";
+          const registerResponseBody = await resp.json();
+          if (registerResponseBody.message === "OK!") {
+            showToastMessage(registerResponseBody.message, "success");
+            window.location.href = "[[ .ProxyURL ]]/user-login-page";
+          } else if (registerResponseBody.message) {
+            showToastMessage(registerResponseBody.message, "error");
+          } else {
+            showToastMessage("Something went wrong!", "error");
+          }
         } catch (error) {
           console.error(error);
-          alert("Registration failed!");
+          showToastMessage("Registration failed!", "error");
         }
       };
+
+      const showToastMessage = (message, type) => {
+        toastMessage.value = message;
+        showToast.value = true;
+        setTimeout(() => {
+          showToast.value = false;
+        }, 3000);
+      }
 
       const app = createApp({
         setup() {
           return {
             registerUser,
-            registerEmail,
             registerUsername,
             registerFirstName,
             registerLastName,
             registerDisplayName,
             registerCountry,
-            registerPassword
+            registerPassword,
+            toastMessage,
+            showToast
           };
         },
       });

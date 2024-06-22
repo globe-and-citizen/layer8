@@ -13,14 +13,16 @@ import (
 )
 
 type MemoryRepository struct {
-	storage     map[string]map[string]string
-	byteStorage map[string][]byte
+	storage                 map[string]map[string]string
+	byteStorage             map[string][]byte
+	verificationDataStorage map[string]models.EmailVerificationData
 }
 
 func NewMemoryRepository() interfaces.IRepository {
 	return &MemoryRepository{
-		storage:     make(map[string]map[string]string),
-		byteStorage: make(map[string][]byte),
+		storage:                 make(map[string]map[string]string),
+		byteStorage:             make(map[string][]byte),
+		verificationDataStorage: make(map[string]models.EmailVerificationData),
 	}
 }
 
@@ -30,16 +32,17 @@ func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO) error {
 	userID := fmt.Sprintf("%d", len(r.storage))
 	key := fmt.Sprintf("%s:%s", req.Username, req.Password)
 	r.storage[key] = map[string]string{
-		"user_id":        userID,
-		"email":          req.Email,
-		"username":       req.Username,
-		"password":       HashedAndSaltedPass,
-		"first_name":     req.FirstName,
-		"last_name":      req.LastName,
-		"country":        req.Country,
-		"display_name":   req.DisplayName,
-		"salt":           rmSalt,
-		"email_verified": "false",
+		"user_id":           userID,
+		"username":          req.Username,
+		"password":          HashedAndSaltedPass,
+		"first_name":        req.FirstName,
+		"last_name":         req.LastName,
+		"country":           req.Country,
+		"display_name":      req.DisplayName,
+		"salt":              rmSalt,
+		"email_verified":    "false",
+		"email_proof":       "",
+		"verification_code": "",
 	}
 	r.storage[req.Username] = map[string]string{
 		"salt":     rmSalt,
@@ -66,6 +69,39 @@ func (r *MemoryRepository) RegisterClient(req dto.RegisterClientDTO) error {
 		"password":     req.Password,
 	}
 	return nil
+}
+
+func (r *MemoryRepository) getUserData(userId uint) (map[string]string, error) {
+	userKeyData, ok := r.storage[strconv.Itoa(int(userId))]
+	if !ok {
+		return nil, fmt.Errorf("user not found for id %d", userId)
+	}
+	key := userKeyData["password"]
+
+	userData, ok := r.storage[key]
+	if !ok {
+		return nil, fmt.Errorf("user not found for key %s", key)
+	}
+
+	return userData, nil
+}
+
+func (r *MemoryRepository) FindUser(userId uint) (models.User, error) {
+	userData, e := r.getUserData(userId)
+	if e != nil {
+		return models.User{}, e
+	}
+
+	return models.User{
+		ID:               userId,
+		Username:         userData["username"],
+		Password:         userData["password"],
+		FirstName:        userData["first_name"],
+		LastName:         userData["last_name"],
+		Salt:             userData["salt"],
+		EmailProof:       userData["email_proof"],
+		VerificationCode: userData["verification_code"],
+	}, nil
 }
 
 func (r *MemoryRepository) GetClientData(clientName string) (models.Client, error) {
@@ -103,7 +139,6 @@ func (r *MemoryRepository) LoginUser(req dto.LoginUserDTO) (models.User, error) 
 	}
 	user := models.User{
 		ID:        uint(userIdUint),
-		Email:     r.storage[key]["email"],
 		Username:  r.storage[key]["username"],
 		Password:  r.storage[key]["password"],
 		FirstName: r.storage[key]["first_name"],
@@ -140,7 +175,6 @@ func (r *MemoryRepository) ProfileUser(userID uint) (models.User, []models.UserM
 	password := r.storage[fmt.Sprintf("%d", userID)]["password"]
 	user := models.User{
 		ID:        userID,
-		Email:     r.storage[password]["email"],
 		Username:  r.storage[password]["username"],
 		Password:  r.storage[password]["password"],
 		FirstName: r.storage[password]["first_name"],
@@ -178,13 +212,36 @@ func (r *MemoryRepository) ProfileClient(username string) (models.Client, error)
 	return client, nil
 }
 
-func (r *MemoryRepository) VerifyEmail(userID uint) error {
-	if _, ok := r.storage[fmt.Sprintf("%d", userID)]; !ok {
-		return fmt.Errorf("user not found")
+func (r *MemoryRepository) SaveProofOfEmailVerification(
+	userId uint, verificationCode string, emailProof string,
+) error {
+	userData, e := r.getUserData(userId)
+	if e != nil {
+		return e
 	}
-	password := r.storage[fmt.Sprintf("%d", userID)]["password"]
-	r.storage[password]["email_verified"] = "true"
+
+	userData["verification_code"] = verificationCode
+	userData["email_proof"] = emailProof
+	userData["email_verified"] = "true"
+
+	delete(r.verificationDataStorage, strconv.Itoa(int(userId)))
+
 	return nil
+}
+
+func (r *MemoryRepository) SaveEmailVerificationData(data models.EmailVerificationData) error {
+	r.verificationDataStorage[strconv.Itoa(int(data.UserId))] = data
+	return nil
+}
+
+func (r *MemoryRepository) GetEmailVerificationData(userId uint) (models.EmailVerificationData, error) {
+	data, ok := r.verificationDataStorage[strconv.Itoa(int(userId))]
+	if !ok {
+		return models.EmailVerificationData{},
+			fmt.Errorf("verification data not found for user with id %d", userId)
+	}
+
+	return data, nil
 }
 
 func (r *MemoryRepository) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
@@ -334,6 +391,15 @@ func (r *MemoryRepository) GetTTL(key string) ([]byte, error) {
 	return r.byteStorage[key], nil
 }
 
+func (r *MemoryRepository) IsBackendURIExists(backendURL string) (bool, error) {
+    for _, data := range r.storage {
+        backend, ok := data["backend_uri"]
+        if ok && backend == backendURL {
+            return true, nil
+        }
+    }
+    return false, nil
+}
 func (r *MemoryRepository) DeleteUserByUsername(req dto.DeleteUserByUsername) error {
 	if _, ok := r.storage[req.Username]; !ok {
 		return fmt.Errorf("user not found")

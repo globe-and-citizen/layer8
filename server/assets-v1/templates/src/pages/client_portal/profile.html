@@ -9,7 +9,6 @@
   <title>Authentication Page</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
 </head>
-
 <body class="bg-[#E5E5E5] h-dvh relative">
   <div id="app">
     <div>
@@ -132,7 +131,6 @@
                 </div>
               </div>
             </div>
-
             <div class="bg-white rounded-2xl py-3 md:py-4 px-4 md:px-6 mb-6 md:mb-0 mt-6">
               <h1 class="font-medium text-lg md:text-xl text-black">Your usage statistics</h1>
               <p class="font-normal text-sm md:text-base text-[#8E8E93] mb-5">Your product data to use on your
@@ -218,10 +216,12 @@
         </div>
       </div>
     </div>
+    <div :class="showToast ? 'opacity-100' : 'opacity-0 pointer-events-none'" class="fixed top-3 right-3 bg-green-500 text-white p-2 rounded-md transition-opacity ease-in-out duration-500 z-50">
+      {{ toastMessage }}
+    </div>
   </div>
   </div>
   </div>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     const { ref, onMounted, createApp } = Vue;
@@ -232,8 +232,8 @@
       name: "",
       redirect_uri: "",
     });
-    const isCopied = ref("")
-    const sidebarShow = ref(false)
+    const isCopied = ref("");
+    const sidebarShow = ref(false);
     const stats = ref({
       metric_type: "",
       unit_of_measurement: "",
@@ -247,8 +247,9 @@
         average: 0,
         details: []
       }
-    })
-
+    });
+    const showToast = ref(false);
+    const toastMessage = ref("");
     const getUserDetails = async () => {
       try {
         const resp = await window.fetch(
@@ -267,7 +268,6 @@
         console.error(error);
       }
     };
-
     const getStats = async () => {
       try {
         const resp = await window.fetch(
@@ -299,6 +299,7 @@
         document.body.appendChild(textarea);
         textarea.select();
         document.execCommand('copy');
+        showToastMessage("Copied to the clipboard!", "success");
       } catch (error) {
         console.error(error)
       }
@@ -315,17 +316,27 @@
       document.body.style.overflow = value ? "hidden" : "auto";
     }
 
+    const showToastMessage = (message, type) => {
+      // Current param type is not used. But will be in the future
+      toastMessage.value = message;
+      showToast.value = true;
+      setTimeout(() => {
+        showToast.value = false;
+      }, 3000);
+    }
     const app = createApp({
       setup() {
         onMounted(async () => {
-          // stats.value = await getStats()
+          if (!token.value) {
+            window.location.href = "[[ .ProxyURL ]]/client-login-page";
+          }
+          stats.value = await getStats()
           const ctx = document.getElementById("statisticChart")
 
           const mappedValue = stats.value.last_thirty_days_statistic.details.map(v => {
             v.total = (v.total * 1000000).toFixed(4)
             return v
           })
-
 
           const lineChart = new Chart(ctx, {
             type: 'line',
@@ -348,8 +359,7 @@
               },
             }
           })
-
-
+          
           getUserDetails();
         });
 
@@ -361,12 +371,13 @@
           isCopied,
           sidebarShow,
           showSidebar,
+          toastMessage,
+          showToast
         };
       },
     });
-
+    
     app.mount("#app");
   </script>
 </body>
-
 </html>

@@ -7,18 +7,23 @@ import (
 	"fmt"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
-	// "globe-and-citizen/layer8/server/opentelemetry"
+	"globe-and-citizen/layer8/server/opentelemetry"
+	"globe-and-citizen/layer8/server/resource_server/db"
+	"globe-and-citizen/layer8/server/resource_server/emails/sender"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
-	"globe-and-citizen/layer8/server/resource_server/db"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
+	"globe-and-citizen/layer8/server/resource_server/utils"
 
 	oauthRepo "globe-and-citizen/layer8/server/internals/repository"
 
@@ -80,7 +85,6 @@ func main() {
 
 		resourceRepository = rsRepo.NewMemoryRepository()
 		resourceRepository.RegisterUser(dto.RegisterUserDTO{
-			Email:       "user@test.com",
 			Username:    "tester",
 			FirstName:   "Test",
 			LastName:    "User",
@@ -104,9 +108,37 @@ func main() {
 		fmt.Println("Running the app with postgres repository")
 	}
 
+	adminEmailAddress := fmt.Sprintf(
+		"%s@%s",
+		os.Getenv("LAYER8_EMAIL_USERNAME"),
+		os.Getenv("LAYER8_EMAIL_DOMAIN"),
+	)
+
+	verificationCodeSize, e := strconv.Atoi(os.Getenv("VERIFICATION_CODE_SIZE"))
+	if e != nil {
+		log.Fatalf("could not read verification code size from .env: %e", e)
+	}
+
+	verificationCodeValidityDuration, e :=
+		time.ParseDuration(os.Getenv("VERIFICATION_CODE_VALIDITY_DURATION"))
+	if e != nil {
+		log.Fatalf("error parsing verification code validity duration: %e", e)
+	}
+
+	emailVerifier := verification.NewEmailVerifier(
+		adminEmailAddress,
+		sender.NewMailerSendService(
+			os.Getenv("MAILER_SEND_API_KEY"),
+			os.Getenv("MAILER_SEND_TEMPLATE_ID"),
+		),
+		code.NewRandomCodeGenerator(verificationCodeSize),
+		verificationCodeValidityDuration,
+		time.Now,
+	)
+
 	// Run server (which never returns)
 	Server(
-		svc.NewService(resourceRepository),
+		svc.NewService(resourceRepository, emailVerifier),
 		oauthService,
 	)
 }
@@ -114,12 +146,17 @@ func main() {
 func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service) {
 	port := os.Getenv("SERVER_PORT")
 
-	_, err := oauthService.AddTestClient()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	getPwd()
+
+	authenticationHandler := handlers.NewAuthenticationHandler(
+		oauthService,
+		utils.ParseHTML,
+	)
+
+	authorizationHandler := handlers.NewAuthorizationHandler(
+		oauthService,
+		utils.ParseHTML,
+	)
 
 	server := http.Server{
 		Addr: fmt.Sprintf(":%s", port),
@@ -147,13 +184,13 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 
 			// Authorization Server endpoints
 			case path == "/login":
-				handlers.Login(w, r)
+				authenticationHandler.Login(w, r)
 			case path == "/authorize":
-				handlers.Authorize(w, r)
+				authorizationHandler.Authorize(w, r)
 			case path == "/error":
-				handlers.Error(w, r)
+				authorizationHandler.Error(w, r)
 			case path == "/api/oauth":
-				handlers.OAuthToken(w, r)
+				authorizationHandler.OAuthToken(w, r)
 			case path == "/api/user":
 				handlers.UserInfo(w, r)
 			case strings.HasPrefix(path, "/assets-v1"):
@@ -168,6 +205,10 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.LoginUserPage(w, r)
 			case path == "/user-register-page":
 				Ctl.RegisterUserPage(w, r)
+			case path == "/input-your-email-page":
+				Ctl.InputYourEmailPage(w, r)
+			case path == "/input-verification-code-page":
+				Ctl.InputVerificationCodePage(w, r)
 			case path == "/client-register-page":
 				Ctl.ClientHandler(w, r)
 			case path == "/client-login-page":
@@ -192,10 +233,14 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.ClientProfileHandler(w, r)
 			case path == "/api/v1/verify-email":
 				Ctl.VerifyEmailHandler(w, r)
+			case path == "/api/v1/check-email-verification-code":
+				Ctl.CheckEmailVerificationCode(w, r)
 			case path == "/api/v1/change-display-name":
 				Ctl.UpdateDisplayNameHandler(w, r)
 			case path == "/api/v1/usage-stats":
 				Ctl.GetUsageStats(w, r)
+			case path == "/api/v1/check-backend-uri":
+				Ctl.CheckBackendURI(w, r)
 			case path == "/api/v1/delete-user":
 				Ctl.DeleteUserByUsername(w, r)
 			case path == "/favicon.ico":
