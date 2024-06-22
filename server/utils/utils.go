@@ -24,7 +24,20 @@ func WriteJSONResponse(
 ) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+
+	byteData, ok := data.(string)
+	if ok {
+		w.Write([]byte(byteData))
+		return
+	}
+
+	resBody, err := json.Marshal(data)
+	if err != nil {
+		http.Error(w, "Error marshalling JSON", http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(resBody)
 }
 
 type JSONResponseInput struct {
