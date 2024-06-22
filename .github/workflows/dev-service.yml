@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - firhan/implement-database-migration-ci
+      - development
 
 jobs:
   build-layer8:
