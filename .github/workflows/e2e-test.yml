@@ -17,6 +17,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Upgrade node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.15.0'
+
       - name: Run server
         run: |
           sed -i "s/TEST_CLIENT_BACKEND_URL=localhost:8000/TEST_CLIENT_BACKEND_URL=localhost:6001/g" server/.env.dev
@@ -42,7 +47,6 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           wait-on: 'http://localhost:5173, http://localhost:6001, http://localhost:5001'
-          browser: chrome
           spec: ./cypress/e2e/imsharer/*.cy.js
           working-directory: ./test/cypress
 
@@ -51,6 +55,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Upgrade node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.15.0'
 
       - name: Run server
         run: |
@@ -83,6 +92,5 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           wait-on: 'http://localhost:5173, http://localhost:6002, http://localhost:5001'
-          browser: chrome
           spec: ./cypress/e2e/wgp/*.cy.js
           working-directory: ./test/cypress
