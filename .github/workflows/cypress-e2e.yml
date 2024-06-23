@@ -1,0 +1,60 @@
+name: End-to-end tests
+
+on: [push]
+
+jobs:
+  cypress-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./server/assets-v1/templates
+      
+      - name: Install cypress
+        run: npm install cypress
+        working-directory: ./server/assets-v1/templates
+
+      - name: Install wait-on
+        run: npm install wait-on
+        working-directory: ./server/assets-v1/templates
+
+      - name: Install dependencies for server
+        run: sudo apt-get install -y make
+
+      - name: Start the server
+        run: |
+          make setup_and_run &
+          for attempt in {1..30}; do sleep 2; if curl -s http://localhost:5001/ > /dev/null; then break; fi; done
+
+      # - name: Wait for server to be ready
+      #   run: npx wait-on http://localhost:5001 --timeout 120000
+      #   working-directory: ./server/assets-v1/templates
+
+      # - name: Verify server is running
+      #   run: curl -v http://localhost:5001
+
+      - name: Run Cypress
+        run: npx cypress run
+        working-directory: ./server/assets-v1/templates
+
+      - name: Upload Cypress videos
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: cypress-videos
+          path: ./server/assets-v1/templates/cypress/videos
+
+      - name: Upload Cypress screenshots
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: cypress-screenshots
+          path: ./server/assets-v1/templates/cypress/screenshots
