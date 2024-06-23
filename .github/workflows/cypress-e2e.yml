@@ -44,17 +44,3 @@ jobs:
       - name: Run Cypress
         run: npx cypress run
         working-directory: ./server/assets-v1/templates
-
-      - name: Upload Cypress videos
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: cypress-videos
-          path: ./server/assets-v1/templates/cypress/videos
-
-      - name: Upload Cypress screenshots
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: cypress-screenshots
-          path: ./server/assets-v1/templates/cypress/screenshots
