@@ -22,10 +22,6 @@ jobs:
         run: npm install cypress
         working-directory: ./server/assets-v1/templates
 
-      - name: Install wait-on
-        run: npm install wait-on
-        working-directory: ./server/assets-v1/templates
-
       - name: Install dependencies for server
         run: sudo apt-get install -y make
 
@@ -33,13 +29,6 @@ jobs:
         run: |
           make setup_and_run &
           for attempt in {1..30}; do sleep 2; if curl -s http://localhost:5001/ > /dev/null; then break; fi; done
-
-      # - name: Wait for server to be ready
-      #   run: npx wait-on http://localhost:5001 --timeout 120000
-      #   working-directory: ./server/assets-v1/templates
-
-      # - name: Verify server is running
-      #   run: curl -v http://localhost:5001
 
       - name: Run Cypress
         run: npx cypress run
