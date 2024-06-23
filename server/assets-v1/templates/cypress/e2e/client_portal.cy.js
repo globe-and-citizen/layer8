@@ -121,8 +121,14 @@ describe('Login Page', () => {
       expect(window.document.execCommand).to.have.been.calledOnceWith('copy');
     });
   });
-
-  it('delete client', () => {
-    cy.deleteRegisteredUser(username, "client")
-  })
 })
+
+describe('Delete User', () => {
+  const tableName = 'clients';
+
+  it('deletes the registered client', () => {
+    cy.deleteRegisteredUser(username, tableName).then((result) => {
+      expect(result).to.be.true; 
+    });
+  });
+});
