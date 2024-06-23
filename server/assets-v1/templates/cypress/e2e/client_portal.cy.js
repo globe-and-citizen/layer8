@@ -31,9 +31,9 @@ describe('Register Client Page', () => {
 
   it('displays an error message for incomplete registration data', () => {
     cy.get('button').click()
-    cy.on('window:alert', (message) => {
-      expect(message).to.equal('Please enter all fields!')
-    })
+    
+    cy.get('.bg-red-500').should('be.visible')
+    cy.contains('.bg-red-500', 'Please enter all fields!').should('be.visible')
   })
 })
 
