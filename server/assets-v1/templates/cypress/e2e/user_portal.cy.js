@@ -86,8 +86,14 @@ describe('Authentication Page', () => {
     cy.get('button').should('contain', 'Save change')
     cy.get('button').should('contain', 'Verify Email')
   })
-
-  it('delete user', () => {
-    cy.task("connectDB").then(cy.log)
-  })
 })
+
+describe('Delete User', () => {
+  const tableName = 'users';
+
+  it('deletes the registered client', () => {
+    cy.deleteRegisteredUser(username, tableName).then((result) => {
+      expect(result).to.be.true; 
+    });
+  });
+});
