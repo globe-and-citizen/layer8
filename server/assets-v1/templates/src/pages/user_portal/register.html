@@ -36,14 +36,6 @@
           </p>
           <div>
             <div class="mb-3">
-              <label class="text-sm text-[#414141] mb-1 block">Email</label>
-              <input
-                class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
-                v-model="registerEmail"
-                placeholder="Email"
-              />
-            </div>
-            <div class="mb-3">
               <label class="text-sm text-[#414141] mb-1 block">Username</label>
               <input
                 class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
@@ -138,7 +130,6 @@
 
     <script>
       const { createApp, computed, ref } = Vue;
-      const registerEmail = ref("");
       const registerUsername = ref("");
       const registerPassword = ref("");
       const registerFirstName = ref("");
@@ -160,7 +151,6 @@
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              email: registerEmail.value,
               username: registerUsername.value,
               first_name: registerFirstName.value,
               last_name: registerLastName.value,
@@ -196,7 +186,6 @@
         setup() {
           return {
             registerUser,
-            registerEmail,
             registerUsername,
             registerFirstName,
             registerLastName,
