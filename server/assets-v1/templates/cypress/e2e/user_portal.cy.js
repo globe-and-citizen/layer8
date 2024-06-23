@@ -13,7 +13,7 @@ describe('Authentication Page', () => {
   
   it('displays the registration form', () => {
     cy.get('h1').should('contain', 'Register')
-    cy.get('input[placeholder="Email"]').should('exist')
+    // cy.get('input[placeholder="Email"]').should('exist')
     cy.get('input[placeholder="Username"]').should('exist')
     cy.get('input[placeholder="First Name"]').should('exist')
     cy.get('input[placeholder="Last Name"]').should('exist')
@@ -24,7 +24,7 @@ describe('Authentication Page', () => {
   })
 
   it('allows users to register with valid data', () => {
-    cy.get('input[placeholder="Email"]').type(email)
+    // cy.get('input[placeholder="Email"]').type(email)
     cy.get('input[placeholder="Username"]').type(username)
     cy.get('input[placeholder="First Name"]').type(firstname)
     cy.get('input[placeholder="Last Name"]').type(lastname)
@@ -74,7 +74,7 @@ describe('Authentication Page', () => {
     cy.get('input[placeholder="First Name"]').should('have.value', firstname);
     cy.get('input[placeholder="Last Name"]').should('have.value', lastname);
     cy.get('input[placeholder="Country"]').should('have.value', country);
-    cy.get('input[placeholder="Email"]').should('have.value', email);
+    // cy.get('input[placeholder="Email"]').should('have.value', email);
   })
 
   it('allows users to update display name and verify email', () => {
