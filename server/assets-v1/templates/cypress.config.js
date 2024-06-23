@@ -1,6 +1,8 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+
 const { defineConfig } = require("cypress");
 const { Client } = require('pg');
-require('dotenv').config();
 
 module.exports = defineConfig({
   component: {
@@ -14,18 +16,12 @@ module.exports = defineConfig({
     setupNodeEvents(on, config) {
       on("task", {
         async deleteUser({ username, tableName }) {
-          console.log('DB_USER:', String(process.env.DB_USER));
-          console.log('DB_PASSWORD:', String(process.env.DB_PASSWORD));
-          console.log('DB_HOST:', String(process.env.DB_HOST));
-          console.log('DB_NAME:', String(process.env.DB_NAME));
-          console.log('DB_PORT:', String(process.env.DB_PORT));
-
           const client = new Client({
-            user: "layer8development",
-            password: "cRACtIeRChYsiNFinuMp",
-            host: "localhost",
-            database: "development",
-            port: "5433",
+            user: String(process.env.DB_USER),
+            password: String(process.env.DB_PASSWORD),
+            host: String(process.env.DB_HOST),
+            database: String(process.env.DB_NAME),
+            port: String(process.env.DB_PORT),
             ssl: false,
           });
 
