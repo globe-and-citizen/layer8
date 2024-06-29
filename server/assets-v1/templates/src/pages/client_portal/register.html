@@ -177,7 +177,7 @@
             showToastMessage("Please enter all fields!", "error")
             return;
           }
-          await window.fetch("[[ .ProxyURL ]]/api/v1/register-client", {
+          const resp = await window.fetch("[[ .ProxyURL ]]/api/v1/register-client", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -190,8 +190,15 @@
               password: password.value,
             }),
           });
-          showToastMessage("Registration successful!", "success")
-          window.location.href = "[[ .ProxyURL ]]/client-login-page";
+          const registerResponseBody = await resp.json();
+          if (registerResponseBody.message === "OK!") {
+            showToastMessage(registerResponseBody.message, "success");
+            window.location.href = "[[ .ProxyURL ]]/client-login-page";
+          } else if (registerResponseBody.message) {
+            showToastMessage(registerResponseBody.message, "error");
+          } else {
+            showToastMessage("Something went wrong!", "error");
+          }
         } catch (error) {
           console.error(error);
           showToastMessage("Registration failed!", "error")
