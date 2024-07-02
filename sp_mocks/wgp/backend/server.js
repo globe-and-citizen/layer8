@@ -4,7 +4,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const app = express();
-const {poems, users} = require("./mock-database.js") 
+const { poems, users } = require("./mock-database.js");
 const SECRET_KEY = "my_very_secret_key";
 // TODO: For future, use a layer8 npm published package for initialising the client and variables
 const popsicle = require("popsicle");
@@ -62,7 +62,28 @@ app.get("/nextpoem", (req, res) => {
   counter++;
   let marker = counter % 3;
   console.log("Served: ", poems[marker].title);
+  console.log("Req path:", req.path);
   res.status(200).json(poems[marker]);
+});
+
+app.get("/poem", (req, res) => {
+  // console.log("Req query: ", req.query);
+  // console.log("ID in query: ", req.query.id);
+
+  const poem_id = parseInt(req.query.id, 10);
+  // console.log("Parsed Poem ID: ", poem_id);
+
+  if (isNaN(poem_id)) {
+    // console.log("Invalid or missing poem ID!");
+    return res.status(400).json({ error: "Invalid or missing poem ID!" });
+  }
+
+  const poem = poems.find((p) => p.id === poem_id);
+  if (poem) {
+    res.status(200).json(poem);
+  } else {
+    res.status(404).json({ error: "Poem not found!" });
+  }
 });
 
 app.post("/api/register", async (req, res) => {
@@ -167,7 +188,7 @@ app.post("/api/profile/upload", upload.single('file'), (req, res) => {
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
-  res.status(200).json({ 
+  res.status(200).json({
     message: "File uploaded successfully!",
     url: `${req.protocol}://${req.get('host')}/media/dynamic/${req.file?.name}`
   });

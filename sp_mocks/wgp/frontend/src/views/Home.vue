@@ -3,12 +3,13 @@ import { computed, onMounted, ref, watch } from "vue";
 import Navbar from "../components/Navbar.vue";
 import { useRouter } from "vue-router";
 import layer8_interceptor from 'layer8_interceptor'
- 
-const BACKEND_URL =  import.meta.env.VITE_BACKEND_URL
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
 const router = useRouter();
 const SpToken = ref(localStorage.getItem("SP_TOKEN") || null);
 const L8Token = ref(localStorage.getItem("L8_TOKEN") || null);
 const isLoggedIn = computed(() => SpToken.value !== null);
+const poemId = ref(1);
 
 let nextPoem = ref({});
 
@@ -29,9 +30,36 @@ const metaData = computed(() => {
   return "";
 });
 
-const getPoem = async () => {
+const getNextPoem = async () => {
   try {
-    const resp = await layer8_interceptor.fetch( BACKEND_URL + "/nextpoem");
+    const resp = await layer8_interceptor.fetch(BACKEND_URL + "/nextpoem", {
+      method: "GET",
+      headers: {
+        "Content-Type": "Application/Json",
+      },
+    });
+    let poemObj = await resp.json();
+
+    if (poemObj.title) {
+      nextPoem.value = poemObj;
+    } else {
+      console.error("The poemObj is malformed or other error....");
+    }
+  } catch (error) {
+    console.error("error:", error);
+  }
+};
+
+const getPoemById = async (poemId) => {
+  try {
+    let poemIdQuery = poemId ? "?id=" + poemId : "";
+    console.log("Poem ID Query:", poemIdQuery);
+    const resp = await layer8_interceptor.fetch(BACKEND_URL + "/poem" + poemIdQuery, {
+      method: "GET",
+      headers: {
+        "Content-Type": "Application/Json",
+      },
+    });
     let poemObj = await resp.json();
 
     if (poemObj.title) {
@@ -51,7 +79,7 @@ const logoutUser = () => {
   router.push({ name: "loginRegister" });
 };
 
-onMounted(async()=>{
+onMounted(async () => {
   let user = localStorage.getItem("_user") ? JSON.parse(localStorage.getItem("_user")) : null
   let url = await layer8_interceptor.static(user.profile_image);
   const pictureBox = document.getElementById("pictureBox");
@@ -63,16 +91,11 @@ onMounted(async()=>{
 <template>
   <div class="h-screen bg-primary flex flex-col">
     <Navbar></Navbar>
-    <div
-      class="bg-primary-content w-full flex justify-center items-center p-4 flex-1"
-    >
-      <div
-        class="card w-auto bg-base-100 shadow-xl p-8 h-min prose"
-        v-if="isLoggedIn"
-      >
+    <div class="bg-primary-content w-full flex justify-center items-center p-4 flex-1">
+      <div class="card w-auto bg-base-100 shadow-xl p-8 h-min prose" v-if="isLoggedIn">
         <h1>Welcome {{ userName }}!</h1>
         <!-- <div v-if="user?.profile_image"> -->
-         <div> 
+        <div>
           <img id="pictureBox">
         </div>
         <h3>Your MetaData:</h3>
@@ -88,7 +111,13 @@ onMounted(async()=>{
 
         <br />
         <div class="flex gap-6">
-          <button class="btn" @click="getPoem">Get Next Poem</button>
+          <button class="btn" @click="getNextPoem">Get Next Poem</button>
+          <button class="btn" @click="getPoemById(poemId)">Get Poem By Id</button>
+          <select v-model="poemId" class="select select-bordered">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select>
           <button class="btn btn-secondary" @click="logoutUser">Logout</button>
         </div>
         <div>
