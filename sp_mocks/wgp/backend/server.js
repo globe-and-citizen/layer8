@@ -38,6 +38,10 @@ app.get("/healthcheck", (req, res) => {
   res.send("Bro, ur poems coming soon. Relax a little.");
 });
 
+app.get('/', (req, res) => {
+  res.json({ message: "Hello there!" })
+});
+
 //const Layer8 = require("./dist/loadWASM.js");
 //app.use(Layer8);
 
