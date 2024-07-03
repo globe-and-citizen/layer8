@@ -28,8 +28,13 @@ var WorkingDirectory string
 type Response struct {
 	Status  bool        `json:"status"`
 	Message string      `json:"message"`
-	Error   interface{} `json:"errors"`
 	Data    interface{} `json:"data"`
+}
+
+type ErrorResponse struct {
+	Status  bool        `json:"status"`
+	Message string      `json:"message"`
+	Error   interface{} `json:"errors"`
 }
 
 type EmptyObj struct{}
@@ -63,23 +68,22 @@ func CheckPassword(password string, salt string, hash string) bool {
 	return SaltAndHashPassword(password, salt) == hash
 }
 
-func BuildResponse(status bool, message string, data interface{}) Response {
+func BuildResponse(w http.ResponseWriter, message string, data interface{}) Response {
+	w.WriteHeader(http.StatusOK)
 	res := Response{
-		Status:  status,
+		Status:  true,
 		Message: message,
-		Error:   nil,
 		Data:    data,
 	}
 	return res
 }
 
-func BuildErrorResponse(message string, err string, data interface{}) Response {
+func BuildErrorResponse(message string, err string, data interface{}) ErrorResponse {
 	splittedError := strings.Split(err, "\n")
-	res := Response{
+	res := ErrorResponse{
 		Status:  false,
 		Message: message,
 		Error:   splittedError,
-		Data:    data,
 	}
 
 	return res

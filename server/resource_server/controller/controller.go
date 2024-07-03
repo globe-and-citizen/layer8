@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-playground/validator/v10"
 	"io"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/go-playground/validator/v10"
 
 	"globe-and-citizen/layer8/server/resource_server/db"
 	"globe-and-citizen/layer8/server/resource_server/dto"
@@ -116,7 +117,7 @@ func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := utils.BuildResponse(true, "OK!", "User registered successfully")
+	res := utils.BuildResponse(w, "User registered successfully", utils.EmptyObj{})
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
 		return
@@ -137,7 +138,7 @@ func RegisterClientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := utils.BuildResponse(true, "OK!", "Client registered successfully")
+	res := utils.BuildResponse(w, "Client registered successfully", utils.EmptyObj{})
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to register client", err)
 		return
@@ -258,7 +259,7 @@ func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := utils.BuildResponse(true, "OK!", "Verification email sent")
+	response := utils.BuildResponse(w, "Verification email sent", utils.EmptyObj{})
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Internal error happened", err)
@@ -312,11 +313,7 @@ func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := utils.BuildResponse(
-		true,
-		"Your email was successfully verified!",
-		"Email verified!",
-	)
+	response := utils.BuildResponse(w, "Your email was successfully verified!", utils.EmptyObj{})
 	e = json.NewEncoder(w).Encode(response)
 	if e != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Internal error happened", e)
@@ -345,7 +342,7 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := utils.BuildResponse(true, "OK!", "Display name updated successfully")
+	resp := utils.BuildResponse(w, "Display name updated successfully", utils.EmptyObj{})
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)
 		return
@@ -401,7 +398,7 @@ func GetUsageStats(w http.ResponseWriter, r *http.Request) {
 		finalResponse.MonthToDate.ForecastedEndOfMonthUsage = (monthToDateTotal / 1000000000) + float64(totalDaysBeforeNextMonth)*thirtyDaysStatistic.Average
 	}
 
-	resp := utils.BuildResponse(true, "OK!", finalResponse)
+	resp := utils.BuildResponse(w, "Client usage statistics", finalResponse)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get stats", err)
 		return
