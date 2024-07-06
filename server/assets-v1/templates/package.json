@@ -1,0 +1,11 @@
+{
+    "name": "user-client-portal",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "watch": "npx tailwindcss -i ./assets/styles/input.css -o ./assets/styles/output.css --watch"
+    },
+    "devDependencies": {
+        "tailwindcss": "^3.4.1"
+    }
+}
