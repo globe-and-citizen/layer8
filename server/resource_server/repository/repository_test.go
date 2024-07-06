@@ -3,16 +3,17 @@ package repository
 import (
 	"database/sql"
 	"fmt"
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/stretchr/testify/assert"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/models"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 	"regexp"
 	"testing"
 	"time"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 const id uint = 1
@@ -112,7 +113,7 @@ func TestRegisterClient(t *testing.T) {
 	repo := NewRepository(db)
 
 	// Define a test client DTO
-	testClient := dto.RegisterClientDTO{
+	testClient := &models.Client{
 		Name:        "testclient",
 		RedirectURI: "https://gcitizen.com/callback",
 	}

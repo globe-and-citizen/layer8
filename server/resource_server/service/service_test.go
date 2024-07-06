@@ -115,7 +115,7 @@ func (m *mockRepository) UpdateDisplayName(userID uint, req dto.UpdateDisplayNam
 	return nil
 }
 
-func (m *mockRepository) RegisterClient(req dto.RegisterClientDTO) error {
+func (m *mockRepository) RegisterClient(req *models.Client) error {
 	return nil
 }
 

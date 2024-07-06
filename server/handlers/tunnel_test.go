@@ -3,11 +3,12 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"globe-and-citizen/layer8/server/resource_server/dto"
+	"globe-and-citizen/layer8/server/models"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	"globe-and-citizen/layer8/server/resource_server/repository"
 	resourceService "globe-and-citizen/layer8/server/resource_server/service"
 	resourceUtils "globe-and-citizen/layer8/server/resource_server/utils"
+	"globe-and-citizen/layer8/server/resource_server/utils/mocks"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -15,27 +16,37 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
 	utils "github.com/globe-and-citizen/layer8-utils"
 )
 
-func prepareInitTunnelRequest(clientBackendUrl string) *http.Request {
+func prepareInitTunnelRequest(t *testing.T, clientBackendUrl string) *http.Request {
+	rmSalt := resourceUtils.GenerateRandomSalt(resourceUtils.SaltSize)
 	repo := repository.NewMemoryRepository()
-	repo.RegisterClient(dto.RegisterClientDTO{
-		Name:        "name",
-		RedirectURI: "redirect_uri",
+	client := &models.Client{
+		ID:          "notanid",
+		Secret:      "absolutelynotasecret!",
+		Name:        "Ex-C",
+		RedirectURI: "http://localhost:5173/oauth2/callback",
 		BackendURI:  resourceUtils.RemoveProtocolFromURL(clientBackendUrl),
-		Username:    "username",
-		Password:    "password",
-	})
+		Username:    "layer8",
+		Password:    resourceUtils.SaltAndHashPassword("12341234", rmSalt),
+		Salt:        rmSalt,
+	}
+
+	repo.SetClient(client)
+
+	ctrl := gomock.NewController(t)
+	payAsYouGoWrapper := mocks.NewMockPayAsYouGoWrapper(ctrl)
 
 	reqToInitTunnel := httptest.NewRequest("GET", "/init-tunnel", nil)
 	reqToInitTunnel = reqToInitTunnel.WithContext(
 		context.WithValue(
 			reqToInitTunnel.Context(),
 			"service",
-			resourceService.NewService(repo, &verification.EmailVerifier{}),
+			resourceService.NewService(repo, &verification.EmailVerifier{}, payAsYouGoWrapper),
 		),
 	)
 
@@ -69,7 +80,7 @@ func Test_InitTunnel_OK(t *testing.T) {
 		w.Write([]byte(b64PubJWK))
 	}))
 
-	reqToInitTunnel := prepareInitTunnelRequest(mockedServiceProvider.URL)
+	reqToInitTunnel := prepareInitTunnelRequest(t, mockedServiceProvider.URL)
 	responseRecorder := httptest.NewRecorder()
 
 	InitTunnel(responseRecorder, reqToInitTunnel)
@@ -120,7 +131,7 @@ func Test_InitTunnel_InvalidBackendURL(t *testing.T) {
 }
 
 func Test_InitTunnel_UnavailableBackend(t *testing.T) {
-	reqToInitTunnel := prepareInitTunnelRequest("http://localhost:8080")
+	reqToInitTunnel := prepareInitTunnelRequest(t, "http://localhost:8080")
 	responseRecorder := httptest.NewRecorder()
 
 	InitTunnel(responseRecorder, reqToInitTunnel)

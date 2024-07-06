@@ -35,32 +35,60 @@ func (m *MockPayAsYouGoWrapper) EXPECT() *MockPayAsYouGoWrapperMockRecorder {
 	return m.recorder
 }
 
-// CreateContract mocks base method.
-func (m *MockPayAsYouGoWrapper) CreateContract(ctx context.Context, rate uint8, clientId string) (*string, error) {
+// BulkAddBillToClient mocks base method.
+func (m *MockPayAsYouGoWrapper) BulkAddBillToClient(ctx context.Context, billings []blockchain.PayAsYouGoBillingInput) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateContract", ctx, rate, clientId)
-	ret0, _ := ret[0].(*string)
+	ret := m.ctrl.Call(m, "BulkAddBillToClient", ctx, billings)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BulkAddBillToClient indicates an expected call of BulkAddBillToClient.
+func (mr *MockPayAsYouGoWrapperMockRecorder) BulkAddBillToClient(ctx, billings interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BulkAddBillToClient", reflect.TypeOf((*MockPayAsYouGoWrapper)(nil).BulkAddBillToClient), ctx, billings)
+}
+
+// GetClientByID mocks base method.
+func (m *MockPayAsYouGoWrapper) GetClientByID(ctx context.Context, clientID string) (blockchain.PayAsYouGoClient, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClientByID", ctx, clientID)
+	ret0, _ := ret[0].(blockchain.PayAsYouGoClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateContract indicates an expected call of CreateContract.
-func (mr *MockPayAsYouGoWrapperMockRecorder) CreateContract(ctx, rate, clientId interface{}) *gomock.Call {
+// GetClientByID indicates an expected call of GetClientByID.
+func (mr *MockPayAsYouGoWrapperMockRecorder) GetClientByID(ctx, clientID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateContract", reflect.TypeOf((*MockPayAsYouGoWrapper)(nil).CreateContract), ctx, rate, clientId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientByID", reflect.TypeOf((*MockPayAsYouGoWrapper)(nil).GetClientByID), ctx, clientID)
 }
 
-// GetContractByID mocks base method.
-func (m *MockPayAsYouGoWrapper) GetContractByID(ctx context.Context, contractID string) (blockchain.PayAsYouGoAgreement, error) {
+// GetClients mocks base method.
+func (m *MockPayAsYouGoWrapper) GetClients(ctx context.Context) ([]blockchain.PayAsYouGoClient, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetContractByID", ctx, contractID)
-	ret0, _ := ret[0].(blockchain.PayAsYouGoAgreement)
+	ret := m.ctrl.Call(m, "GetClients", ctx)
+	ret0, _ := ret[0].([]blockchain.PayAsYouGoClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetContractByID indicates an expected call of GetContractByID.
-func (mr *MockPayAsYouGoWrapperMockRecorder) GetContractByID(ctx, contractID interface{}) *gomock.Call {
+// GetClients indicates an expected call of GetClients.
+func (mr *MockPayAsYouGoWrapperMockRecorder) GetClients(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContractByID", reflect.TypeOf((*MockPayAsYouGoWrapper)(nil).GetContractByID), ctx, contractID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClients", reflect.TypeOf((*MockPayAsYouGoWrapper)(nil).GetClients), ctx)
+}
+
+// StoreClient mocks base method.
+func (m *MockPayAsYouGoWrapper) StoreClient(ctx context.Context, rate uint64, clientId string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StoreClient", ctx, rate, clientId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StoreClient indicates an expected call of StoreClient.
+func (mr *MockPayAsYouGoWrapperMockRecorder) StoreClient(ctx, rate, clientId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreClient", reflect.TypeOf((*MockPayAsYouGoWrapper)(nil).StoreClient), ctx, rate, clientId)
 }
