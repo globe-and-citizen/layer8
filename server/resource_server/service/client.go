@@ -32,7 +32,7 @@ func NewClientService(
 
 func (c *clientService) RefreshClientBill(ctx context.Context) error {
 	log.Println("Refreshing client bill")
-	clients, err := c.blockchainWrapper.GetContracts(ctx)
+	clients, err := c.blockchainWrapper.GetClients(ctx)
 	if err != nil {
 		return err
 	}
@@ -58,9 +58,9 @@ func (c *clientService) RefreshClientBill(ctx context.Context) error {
 		}
 
 		usages = append(usages, blockchain.PayAsYouGoBillingInput{
-			ContractId: client.ContractId,
-			Amount:     uint64(clientUsageInBytes / 1000000),
-			Timestamp:  uint64(currentTime.Unix()),
+			ClientId:  client.ClientId,
+			Amount:    uint64(clientUsageInBytes / 1000000),
+			Timestamp: uint64(currentTime.Unix()),
 		})
 	}
 
@@ -69,7 +69,7 @@ func (c *clientService) RefreshClientBill(ctx context.Context) error {
 		return nil
 	}
 
-	if err := c.blockchainWrapper.BulkAddBillToContract(ctx, usages); err != nil {
+	if err := c.blockchainWrapper.BulkAddBillToClient(ctx, usages); err != nil {
 		return err
 	}
 

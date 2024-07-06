@@ -15,12 +15,11 @@ contract PayAsYouGo {
         _;
     }
 
-    struct Agreement {
-        bytes32 contractId;
+    struct Client {
         string clientId;
         uint256 unpaidBill;
         uint64 lastUsageFetchTime;
-        uint8 rate;
+        uint64 rate;
         Transaction[] transactions;
     }
 
@@ -31,12 +30,13 @@ contract PayAsYouGo {
     }
 
     struct BillingInput {
-        bytes32 contractId;
+        string clientId;
         uint64 amount;
+        uint64 timestamp;
     }
 
-    bytes32[] public contractIds;
-    mapping(bytes32 => Agreement) public contracts;
+    string[] public clientIDs;
+    mapping(string => Client) public clients;
 
     constructor(
         address payable _transactionAddress
@@ -45,9 +45,9 @@ contract PayAsYouGo {
         transactionAddress = _transactionAddress;
     }
 
-    event ContractCreated(bytes32 contractId, string clientId);
-    event BillAdded(bytes32 contractId, uint256 amount);
-    event BillPaid(bytes32 contractId, uint256 amount);
+    event ClientCreated(string clientId);
+    event BillAdded(string clientId, uint256 amount);
+    event BillPaid(string clientId, uint256 amount);
 
     function changeTransactionAddress(
         address payable _transactionAddress
@@ -55,34 +55,29 @@ contract PayAsYouGo {
         transactionAddress = _transactionAddress;
     }
 
-    function newContract(
-        uint8 rate,
+    function newClient(
+        uint64 rate,
         string memory clientId
     ) external onlyOwner {
-        bytes32 contractId = keccak256(
-            abi.encodePacked(clientId, block.timestamp)
-        );
+        Client storage clientToBeStored = clients[clientId];
 
-        Agreement storage contractToBeStored = contracts[contractId];
+        clientToBeStored.clientId = clientId;
+        clientToBeStored.unpaidBill = 0;
+        clientToBeStored.rate = rate;
+        clientToBeStored.lastUsageFetchTime = uint64(block.timestamp);
 
-        contractToBeStored.contractId = contractId;
-        contractToBeStored.clientId = clientId;
-        contractToBeStored.unpaidBill = 0;
-        contractToBeStored.rate = rate;
-        contractToBeStored.lastUsageFetchTime = uint64(block.timestamp);
+        clientIDs.push(clientId);
 
-        contractIds.push(contractId);
-
-        emit ContractCreated(contractId, clientId); 
+        emit ClientCreated(clientId); 
     }
 
-    function addBillToContract(
-        bytes32 contractId,
+    function addBillToClient(
+        string memory clientId,
         uint64 amount,
         uint64 timestamp
     ) public onlyOwner {
-        Agreement storage updatedContract = contracts[contractId];
-        uint256 amountToBePaid = amount * updatedContract.rate;
+        Client storage updatedClient = clients[clientId];
+        uint256 amountToBePaid = amount * updatedClient.rate;
 
         Transaction memory transaction = Transaction({
             amount: amountToBePaid,
@@ -90,27 +85,26 @@ contract PayAsYouGo {
             transactionType: TransactionType.BILL
         });
 
-        updatedContract.transactions.push(transaction);
-        updatedContract.unpaidBill += amountToBePaid;
-        updatedContract.lastUsageFetchTime = timestamp;
+        updatedClient.transactions.push(transaction);
+        updatedClient.unpaidBill += amountToBePaid;
+        updatedClient.lastUsageFetchTime = timestamp;
 
-        emit BillAdded(contractId, amountToBePaid);
+        emit BillAdded(clientId, amountToBePaid);
     }
 
-    function bulkAddBillToContract(
-        uint64 timestamp,
+    function bulkAddBillToClient(
         BillingInput[] memory billings
     ) external onlyOwner {
         for (uint256 i = 0; i < billings.length; i++) {
-            addBillToContract(billings[i].contractId, billings[i].amount, timestamp);
+            addBillToClient(billings[i].clientId, billings[i].amount, billings[i].timestamp);
         }
     }
 
-    function payBill(bytes32 contractId) external payable {
-        Agreement storage updatedContract = contracts[contractId];
-        require(msg.value <= updatedContract.unpaidBill, "Overpaying the bill");
+    function payBill(string memory clientId) external payable {
+        Client storage updatedClient = clients[clientId];
+        require(msg.value <= updatedClient.unpaidBill, "Overpaying the bill");
 
-        updatedContract.unpaidBill -= msg.value;
+        updatedClient.unpaidBill -= msg.value;
 
         Transaction memory transaction = Transaction({
             amount: msg.value,
@@ -118,29 +112,40 @@ contract PayAsYouGo {
             transactionType: TransactionType.PAYMENT
         });
 
-        updatedContract.transactions.push(transaction);
+        updatedClient.transactions.push(transaction);
 
         (bool sent, ) = transactionAddress.call{value: msg.value}("");
         require(sent, "Failed to send payment to contract owner");
         
-        emit BillPaid(contractId, msg.value);
+        emit BillPaid(clientId, msg.value);
     }
 
-    function getContractById(bytes32 contractId)
+    function changeRate(string memory clientId, uint64 rate) external onlyOwner {
+        Client storage updatedClient = clients[clientId];
+        updatedClient.rate = rate;
+    }
+
+    function changeAllClientRates(uint64 rate) external onlyOwner {
+        for (uint256 i = 0; i < clientIDs.length; i++) {
+            clients[clientIDs[i]].rate = rate;
+        }
+    }
+
+    function getClientById(string memory clientId)
         external
         view
-        returns (Agreement memory)
+        returns (Client memory)
     {
-        return contracts[contractId];
+        return clients[clientId];
     }
 
-    function getContracts() external view returns (Agreement[] memory) {
-        Agreement[] memory agreements = new Agreement[](contractIds.length);
+    function getClients() external view returns (Client[] memory) {
+        Client[] memory clientToResponse = new Client[](clientIDs.length);
 
-        for (uint256 i = 0; i < contractIds.length; i++) {
-            agreements[i] = contracts[contractIds[i]];
+        for (uint256 i = 0; i < clientIDs.length; i++) {
+            clientToResponse[i] = clients[clientIDs[i]];
         }
 
-        return agreements;
+        return clientToResponse;
     }
 }

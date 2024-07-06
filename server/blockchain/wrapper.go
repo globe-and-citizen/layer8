@@ -2,9 +2,7 @@ package blockchain
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -13,10 +11,10 @@ import (
 )
 
 type PayAsYouGoWrapper interface {
-	CreateContract(ctx context.Context, rate uint8, clientId string) (*string, error)
-	GetContracts(ctx context.Context) ([]PayAsYouGoAgreement, error)
-	GetContractByID(ctx context.Context, contractID string) (PayAsYouGoAgreement, error)
-	BulkAddBillToContract(ctx context.Context, billings []PayAsYouGoBillingInput) error
+	StoreClient(ctx context.Context, rate uint64, clientId string) error
+	GetClients(ctx context.Context) ([]PayAsYouGoClient, error)
+	GetClientByID(ctx context.Context, clientID string) (PayAsYouGoClient, error)
+	BulkAddBillToClient(ctx context.Context, billings []PayAsYouGoBillingInput) error
 }
 
 type PayAsYouGoWrapperImpl struct {
@@ -46,14 +44,14 @@ func NewPayAsYouGoWrapper(
 	}
 }
 
-func (w *PayAsYouGoWrapperImpl) CreateContract(ctx context.Context, rate uint8, clientId string) (*string, error) {
+func (w *PayAsYouGoWrapperImpl) StoreClient(ctx context.Context, rate uint64, clientId string) error {
 	sign, err := w.generateSign(ctx)
 	if err != nil {
 		log.Printf("Failed to sign transaction %s", err)
-		return nil, err
+		return err
 	}
 
-	tx, err := w.c.NewContract(
+	tx, err := w.c.NewClient(
 		sign,
 		rate,
 		clientId,
@@ -61,30 +59,23 @@ func (w *PayAsYouGoWrapperImpl) CreateContract(ctx context.Context, rate uint8, 
 
 	if err != nil {
 		log.Printf("failed to create contract %s", err)
-		return nil, err
+		return err
 	}
 
 	receipt, err := bind.WaitMined(context.Background(), w.rpcClient, tx)
 	if err != nil {
 		log.Printf("failed to wait for transaction to be mined %s", err)
-		return nil, err
+		return err
 	}
 
 	if receipt.Status != 1 {
-		return nil, errors.New("transaction failed")
+		return errors.New("transaction failed")
 	}
 
-	parsedLog, err := w.c.PayAsYouGoFilterer.ParseContractCreated(*receipt.Logs[0])
-	if err != nil {
-		return nil, err
-	}
-
-	contractId := fmt.Sprintf("%x", parsedLog.ContractId[:])
-
-	return &contractId, nil
+	return nil
 }
 
-func (w *PayAsYouGoWrapperImpl) BulkAddBillToContract(
+func (w *PayAsYouGoWrapperImpl) BulkAddBillToClient(
 	ctx context.Context,
 	billings []PayAsYouGoBillingInput,
 ) error {
@@ -94,7 +85,7 @@ func (w *PayAsYouGoWrapperImpl) BulkAddBillToContract(
 		return err
 	}
 
-	_, err = w.c.BulkAddBillToContract(sign, billings)
+	_, err = w.c.BulkAddBillToClient(sign, billings)
 	if err != nil {
 		log.Printf("failed to bulk add bill to contract %s", err)
 		return err
@@ -103,16 +94,16 @@ func (w *PayAsYouGoWrapperImpl) BulkAddBillToContract(
 	return nil
 }
 
-func (w *PayAsYouGoWrapperImpl) GetContracts(
+func (w *PayAsYouGoWrapperImpl) GetClients(
 	ctx context.Context,
-) ([]PayAsYouGoAgreement, error) {
+) ([]PayAsYouGoClient, error) {
 	sign, err := w.generateSign(ctx)
 	if err != nil {
 		log.Printf("Failed to sign transaction %s", err)
 		return nil, err
 	}
 
-	contracts, err := w.c.GetContracts(&bind.CallOpts{
+	contracts, err := w.c.GetClients(&bind.CallOpts{
 		From: sign.From,
 	})
 	if err != nil {
@@ -123,31 +114,25 @@ func (w *PayAsYouGoWrapperImpl) GetContracts(
 	return contracts, nil
 }
 
-func (w *PayAsYouGoWrapperImpl) GetContractByID(ctx context.Context, contractID string) (PayAsYouGoAgreement, error) {
+func (w *PayAsYouGoWrapperImpl) GetClientByID(ctx context.Context, clientID string) (PayAsYouGoClient, error) {
 	chainId, err := w.rpcClient.ChainID(ctx)
 	if err != nil {
 		log.Fatalf("Failed to get chain id %s", err)
-		return PayAsYouGoAgreement{}, err
+		return PayAsYouGoClient{}, err
 	}
 
 	sign, err := w.signer.CreateSign(chainId)
 	if err != nil {
 		log.Printf("Failed to sign transaction %s", err)
-		return PayAsYouGoAgreement{}, err
+		return PayAsYouGoClient{}, err
 	}
 
-	decodedContractId, err := hex.DecodeString(contractID)
-	if err != nil {
-		log.Printf("Failed to decode contract id %s", err)
-		return PayAsYouGoAgreement{}, err
-	}
-
-	contract, err := w.c.GetContractById(&bind.CallOpts{
+	contract, err := w.c.GetClientById(&bind.CallOpts{
 		From: sign.From,
-	}, [32]byte(decodedContractId))
+	}, clientID)
 	if err != nil {
 		log.Printf("Failed to get contract %s", err)
-		return PayAsYouGoAgreement{}, err
+		return PayAsYouGoClient{}, err
 	}
 
 	return contract, nil

@@ -1,1 +1,0 @@
-ALTER TABLE clients ADD COLUMN blockchain_contract_id TEXT;

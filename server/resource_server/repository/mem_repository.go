@@ -399,7 +399,3 @@ func (r *MemoryRepository) IsBackendURIExists(backendURL string) (bool, error) {
 
 	return false, nil
 }
-
-func (r *MemoryRepository) UpdateClientBlockchainContractID(clientID string, contractID *string) error {
-	return nil
-}

@@ -75,18 +75,11 @@ func (s *service) RegisterClient(req dto.RegisterClientDTO) error {
 			return
 		}
 
-		contractID, err := s.payAsYouGoWrapper.CreateContract(context.Background(), uint8(billRate), clientUUID)
+		err = s.payAsYouGoWrapper.StoreClient(context.Background(), uint64(billRate), clientUUID)
 		if err != nil {
 			fmt.Println("Error creating contract: ", err)
 			return
 		}
-
-		err = s.repository.UpdateClientBlockchainContractID(clientUUID, contractID)
-		if err != nil {
-			fmt.Println("Error updating client contract ID: ", err)
-			return
-		}
-
 	}()
 
 	return nil

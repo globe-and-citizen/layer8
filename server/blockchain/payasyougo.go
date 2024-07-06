@@ -29,21 +29,20 @@ var (
 	_ = abi.ConvertType
 )
 
-// PayAsYouGoAgreement is an auto generated low-level Go binding around an user-defined struct.
-type PayAsYouGoAgreement struct {
-	ContractId         [32]byte
+// PayAsYouGoBillingInput is an auto generated low-level Go binding around an user-defined struct.
+type PayAsYouGoBillingInput struct {
+	ClientId  string
+	Amount    uint64
+	Timestamp uint64
+}
+
+// PayAsYouGoClient is an auto generated low-level Go binding around an user-defined struct.
+type PayAsYouGoClient struct {
 	ClientId           string
 	UnpaidBill         *big.Int
 	LastUsageFetchTime uint64
-	Rate               uint8
+	Rate               uint64
 	Transactions       []PayAsYouGoTransaction
-}
-
-// PayAsYouGoBillingInput is an auto generated low-level Go binding around an user-defined struct.
-type PayAsYouGoBillingInput struct {
-	ContractId [32]byte
-	Amount     uint64
-	Timestamp  uint64
 }
 
 // PayAsYouGoTransaction is an auto generated low-level Go binding around an user-defined struct.
@@ -55,7 +54,7 @@ type PayAsYouGoTransaction struct {
 
 // PayAsYouGoMetaData contains all meta data concerning the PayAsYouGo contract.
 var PayAsYouGoMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"addresspayable\",\"name\":\"_transactionAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"contractId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"BillAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"contractId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"BillPaid\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"contractId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"}],\"name\":\"ContractCreated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"contractId\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"}],\"name\":\"addBillToContract\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"contractId\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"}],\"internalType\":\"structPayAsYouGo.BillingInput[]\",\"name\":\"billings\",\"type\":\"tuple[]\"}],\"name\":\"bulkAddBillToContract\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"addresspayable\",\"name\":\"_transactionAddress\",\"type\":\"address\"}],\"name\":\"changeTransactionAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"contractIds\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"contracts\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"contractId\",\"type\":\"bytes32\"},{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"unpaidBill\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"lastUsageFetchTime\",\"type\":\"uint64\"},{\"internalType\":\"uint8\",\"name\":\"rate\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"contractId\",\"type\":\"bytes32\"}],\"name\":\"getContractById\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"contractId\",\"type\":\"bytes32\"},{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"unpaidBill\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"lastUsageFetchTime\",\"type\":\"uint64\"},{\"internalType\":\"uint8\",\"name\":\"rate\",\"type\":\"uint8\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"},{\"internalType\":\"enumPayAsYouGo.TransactionType\",\"name\":\"transactionType\",\"type\":\"uint8\"}],\"internalType\":\"structPayAsYouGo.Transaction[]\",\"name\":\"transactions\",\"type\":\"tuple[]\"}],\"internalType\":\"structPayAsYouGo.Agreement\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getContracts\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"contractId\",\"type\":\"bytes32\"},{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"unpaidBill\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"lastUsageFetchTime\",\"type\":\"uint64\"},{\"internalType\":\"uint8\",\"name\":\"rate\",\"type\":\"uint8\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"},{\"internalType\":\"enumPayAsYouGo.TransactionType\",\"name\":\"transactionType\",\"type\":\"uint8\"}],\"internalType\":\"structPayAsYouGo.Transaction[]\",\"name\":\"transactions\",\"type\":\"tuple[]\"}],\"internalType\":\"structPayAsYouGo.Agreement[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"rate\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"}],\"name\":\"newContract\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"contractId\",\"type\":\"bytes32\"}],\"name\":\"payBill\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"addresspayable\",\"name\":\"_transactionAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"BillAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"BillPaid\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"}],\"name\":\"ClientCreated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"},{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"}],\"name\":\"addBillToClient\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"},{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"}],\"internalType\":\"structPayAsYouGo.BillingInput[]\",\"name\":\"billings\",\"type\":\"tuple[]\"}],\"name\":\"bulkAddBillToClient\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"rate\",\"type\":\"uint64\"}],\"name\":\"changeAllClientRates\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"},{\"internalType\":\"uint64\",\"name\":\"rate\",\"type\":\"uint64\"}],\"name\":\"changeRate\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"addresspayable\",\"name\":\"_transactionAddress\",\"type\":\"address\"}],\"name\":\"changeTransactionAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"clientIDs\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"name\":\"clients\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"unpaidBill\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"lastUsageFetchTime\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"rate\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"}],\"name\":\"getClientById\",\"outputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"unpaidBill\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"lastUsageFetchTime\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"rate\",\"type\":\"uint64\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"},{\"internalType\":\"enumPayAsYouGo.TransactionType\",\"name\":\"transactionType\",\"type\":\"uint8\"}],\"internalType\":\"structPayAsYouGo.Transaction[]\",\"name\":\"transactions\",\"type\":\"tuple[]\"}],\"internalType\":\"structPayAsYouGo.Client\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getClients\",\"outputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"unpaidBill\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"lastUsageFetchTime\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"rate\",\"type\":\"uint64\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"},{\"internalType\":\"enumPayAsYouGo.TransactionType\",\"name\":\"transactionType\",\"type\":\"uint8\"}],\"internalType\":\"structPayAsYouGo.Transaction[]\",\"name\":\"transactions\",\"type\":\"tuple[]\"}],\"internalType\":\"structPayAsYouGo.Client[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"rate\",\"type\":\"uint64\"},{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"}],\"name\":\"newClient\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"clientId\",\"type\":\"string\"}],\"name\":\"payBill\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}]",
 }
 
 // PayAsYouGoABI is the input ABI used to generate the binding from.
@@ -204,199 +203,236 @@ func (_PayAsYouGo *PayAsYouGoTransactorRaw) Transact(opts *bind.TransactOpts, me
 	return _PayAsYouGo.Contract.contract.Transact(opts, method, params...)
 }
 
-// ContractIds is a free data retrieval call binding the contract method 0x438c3aff.
+// ClientIDs is a free data retrieval call binding the contract method 0x6af5ec39.
 //
-// Solidity: function contractIds(uint256 ) view returns(bytes32)
-func (_PayAsYouGo *PayAsYouGoCaller) ContractIds(opts *bind.CallOpts, arg0 *big.Int) ([32]byte, error) {
+// Solidity: function clientIDs(uint256 ) view returns(string)
+func (_PayAsYouGo *PayAsYouGoCaller) ClientIDs(opts *bind.CallOpts, arg0 *big.Int) (string, error) {
 	var out []interface{}
-	err := _PayAsYouGo.contract.Call(opts, &out, "contractIds", arg0)
+	err := _PayAsYouGo.contract.Call(opts, &out, "clientIDs", arg0)
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(string), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(string)).(*string)
 
 	return out0, err
 
 }
 
-// ContractIds is a free data retrieval call binding the contract method 0x438c3aff.
+// ClientIDs is a free data retrieval call binding the contract method 0x6af5ec39.
 //
-// Solidity: function contractIds(uint256 ) view returns(bytes32)
-func (_PayAsYouGo *PayAsYouGoSession) ContractIds(arg0 *big.Int) ([32]byte, error) {
-	return _PayAsYouGo.Contract.ContractIds(&_PayAsYouGo.CallOpts, arg0)
+// Solidity: function clientIDs(uint256 ) view returns(string)
+func (_PayAsYouGo *PayAsYouGoSession) ClientIDs(arg0 *big.Int) (string, error) {
+	return _PayAsYouGo.Contract.ClientIDs(&_PayAsYouGo.CallOpts, arg0)
 }
 
-// ContractIds is a free data retrieval call binding the contract method 0x438c3aff.
+// ClientIDs is a free data retrieval call binding the contract method 0x6af5ec39.
 //
-// Solidity: function contractIds(uint256 ) view returns(bytes32)
-func (_PayAsYouGo *PayAsYouGoCallerSession) ContractIds(arg0 *big.Int) ([32]byte, error) {
-	return _PayAsYouGo.Contract.ContractIds(&_PayAsYouGo.CallOpts, arg0)
+// Solidity: function clientIDs(uint256 ) view returns(string)
+func (_PayAsYouGo *PayAsYouGoCallerSession) ClientIDs(arg0 *big.Int) (string, error) {
+	return _PayAsYouGo.Contract.ClientIDs(&_PayAsYouGo.CallOpts, arg0)
 }
 
-// Contracts is a free data retrieval call binding the contract method 0xec56a373.
+// Clients is a free data retrieval call binding the contract method 0x20ba1e9f.
 //
-// Solidity: function contracts(bytes32 ) view returns(bytes32 contractId, string clientId, uint256 unpaidBill, uint64 lastUsageFetchTime, uint8 rate)
-func (_PayAsYouGo *PayAsYouGoCaller) Contracts(opts *bind.CallOpts, arg0 [32]byte) (struct {
-	ContractId         [32]byte
+// Solidity: function clients(string ) view returns(string clientId, uint256 unpaidBill, uint64 lastUsageFetchTime, uint64 rate)
+func (_PayAsYouGo *PayAsYouGoCaller) Clients(opts *bind.CallOpts, arg0 string) (struct {
 	ClientId           string
 	UnpaidBill         *big.Int
 	LastUsageFetchTime uint64
-	Rate               uint8
+	Rate               uint64
 }, error) {
 	var out []interface{}
-	err := _PayAsYouGo.contract.Call(opts, &out, "contracts", arg0)
+	err := _PayAsYouGo.contract.Call(opts, &out, "clients", arg0)
 
 	outstruct := new(struct {
-		ContractId         [32]byte
 		ClientId           string
 		UnpaidBill         *big.Int
 		LastUsageFetchTime uint64
-		Rate               uint8
+		Rate               uint64
 	})
 	if err != nil {
 		return *outstruct, err
 	}
 
-	outstruct.ContractId = *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
-	outstruct.ClientId = *abi.ConvertType(out[1], new(string)).(*string)
-	outstruct.UnpaidBill = *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
-	outstruct.LastUsageFetchTime = *abi.ConvertType(out[3], new(uint64)).(*uint64)
-	outstruct.Rate = *abi.ConvertType(out[4], new(uint8)).(*uint8)
+	outstruct.ClientId = *abi.ConvertType(out[0], new(string)).(*string)
+	outstruct.UnpaidBill = *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
+	outstruct.LastUsageFetchTime = *abi.ConvertType(out[2], new(uint64)).(*uint64)
+	outstruct.Rate = *abi.ConvertType(out[3], new(uint64)).(*uint64)
 
 	return *outstruct, err
 
 }
 
-// Contracts is a free data retrieval call binding the contract method 0xec56a373.
+// Clients is a free data retrieval call binding the contract method 0x20ba1e9f.
 //
-// Solidity: function contracts(bytes32 ) view returns(bytes32 contractId, string clientId, uint256 unpaidBill, uint64 lastUsageFetchTime, uint8 rate)
-func (_PayAsYouGo *PayAsYouGoSession) Contracts(arg0 [32]byte) (struct {
-	ContractId         [32]byte
+// Solidity: function clients(string ) view returns(string clientId, uint256 unpaidBill, uint64 lastUsageFetchTime, uint64 rate)
+func (_PayAsYouGo *PayAsYouGoSession) Clients(arg0 string) (struct {
 	ClientId           string
 	UnpaidBill         *big.Int
 	LastUsageFetchTime uint64
-	Rate               uint8
+	Rate               uint64
 }, error) {
-	return _PayAsYouGo.Contract.Contracts(&_PayAsYouGo.CallOpts, arg0)
+	return _PayAsYouGo.Contract.Clients(&_PayAsYouGo.CallOpts, arg0)
 }
 
-// Contracts is a free data retrieval call binding the contract method 0xec56a373.
+// Clients is a free data retrieval call binding the contract method 0x20ba1e9f.
 //
-// Solidity: function contracts(bytes32 ) view returns(bytes32 contractId, string clientId, uint256 unpaidBill, uint64 lastUsageFetchTime, uint8 rate)
-func (_PayAsYouGo *PayAsYouGoCallerSession) Contracts(arg0 [32]byte) (struct {
-	ContractId         [32]byte
+// Solidity: function clients(string ) view returns(string clientId, uint256 unpaidBill, uint64 lastUsageFetchTime, uint64 rate)
+func (_PayAsYouGo *PayAsYouGoCallerSession) Clients(arg0 string) (struct {
 	ClientId           string
 	UnpaidBill         *big.Int
 	LastUsageFetchTime uint64
-	Rate               uint8
+	Rate               uint64
 }, error) {
-	return _PayAsYouGo.Contract.Contracts(&_PayAsYouGo.CallOpts, arg0)
+	return _PayAsYouGo.Contract.Clients(&_PayAsYouGo.CallOpts, arg0)
 }
 
-// GetContractById is a free data retrieval call binding the contract method 0xa9c9a918.
+// GetClientById is a free data retrieval call binding the contract method 0x4c4d7c5a.
 //
-// Solidity: function getContractById(bytes32 contractId) view returns((bytes32,string,uint256,uint64,uint8,(uint256,uint64,uint8)[]))
-func (_PayAsYouGo *PayAsYouGoCaller) GetContractById(opts *bind.CallOpts, contractId [32]byte) (PayAsYouGoAgreement, error) {
+// Solidity: function getClientById(string clientId) view returns((string,uint256,uint64,uint64,(uint256,uint64,uint8)[]))
+func (_PayAsYouGo *PayAsYouGoCaller) GetClientById(opts *bind.CallOpts, clientId string) (PayAsYouGoClient, error) {
 	var out []interface{}
-	err := _PayAsYouGo.contract.Call(opts, &out, "getContractById", contractId)
+	err := _PayAsYouGo.contract.Call(opts, &out, "getClientById", clientId)
 
 	if err != nil {
-		return *new(PayAsYouGoAgreement), err
+		return *new(PayAsYouGoClient), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(PayAsYouGoAgreement)).(*PayAsYouGoAgreement)
+	out0 := *abi.ConvertType(out[0], new(PayAsYouGoClient)).(*PayAsYouGoClient)
 
 	return out0, err
 
 }
 
-// GetContractById is a free data retrieval call binding the contract method 0xa9c9a918.
+// GetClientById is a free data retrieval call binding the contract method 0x4c4d7c5a.
 //
-// Solidity: function getContractById(bytes32 contractId) view returns((bytes32,string,uint256,uint64,uint8,(uint256,uint64,uint8)[]))
-func (_PayAsYouGo *PayAsYouGoSession) GetContractById(contractId [32]byte) (PayAsYouGoAgreement, error) {
-	return _PayAsYouGo.Contract.GetContractById(&_PayAsYouGo.CallOpts, contractId)
+// Solidity: function getClientById(string clientId) view returns((string,uint256,uint64,uint64,(uint256,uint64,uint8)[]))
+func (_PayAsYouGo *PayAsYouGoSession) GetClientById(clientId string) (PayAsYouGoClient, error) {
+	return _PayAsYouGo.Contract.GetClientById(&_PayAsYouGo.CallOpts, clientId)
 }
 
-// GetContractById is a free data retrieval call binding the contract method 0xa9c9a918.
+// GetClientById is a free data retrieval call binding the contract method 0x4c4d7c5a.
 //
-// Solidity: function getContractById(bytes32 contractId) view returns((bytes32,string,uint256,uint64,uint8,(uint256,uint64,uint8)[]))
-func (_PayAsYouGo *PayAsYouGoCallerSession) GetContractById(contractId [32]byte) (PayAsYouGoAgreement, error) {
-	return _PayAsYouGo.Contract.GetContractById(&_PayAsYouGo.CallOpts, contractId)
+// Solidity: function getClientById(string clientId) view returns((string,uint256,uint64,uint64,(uint256,uint64,uint8)[]))
+func (_PayAsYouGo *PayAsYouGoCallerSession) GetClientById(clientId string) (PayAsYouGoClient, error) {
+	return _PayAsYouGo.Contract.GetClientById(&_PayAsYouGo.CallOpts, clientId)
 }
 
-// GetContracts is a free data retrieval call binding the contract method 0xc3a2a93a.
+// GetClients is a free data retrieval call binding the contract method 0x6db80995.
 //
-// Solidity: function getContracts() view returns((bytes32,string,uint256,uint64,uint8,(uint256,uint64,uint8)[])[])
-func (_PayAsYouGo *PayAsYouGoCaller) GetContracts(opts *bind.CallOpts) ([]PayAsYouGoAgreement, error) {
+// Solidity: function getClients() view returns((string,uint256,uint64,uint64,(uint256,uint64,uint8)[])[])
+func (_PayAsYouGo *PayAsYouGoCaller) GetClients(opts *bind.CallOpts) ([]PayAsYouGoClient, error) {
 	var out []interface{}
-	err := _PayAsYouGo.contract.Call(opts, &out, "getContracts")
+	err := _PayAsYouGo.contract.Call(opts, &out, "getClients")
 
 	if err != nil {
-		return *new([]PayAsYouGoAgreement), err
+		return *new([]PayAsYouGoClient), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([]PayAsYouGoAgreement)).(*[]PayAsYouGoAgreement)
+	out0 := *abi.ConvertType(out[0], new([]PayAsYouGoClient)).(*[]PayAsYouGoClient)
 
 	return out0, err
 
 }
 
-// GetContracts is a free data retrieval call binding the contract method 0xc3a2a93a.
+// GetClients is a free data retrieval call binding the contract method 0x6db80995.
 //
-// Solidity: function getContracts() view returns((bytes32,string,uint256,uint64,uint8,(uint256,uint64,uint8)[])[])
-func (_PayAsYouGo *PayAsYouGoSession) GetContracts() ([]PayAsYouGoAgreement, error) {
-	return _PayAsYouGo.Contract.GetContracts(&_PayAsYouGo.CallOpts)
+// Solidity: function getClients() view returns((string,uint256,uint64,uint64,(uint256,uint64,uint8)[])[])
+func (_PayAsYouGo *PayAsYouGoSession) GetClients() ([]PayAsYouGoClient, error) {
+	return _PayAsYouGo.Contract.GetClients(&_PayAsYouGo.CallOpts)
 }
 
-// GetContracts is a free data retrieval call binding the contract method 0xc3a2a93a.
+// GetClients is a free data retrieval call binding the contract method 0x6db80995.
 //
-// Solidity: function getContracts() view returns((bytes32,string,uint256,uint64,uint8,(uint256,uint64,uint8)[])[])
-func (_PayAsYouGo *PayAsYouGoCallerSession) GetContracts() ([]PayAsYouGoAgreement, error) {
-	return _PayAsYouGo.Contract.GetContracts(&_PayAsYouGo.CallOpts)
+// Solidity: function getClients() view returns((string,uint256,uint64,uint64,(uint256,uint64,uint8)[])[])
+func (_PayAsYouGo *PayAsYouGoCallerSession) GetClients() ([]PayAsYouGoClient, error) {
+	return _PayAsYouGo.Contract.GetClients(&_PayAsYouGo.CallOpts)
 }
 
-// AddBillToContract is a paid mutator transaction binding the contract method 0xba281ab7.
+// AddBillToClient is a paid mutator transaction binding the contract method 0xf0a537e4.
 //
-// Solidity: function addBillToContract(bytes32 contractId, uint64 amount, uint64 timestamp) returns()
-func (_PayAsYouGo *PayAsYouGoTransactor) AddBillToContract(opts *bind.TransactOpts, contractId [32]byte, amount uint64, timestamp uint64) (*types.Transaction, error) {
-	return _PayAsYouGo.contract.Transact(opts, "addBillToContract", contractId, amount, timestamp)
+// Solidity: function addBillToClient(string clientId, uint64 amount, uint64 timestamp) returns()
+func (_PayAsYouGo *PayAsYouGoTransactor) AddBillToClient(opts *bind.TransactOpts, clientId string, amount uint64, timestamp uint64) (*types.Transaction, error) {
+	return _PayAsYouGo.contract.Transact(opts, "addBillToClient", clientId, amount, timestamp)
 }
 
-// AddBillToContract is a paid mutator transaction binding the contract method 0xba281ab7.
+// AddBillToClient is a paid mutator transaction binding the contract method 0xf0a537e4.
 //
-// Solidity: function addBillToContract(bytes32 contractId, uint64 amount, uint64 timestamp) returns()
-func (_PayAsYouGo *PayAsYouGoSession) AddBillToContract(contractId [32]byte, amount uint64, timestamp uint64) (*types.Transaction, error) {
-	return _PayAsYouGo.Contract.AddBillToContract(&_PayAsYouGo.TransactOpts, contractId, amount, timestamp)
+// Solidity: function addBillToClient(string clientId, uint64 amount, uint64 timestamp) returns()
+func (_PayAsYouGo *PayAsYouGoSession) AddBillToClient(clientId string, amount uint64, timestamp uint64) (*types.Transaction, error) {
+	return _PayAsYouGo.Contract.AddBillToClient(&_PayAsYouGo.TransactOpts, clientId, amount, timestamp)
 }
 
-// AddBillToContract is a paid mutator transaction binding the contract method 0xba281ab7.
+// AddBillToClient is a paid mutator transaction binding the contract method 0xf0a537e4.
 //
-// Solidity: function addBillToContract(bytes32 contractId, uint64 amount, uint64 timestamp) returns()
-func (_PayAsYouGo *PayAsYouGoTransactorSession) AddBillToContract(contractId [32]byte, amount uint64, timestamp uint64) (*types.Transaction, error) {
-	return _PayAsYouGo.Contract.AddBillToContract(&_PayAsYouGo.TransactOpts, contractId, amount, timestamp)
+// Solidity: function addBillToClient(string clientId, uint64 amount, uint64 timestamp) returns()
+func (_PayAsYouGo *PayAsYouGoTransactorSession) AddBillToClient(clientId string, amount uint64, timestamp uint64) (*types.Transaction, error) {
+	return _PayAsYouGo.Contract.AddBillToClient(&_PayAsYouGo.TransactOpts, clientId, amount, timestamp)
 }
 
-// BulkAddBillToContract is a paid mutator transaction binding the contract method 0x610b69c8.
+// BulkAddBillToClient is a paid mutator transaction binding the contract method 0x09b1f57a.
 //
-// Solidity: function bulkAddBillToContract((bytes32,uint64,uint64)[] billings) returns()
-func (_PayAsYouGo *PayAsYouGoTransactor) BulkAddBillToContract(opts *bind.TransactOpts, billings []PayAsYouGoBillingInput) (*types.Transaction, error) {
-	return _PayAsYouGo.contract.Transact(opts, "bulkAddBillToContract", billings)
+// Solidity: function bulkAddBillToClient((string,uint64,uint64)[] billings) returns()
+func (_PayAsYouGo *PayAsYouGoTransactor) BulkAddBillToClient(opts *bind.TransactOpts, billings []PayAsYouGoBillingInput) (*types.Transaction, error) {
+	return _PayAsYouGo.contract.Transact(opts, "bulkAddBillToClient", billings)
 }
 
-// BulkAddBillToContract is a paid mutator transaction binding the contract method 0x610b69c8.
+// BulkAddBillToClient is a paid mutator transaction binding the contract method 0x09b1f57a.
 //
-// Solidity: function bulkAddBillToContract((bytes32,uint64,uint64)[] billings) returns()
-func (_PayAsYouGo *PayAsYouGoSession) BulkAddBillToContract(billings []PayAsYouGoBillingInput) (*types.Transaction, error) {
-	return _PayAsYouGo.Contract.BulkAddBillToContract(&_PayAsYouGo.TransactOpts, billings)
+// Solidity: function bulkAddBillToClient((string,uint64,uint64)[] billings) returns()
+func (_PayAsYouGo *PayAsYouGoSession) BulkAddBillToClient(billings []PayAsYouGoBillingInput) (*types.Transaction, error) {
+	return _PayAsYouGo.Contract.BulkAddBillToClient(&_PayAsYouGo.TransactOpts, billings)
 }
 
-// BulkAddBillToContract is a paid mutator transaction binding the contract method 0x610b69c8.
+// BulkAddBillToClient is a paid mutator transaction binding the contract method 0x09b1f57a.
 //
-// Solidity: function bulkAddBillToContract((bytes32,uint64,uint64)[] billings) returns()
-func (_PayAsYouGo *PayAsYouGoTransactorSession) BulkAddBillToContract(billings []PayAsYouGoBillingInput) (*types.Transaction, error) {
-	return _PayAsYouGo.Contract.BulkAddBillToContract(&_PayAsYouGo.TransactOpts, billings)
+// Solidity: function bulkAddBillToClient((string,uint64,uint64)[] billings) returns()
+func (_PayAsYouGo *PayAsYouGoTransactorSession) BulkAddBillToClient(billings []PayAsYouGoBillingInput) (*types.Transaction, error) {
+	return _PayAsYouGo.Contract.BulkAddBillToClient(&_PayAsYouGo.TransactOpts, billings)
+}
+
+// ChangeAllClientRates is a paid mutator transaction binding the contract method 0x797bad26.
+//
+// Solidity: function changeAllClientRates(uint64 rate) returns()
+func (_PayAsYouGo *PayAsYouGoTransactor) ChangeAllClientRates(opts *bind.TransactOpts, rate uint64) (*types.Transaction, error) {
+	return _PayAsYouGo.contract.Transact(opts, "changeAllClientRates", rate)
+}
+
+// ChangeAllClientRates is a paid mutator transaction binding the contract method 0x797bad26.
+//
+// Solidity: function changeAllClientRates(uint64 rate) returns()
+func (_PayAsYouGo *PayAsYouGoSession) ChangeAllClientRates(rate uint64) (*types.Transaction, error) {
+	return _PayAsYouGo.Contract.ChangeAllClientRates(&_PayAsYouGo.TransactOpts, rate)
+}
+
+// ChangeAllClientRates is a paid mutator transaction binding the contract method 0x797bad26.
+//
+// Solidity: function changeAllClientRates(uint64 rate) returns()
+func (_PayAsYouGo *PayAsYouGoTransactorSession) ChangeAllClientRates(rate uint64) (*types.Transaction, error) {
+	return _PayAsYouGo.Contract.ChangeAllClientRates(&_PayAsYouGo.TransactOpts, rate)
+}
+
+// ChangeRate is a paid mutator transaction binding the contract method 0xa87d7ba7.
+//
+// Solidity: function changeRate(string clientId, uint64 rate) returns()
+func (_PayAsYouGo *PayAsYouGoTransactor) ChangeRate(opts *bind.TransactOpts, clientId string, rate uint64) (*types.Transaction, error) {
+	return _PayAsYouGo.contract.Transact(opts, "changeRate", clientId, rate)
+}
+
+// ChangeRate is a paid mutator transaction binding the contract method 0xa87d7ba7.
+//
+// Solidity: function changeRate(string clientId, uint64 rate) returns()
+func (_PayAsYouGo *PayAsYouGoSession) ChangeRate(clientId string, rate uint64) (*types.Transaction, error) {
+	return _PayAsYouGo.Contract.ChangeRate(&_PayAsYouGo.TransactOpts, clientId, rate)
+}
+
+// ChangeRate is a paid mutator transaction binding the contract method 0xa87d7ba7.
+//
+// Solidity: function changeRate(string clientId, uint64 rate) returns()
+func (_PayAsYouGo *PayAsYouGoTransactorSession) ChangeRate(clientId string, rate uint64) (*types.Transaction, error) {
+	return _PayAsYouGo.Contract.ChangeRate(&_PayAsYouGo.TransactOpts, clientId, rate)
 }
 
 // ChangeTransactionAddress is a paid mutator transaction binding the contract method 0xf4217f2a.
@@ -420,46 +456,46 @@ func (_PayAsYouGo *PayAsYouGoTransactorSession) ChangeTransactionAddress(_transa
 	return _PayAsYouGo.Contract.ChangeTransactionAddress(&_PayAsYouGo.TransactOpts, _transactionAddress)
 }
 
-// NewContract is a paid mutator transaction binding the contract method 0x05c23118.
+// NewClient is a paid mutator transaction binding the contract method 0x03900e36.
 //
-// Solidity: function newContract(uint8 rate, string clientId) returns()
-func (_PayAsYouGo *PayAsYouGoTransactor) NewContract(opts *bind.TransactOpts, rate uint8, clientId string) (*types.Transaction, error) {
-	return _PayAsYouGo.contract.Transact(opts, "newContract", rate, clientId)
+// Solidity: function newClient(uint64 rate, string clientId) returns()
+func (_PayAsYouGo *PayAsYouGoTransactor) NewClient(opts *bind.TransactOpts, rate uint64, clientId string) (*types.Transaction, error) {
+	return _PayAsYouGo.contract.Transact(opts, "newClient", rate, clientId)
 }
 
-// NewContract is a paid mutator transaction binding the contract method 0x05c23118.
+// NewClient is a paid mutator transaction binding the contract method 0x03900e36.
 //
-// Solidity: function newContract(uint8 rate, string clientId) returns()
-func (_PayAsYouGo *PayAsYouGoSession) NewContract(rate uint8, clientId string) (*types.Transaction, error) {
-	return _PayAsYouGo.Contract.NewContract(&_PayAsYouGo.TransactOpts, rate, clientId)
+// Solidity: function newClient(uint64 rate, string clientId) returns()
+func (_PayAsYouGo *PayAsYouGoSession) NewClient(rate uint64, clientId string) (*types.Transaction, error) {
+	return _PayAsYouGo.Contract.NewClient(&_PayAsYouGo.TransactOpts, rate, clientId)
 }
 
-// NewContract is a paid mutator transaction binding the contract method 0x05c23118.
+// NewClient is a paid mutator transaction binding the contract method 0x03900e36.
 //
-// Solidity: function newContract(uint8 rate, string clientId) returns()
-func (_PayAsYouGo *PayAsYouGoTransactorSession) NewContract(rate uint8, clientId string) (*types.Transaction, error) {
-	return _PayAsYouGo.Contract.NewContract(&_PayAsYouGo.TransactOpts, rate, clientId)
+// Solidity: function newClient(uint64 rate, string clientId) returns()
+func (_PayAsYouGo *PayAsYouGoTransactorSession) NewClient(rate uint64, clientId string) (*types.Transaction, error) {
+	return _PayAsYouGo.Contract.NewClient(&_PayAsYouGo.TransactOpts, rate, clientId)
 }
 
-// PayBill is a paid mutator transaction binding the contract method 0xf0d65ec5.
+// PayBill is a paid mutator transaction binding the contract method 0x070abcc2.
 //
-// Solidity: function payBill(bytes32 contractId) payable returns()
-func (_PayAsYouGo *PayAsYouGoTransactor) PayBill(opts *bind.TransactOpts, contractId [32]byte) (*types.Transaction, error) {
-	return _PayAsYouGo.contract.Transact(opts, "payBill", contractId)
+// Solidity: function payBill(string clientId) payable returns()
+func (_PayAsYouGo *PayAsYouGoTransactor) PayBill(opts *bind.TransactOpts, clientId string) (*types.Transaction, error) {
+	return _PayAsYouGo.contract.Transact(opts, "payBill", clientId)
 }
 
-// PayBill is a paid mutator transaction binding the contract method 0xf0d65ec5.
+// PayBill is a paid mutator transaction binding the contract method 0x070abcc2.
 //
-// Solidity: function payBill(bytes32 contractId) payable returns()
-func (_PayAsYouGo *PayAsYouGoSession) PayBill(contractId [32]byte) (*types.Transaction, error) {
-	return _PayAsYouGo.Contract.PayBill(&_PayAsYouGo.TransactOpts, contractId)
+// Solidity: function payBill(string clientId) payable returns()
+func (_PayAsYouGo *PayAsYouGoSession) PayBill(clientId string) (*types.Transaction, error) {
+	return _PayAsYouGo.Contract.PayBill(&_PayAsYouGo.TransactOpts, clientId)
 }
 
-// PayBill is a paid mutator transaction binding the contract method 0xf0d65ec5.
+// PayBill is a paid mutator transaction binding the contract method 0x070abcc2.
 //
-// Solidity: function payBill(bytes32 contractId) payable returns()
-func (_PayAsYouGo *PayAsYouGoTransactorSession) PayBill(contractId [32]byte) (*types.Transaction, error) {
-	return _PayAsYouGo.Contract.PayBill(&_PayAsYouGo.TransactOpts, contractId)
+// Solidity: function payBill(string clientId) payable returns()
+func (_PayAsYouGo *PayAsYouGoTransactorSession) PayBill(clientId string) (*types.Transaction, error) {
+	return _PayAsYouGo.Contract.PayBill(&_PayAsYouGo.TransactOpts, clientId)
 }
 
 // PayAsYouGoBillAddedIterator is returned from FilterBillAdded and is used to iterate over the raw logs and unpacked data for BillAdded events raised by the PayAsYouGo contract.
@@ -531,14 +567,14 @@ func (it *PayAsYouGoBillAddedIterator) Close() error {
 
 // PayAsYouGoBillAdded represents a BillAdded event raised by the PayAsYouGo contract.
 type PayAsYouGoBillAdded struct {
-	ContractId [32]byte
-	Amount     *big.Int
-	Raw        types.Log // Blockchain specific contextual infos
+	ClientId string
+	Amount   *big.Int
+	Raw      types.Log // Blockchain specific contextual infos
 }
 
-// FilterBillAdded is a free log retrieval operation binding the contract event 0xbde0d7a98e165595b50c03cf55b0293b83d8f4b3223e8fe0edf0c1ac95ecf916.
+// FilterBillAdded is a free log retrieval operation binding the contract event 0x3d43d2c72e75437af21df25cfbf67c625914003c91122e46b6e3396434c1f7c2.
 //
-// Solidity: event BillAdded(bytes32 contractId, uint256 amount)
+// Solidity: event BillAdded(string clientId, uint256 amount)
 func (_PayAsYouGo *PayAsYouGoFilterer) FilterBillAdded(opts *bind.FilterOpts) (*PayAsYouGoBillAddedIterator, error) {
 
 	logs, sub, err := _PayAsYouGo.contract.FilterLogs(opts, "BillAdded")
@@ -548,9 +584,9 @@ func (_PayAsYouGo *PayAsYouGoFilterer) FilterBillAdded(opts *bind.FilterOpts) (*
 	return &PayAsYouGoBillAddedIterator{contract: _PayAsYouGo.contract, event: "BillAdded", logs: logs, sub: sub}, nil
 }
 
-// WatchBillAdded is a free log subscription operation binding the contract event 0xbde0d7a98e165595b50c03cf55b0293b83d8f4b3223e8fe0edf0c1ac95ecf916.
+// WatchBillAdded is a free log subscription operation binding the contract event 0x3d43d2c72e75437af21df25cfbf67c625914003c91122e46b6e3396434c1f7c2.
 //
-// Solidity: event BillAdded(bytes32 contractId, uint256 amount)
+// Solidity: event BillAdded(string clientId, uint256 amount)
 func (_PayAsYouGo *PayAsYouGoFilterer) WatchBillAdded(opts *bind.WatchOpts, sink chan<- *PayAsYouGoBillAdded) (event.Subscription, error) {
 
 	logs, sub, err := _PayAsYouGo.contract.WatchLogs(opts, "BillAdded")
@@ -585,9 +621,9 @@ func (_PayAsYouGo *PayAsYouGoFilterer) WatchBillAdded(opts *bind.WatchOpts, sink
 	}), nil
 }
 
-// ParseBillAdded is a log parse operation binding the contract event 0xbde0d7a98e165595b50c03cf55b0293b83d8f4b3223e8fe0edf0c1ac95ecf916.
+// ParseBillAdded is a log parse operation binding the contract event 0x3d43d2c72e75437af21df25cfbf67c625914003c91122e46b6e3396434c1f7c2.
 //
-// Solidity: event BillAdded(bytes32 contractId, uint256 amount)
+// Solidity: event BillAdded(string clientId, uint256 amount)
 func (_PayAsYouGo *PayAsYouGoFilterer) ParseBillAdded(log types.Log) (*PayAsYouGoBillAdded, error) {
 	event := new(PayAsYouGoBillAdded)
 	if err := _PayAsYouGo.contract.UnpackLog(event, "BillAdded", log); err != nil {
@@ -666,14 +702,14 @@ func (it *PayAsYouGoBillPaidIterator) Close() error {
 
 // PayAsYouGoBillPaid represents a BillPaid event raised by the PayAsYouGo contract.
 type PayAsYouGoBillPaid struct {
-	ContractId [32]byte
-	Amount     *big.Int
-	Raw        types.Log // Blockchain specific contextual infos
+	ClientId string
+	Amount   *big.Int
+	Raw      types.Log // Blockchain specific contextual infos
 }
 
-// FilterBillPaid is a free log retrieval operation binding the contract event 0xa5b2fe6b6b3708f6c4805b27758d1745626d759eea73c3572b0da8b3a96db97b.
+// FilterBillPaid is a free log retrieval operation binding the contract event 0x85efa8140d8de83ee16bcc1d3f231311f1eaa6dacc4868130fc30689c5ab0b66.
 //
-// Solidity: event BillPaid(bytes32 contractId, uint256 amount)
+// Solidity: event BillPaid(string clientId, uint256 amount)
 func (_PayAsYouGo *PayAsYouGoFilterer) FilterBillPaid(opts *bind.FilterOpts) (*PayAsYouGoBillPaidIterator, error) {
 
 	logs, sub, err := _PayAsYouGo.contract.FilterLogs(opts, "BillPaid")
@@ -683,9 +719,9 @@ func (_PayAsYouGo *PayAsYouGoFilterer) FilterBillPaid(opts *bind.FilterOpts) (*P
 	return &PayAsYouGoBillPaidIterator{contract: _PayAsYouGo.contract, event: "BillPaid", logs: logs, sub: sub}, nil
 }
 
-// WatchBillPaid is a free log subscription operation binding the contract event 0xa5b2fe6b6b3708f6c4805b27758d1745626d759eea73c3572b0da8b3a96db97b.
+// WatchBillPaid is a free log subscription operation binding the contract event 0x85efa8140d8de83ee16bcc1d3f231311f1eaa6dacc4868130fc30689c5ab0b66.
 //
-// Solidity: event BillPaid(bytes32 contractId, uint256 amount)
+// Solidity: event BillPaid(string clientId, uint256 amount)
 func (_PayAsYouGo *PayAsYouGoFilterer) WatchBillPaid(opts *bind.WatchOpts, sink chan<- *PayAsYouGoBillPaid) (event.Subscription, error) {
 
 	logs, sub, err := _PayAsYouGo.contract.WatchLogs(opts, "BillPaid")
@@ -720,9 +756,9 @@ func (_PayAsYouGo *PayAsYouGoFilterer) WatchBillPaid(opts *bind.WatchOpts, sink 
 	}), nil
 }
 
-// ParseBillPaid is a log parse operation binding the contract event 0xa5b2fe6b6b3708f6c4805b27758d1745626d759eea73c3572b0da8b3a96db97b.
+// ParseBillPaid is a log parse operation binding the contract event 0x85efa8140d8de83ee16bcc1d3f231311f1eaa6dacc4868130fc30689c5ab0b66.
 //
-// Solidity: event BillPaid(bytes32 contractId, uint256 amount)
+// Solidity: event BillPaid(string clientId, uint256 amount)
 func (_PayAsYouGo *PayAsYouGoFilterer) ParseBillPaid(log types.Log) (*PayAsYouGoBillPaid, error) {
 	event := new(PayAsYouGoBillPaid)
 	if err := _PayAsYouGo.contract.UnpackLog(event, "BillPaid", log); err != nil {
@@ -732,9 +768,9 @@ func (_PayAsYouGo *PayAsYouGoFilterer) ParseBillPaid(log types.Log) (*PayAsYouGo
 	return event, nil
 }
 
-// PayAsYouGoContractCreatedIterator is returned from FilterContractCreated and is used to iterate over the raw logs and unpacked data for ContractCreated events raised by the PayAsYouGo contract.
-type PayAsYouGoContractCreatedIterator struct {
-	Event *PayAsYouGoContractCreated // Event containing the contract specifics and raw log
+// PayAsYouGoClientCreatedIterator is returned from FilterClientCreated and is used to iterate over the raw logs and unpacked data for ClientCreated events raised by the PayAsYouGo contract.
+type PayAsYouGoClientCreatedIterator struct {
+	Event *PayAsYouGoClientCreated // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -748,7 +784,7 @@ type PayAsYouGoContractCreatedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *PayAsYouGoContractCreatedIterator) Next() bool {
+func (it *PayAsYouGoClientCreatedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -757,7 +793,7 @@ func (it *PayAsYouGoContractCreatedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(PayAsYouGoContractCreated)
+			it.Event = new(PayAsYouGoClientCreated)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -772,7 +808,7 @@ func (it *PayAsYouGoContractCreatedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(PayAsYouGoContractCreated)
+		it.Event = new(PayAsYouGoClientCreated)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -788,42 +824,41 @@ func (it *PayAsYouGoContractCreatedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *PayAsYouGoContractCreatedIterator) Error() error {
+func (it *PayAsYouGoClientCreatedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *PayAsYouGoContractCreatedIterator) Close() error {
+func (it *PayAsYouGoClientCreatedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// PayAsYouGoContractCreated represents a ContractCreated event raised by the PayAsYouGo contract.
-type PayAsYouGoContractCreated struct {
-	ContractId [32]byte
-	ClientId   string
-	Raw        types.Log // Blockchain specific contextual infos
+// PayAsYouGoClientCreated represents a ClientCreated event raised by the PayAsYouGo contract.
+type PayAsYouGoClientCreated struct {
+	ClientId string
+	Raw      types.Log // Blockchain specific contextual infos
 }
 
-// FilterContractCreated is a free log retrieval operation binding the contract event 0x102ef7a35251c7335cc8d842cacf8ddfa4e69191f4908aeab4327976ada485a8.
+// FilterClientCreated is a free log retrieval operation binding the contract event 0xeb98df470d17266538e4ee034952206621fad8d86ca38b090e92f64589108482.
 //
-// Solidity: event ContractCreated(bytes32 contractId, string clientId)
-func (_PayAsYouGo *PayAsYouGoFilterer) FilterContractCreated(opts *bind.FilterOpts) (*PayAsYouGoContractCreatedIterator, error) {
+// Solidity: event ClientCreated(string clientId)
+func (_PayAsYouGo *PayAsYouGoFilterer) FilterClientCreated(opts *bind.FilterOpts) (*PayAsYouGoClientCreatedIterator, error) {
 
-	logs, sub, err := _PayAsYouGo.contract.FilterLogs(opts, "ContractCreated")
+	logs, sub, err := _PayAsYouGo.contract.FilterLogs(opts, "ClientCreated")
 	if err != nil {
 		return nil, err
 	}
-	return &PayAsYouGoContractCreatedIterator{contract: _PayAsYouGo.contract, event: "ContractCreated", logs: logs, sub: sub}, nil
+	return &PayAsYouGoClientCreatedIterator{contract: _PayAsYouGo.contract, event: "ClientCreated", logs: logs, sub: sub}, nil
 }
 
-// WatchContractCreated is a free log subscription operation binding the contract event 0x102ef7a35251c7335cc8d842cacf8ddfa4e69191f4908aeab4327976ada485a8.
+// WatchClientCreated is a free log subscription operation binding the contract event 0xeb98df470d17266538e4ee034952206621fad8d86ca38b090e92f64589108482.
 //
-// Solidity: event ContractCreated(bytes32 contractId, string clientId)
-func (_PayAsYouGo *PayAsYouGoFilterer) WatchContractCreated(opts *bind.WatchOpts, sink chan<- *PayAsYouGoContractCreated) (event.Subscription, error) {
+// Solidity: event ClientCreated(string clientId)
+func (_PayAsYouGo *PayAsYouGoFilterer) WatchClientCreated(opts *bind.WatchOpts, sink chan<- *PayAsYouGoClientCreated) (event.Subscription, error) {
 
-	logs, sub, err := _PayAsYouGo.contract.WatchLogs(opts, "ContractCreated")
+	logs, sub, err := _PayAsYouGo.contract.WatchLogs(opts, "ClientCreated")
 	if err != nil {
 		return nil, err
 	}
@@ -833,8 +868,8 @@ func (_PayAsYouGo *PayAsYouGoFilterer) WatchContractCreated(opts *bind.WatchOpts
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(PayAsYouGoContractCreated)
-				if err := _PayAsYouGo.contract.UnpackLog(event, "ContractCreated", log); err != nil {
+				event := new(PayAsYouGoClientCreated)
+				if err := _PayAsYouGo.contract.UnpackLog(event, "ClientCreated", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -855,12 +890,12 @@ func (_PayAsYouGo *PayAsYouGoFilterer) WatchContractCreated(opts *bind.WatchOpts
 	}), nil
 }
 
-// ParseContractCreated is a log parse operation binding the contract event 0x102ef7a35251c7335cc8d842cacf8ddfa4e69191f4908aeab4327976ada485a8.
+// ParseClientCreated is a log parse operation binding the contract event 0xeb98df470d17266538e4ee034952206621fad8d86ca38b090e92f64589108482.
 //
-// Solidity: event ContractCreated(bytes32 contractId, string clientId)
-func (_PayAsYouGo *PayAsYouGoFilterer) ParseContractCreated(log types.Log) (*PayAsYouGoContractCreated, error) {
-	event := new(PayAsYouGoContractCreated)
-	if err := _PayAsYouGo.contract.UnpackLog(event, "ContractCreated", log); err != nil {
+// Solidity: event ClientCreated(string clientId)
+func (_PayAsYouGo *PayAsYouGoFilterer) ParseClientCreated(log types.Log) (*PayAsYouGoClientCreated, error) {
+	event := new(PayAsYouGoClientCreated)
+	if err := _PayAsYouGo.contract.UnpackLog(event, "ClientCreated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
