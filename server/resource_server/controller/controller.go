@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-playground/validator/v10"
 	"io"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/go-playground/validator/v10"
 
 	"globe-and-citizen/layer8/server/resource_server/db"
 	"globe-and-citizen/layer8/server/resource_server/dto"
@@ -56,7 +57,8 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
 	}
 
 	utils.ParseHTML(w, filePath, map[string]interface{}{
-		"ProxyURL": os.Getenv("PROXY_URL"),
+		"ProxyURL":             os.Getenv("PROXY_URL"),
+		"SmartContractAddress": os.Getenv("BLOCKCHAIN_PAYASYOUGO_CONTRACT_ADDRESS"),
 	})
 }
 

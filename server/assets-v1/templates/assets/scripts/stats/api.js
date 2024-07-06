@@ -9,7 +9,7 @@ export const getClientUsageStatistics = async (baseUrl, token) => {
             },
         }
     );
-    const data = await resp.json();
 
+    const data = await resp.json();
     return data.data
 }

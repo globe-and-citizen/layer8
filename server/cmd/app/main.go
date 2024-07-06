@@ -155,25 +155,25 @@ func main() {
 			rpcClient,
 			signer,
 		)
+
+		clientService := svc.NewClientService(
+			*rsRepo.NewStatRepository(
+				db.GetInfluxDBClient(),
+			),
+			wrapper,
+			time.Now,
+		)
+
+		schedulerInterval, err := time.ParseDuration(os.Getenv("BLOCKCHAIN_SCHEDULER_INTERVAL"))
+		if err != nil {
+			log.Fatalf("Failed to parse scheduler interval %s", err)
+		}
+
+		go scheduler.StartScheduler(
+			schedulerInterval,
+			clientService.RefreshClientBill,
+		)
 	}
-
-	clientService := svc.NewClientService(
-		*rsRepo.NewStatRepository(
-			db.GetInfluxDBClient(),
-		),
-		wrapper,
-		time.Now,
-	)
-
-	schedulerInterval, err := time.ParseDuration(os.Getenv("BLOCKCHAIN_SCHEDULER_INTERVAL"))
-	if err != nil {
-		log.Fatalf("Failed to parse scheduler interval %s", err)
-	}
-
-	go scheduler.StartScheduler(
-		schedulerInterval,
-		clientService.RefreshClientBill,
-	)
 
 	// Run server (which never returns)
 	Server(
