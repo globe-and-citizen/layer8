@@ -246,7 +246,7 @@
           toastType: "",
           showToast: false,
           sidebarShow: false,
-          isWalletConnected: false,
+          isWalletConnected: localStorage.getItem("walletConnected") == "true" || false,
           token: localStorage.getItem("clientToken") || null,
           unpaidValue: 0,
           paymentAmount: 0.0,
@@ -299,9 +299,12 @@
           watchConnections(WAGMI_CONFIG, {
             onChange(data) {
               if (data.length === 0) {
+                localStorage.removeItem("walletConnected")
                 vm.isWalletConnected = false
+                return
               }
 
+              localStorage.setItem("walletConnected", true)
               vm.isWalletConnected = true
             },
           })
@@ -463,12 +466,13 @@
           return this.toastType == "success" ? "bg-green-500" : "bg-red-500"
         }
       },
+      created() {
+        reconnect(WAGMI_CONFIG)
+        this.watchWalletChange()
+        setupWeb3Modal()
+      },
       mounted() {
         try {
-          reconnect(WAGMI_CONFIG)
-          setupWeb3Modal()
-          this.watchWalletChange()
-
           this.getUserDetails().then(this.refreshUnpaidBill)
           .catch(async (err) => this.handleHttpCallError(err))
           
