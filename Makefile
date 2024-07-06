@@ -93,9 +93,6 @@ run_layer8server_local:
 
 setup_and_run:
 	make setup_local_dependency && make run_layer8server_local
-
-mockgen:
-	mockgen -source=server/internals/service/service.go -destination=server/utils/mocks/internal_service_mock.go -package=mocks
 	
 run_smart_contract_test:
 	cd contract && npx hardhat test
@@ -115,3 +112,4 @@ generate_go_from_abi:
 
 mockgen:
 	mockgen -source=server/blockchain/wrapper.go -destination=server/resource_server/utils/mocks/bockchain_wrapper_mock.go -package=mocks
+	mockgen -source=server/internals/service/service.go -destination=server/utils/mocks/internal_service_mock.go -package=mocks

@@ -138,21 +138,24 @@ func main() {
 		time.Now,
 	)
 
-	rpcClient, err := blockchain.NewSepholiaClient()
-	if err != nil {
-		log.Fatalf("Failed to create Ethereum client %s", err)
-	}
+	var wrapper blockchain.PayAsYouGoWrapper
+	if os.Getenv("BLOCKCHAIN_IS_ACTIVE") == "true" {
+		rpcClient, err := blockchain.NewBlockchainClient()
+		if err != nil {
+			log.Fatalf("Failed to create Ethereum client %s", err)
+		}
 
-	signer, err := blockchain.NewTransactionSigner(os.Getenv("BLOCKCHAIN_PRIVATE_KEY"))
-	if err != nil {
-		log.Fatalf("Failed to create transaction signer %s", err)
-	}
+		signer, err := blockchain.NewTransactionSigner(os.Getenv("BLOCKCHAIN_PRIVATE_KEY"))
+		if err != nil {
+			log.Fatalf("Failed to create transaction signer %s", err)
+		}
 
-	wrapper := blockchain.NewPayAsYouGoWrapper(
-		os.Getenv("BLOCKCHAIN_PAYASYOUGO_CONTRACT_ADDRESS"),
-		rpcClient,
-		signer,
-	)
+		wrapper = blockchain.NewPayAsYouGoWrapper(
+			os.Getenv("BLOCKCHAIN_PAYASYOUGO_CONTRACT_ADDRESS"),
+			rpcClient,
+			signer,
+		)
+	}
 
 	clientService := svc.NewClientService(
 		*rsRepo.NewStatRepository(

@@ -68,19 +68,21 @@ func (s *service) RegisterClient(req dto.RegisterClientDTO) error {
 		return err
 	}
 
-	go func() {
-		billRate, err := strconv.Atoi(os.Getenv("BLOCKCHAIN_BILL_RATE"))
-		if err != nil {
-			fmt.Println("Error converting bill rate to int: ", err)
-			return
-		}
+	if os.Getenv("BLOCKCHAIN_IS_ACTIVE") == "true" {
+		go func() {
+			billRate, err := strconv.Atoi(os.Getenv("BLOCKCHAIN_BILL_RATE"))
+			if err != nil {
+				fmt.Println("Error converting bill rate to int: ", err)
+				return
+			}
 
-		err = s.payAsYouGoWrapper.StoreClient(context.Background(), uint64(billRate), clientUUID)
-		if err != nil {
-			fmt.Println("Error creating contract: ", err)
-			return
-		}
-	}()
+			err = s.payAsYouGoWrapper.StoreClient(context.Background(), uint64(billRate), clientUUID)
+			if err != nil {
+				fmt.Println("Error creating contract: ", err)
+				return
+			}
+		}()
+	}
 
 	return nil
 }
