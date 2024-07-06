@@ -84,11 +84,17 @@ func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
 
 func ClientProfileHandler(w http.ResponseWriter, r *http.Request) {
 	newService := r.Context().Value("service").(interfaces.IService)
-	tokenString := r.Header.Get("Authorization")
-	tokenString = tokenString[7:]
-	clientClaims, err := utils.ValidateClientToken(tokenString)
+
+	authToken := r.Header.Get("Authorization")
+	if authToken == "" {
+		utils.HandleError(w, http.StatusUnauthorized, "Failed to get user profile, invalid token", errors.New("missing jwt token"))
+		return
+	}
+
+	authToken = authToken[7:]
+	clientClaims, err := utils.ValidateClientToken(authToken)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile, invalid token", err)
+		utils.HandleError(w, http.StatusUnauthorized, "Failed to get user profile, invalid token", errors.New("jwt token invalid"))
 		return
 	}
 

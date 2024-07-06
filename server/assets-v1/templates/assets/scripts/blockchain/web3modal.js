@@ -1,7 +1,7 @@
 import { sepolia, mainnet } from 'https://esm.sh/@wagmi/core@2.11.6/chains'
 import { createWeb3Modal, defaultWagmiConfig } from 'https://esm.sh/@web3modal/wagmi?bundle'
 
-const WALLET_CONNECT_PROJECT_ID = "a2b392649ab49d473ca531f98ed09ae0"
+const WALLET_CONNECT_PROJECT_ID = "339b2396ae9c42ea2ffd29ab386c8a9e"
 
 const WALLET_CONNECT_METADATA = {
     name: 'Layer8',

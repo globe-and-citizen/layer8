@@ -52,8 +52,8 @@
         </div>
         <div style="display: flex;flex-direction: row;" class="">
           <w3m-button class="pr-4"></w3m-button>
-          <div v-if="isWalletConnected" class="p-2 rounded-xl text-sm md:text-base bg-[#3751FE] text-white" data-toggle="modal"
-            data-target="#payWithBlockchain">Billing Payment</div>
+          <div v-if="isWalletConnected" class="p-2 rounded-xl text-sm md:text-base bg-[#3751FE] text-white"
+            data-toggle="modal" data-target="#payWithBlockchain">Billing Payment</div>
         </div>
       </div>
       <div @click="showSidebar(false)" class="grid md:grid-cols-5 lg:grid-cols-5 gap-x-4 m-4">
@@ -230,17 +230,13 @@
       { reconnect, watchConnections },
       { formatEther, parseEther },
       { WAGMI_CONFIG, setupWeb3Modal },
-      { getClientById, payBill },
-      { getClientUsageStatistics },
-      { renderChart }
+      { getClientById, payBill }
     ] = await Promise.all([
       import('https://unpkg.com/vue@3/dist/vue.esm-browser.js'),
       import('https://esm.sh/@wagmi/core@2.11.6'),
       import('https://esm.sh/viem@2.17.0'),
       import('/assets-v1/templates/assets/scripts/blockchain/web3modal.js'),
-      import('/assets-v1/templates/assets/scripts/blockchain/api.js'),
-      import('/assets-v1/templates/assets/scripts/stats/api.js'),
-      import('/assets-v1/templates/assets/scripts/stats/chart.js')
+      import('/assets-v1/templates/assets/scripts/blockchain/api.js')
     ]);
 
     const app = createApp({
@@ -260,6 +256,7 @@
             secret: "",
             name: "",
             redirect_uri: "",
+            backend_uri: ""
           },
           stats: {
             metric_type: "",
@@ -278,57 +275,7 @@
         }
       },
       methods: {
-        copyToClipboard(text) {
-          try {
-            this.isCopied = text
-            const textarea = document.createElement('textarea');
-            this.textarea = text;
-            textarea.setAttribute('readonly', '');
-            textarea.style.position = 'absolute';
-            textarea.style.left = '-9999px';
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            showToastMessage("Copied to the clipboard!", "success");
-          } catch (error) {
-            console.error(error)
-          }
-        },
-        logoutUser() {
-          this.token = null;
-          localStorage.removeItem("clientToken");
-          window.location.href = "[[ .ProxyURL ]]/";
-        },
-        showSidebar(value) {
-          this.sidebarShow = value
-          document.body.style.overflow = value ? "hidden" : "auto";
-        },
-        showToastMessage(message, type) {
-          this.toastMessage = message;
-          this.toastType = type;
-          this.showToast = true;
-          setTimeout(() => {
-            this.showToast = false;
-          }, 3000);
-        },
-        async getUserDetails() {
-          try {
-            const resp = await window.fetch(
-              "[[ .ProxyURL ]]/api/v1/client-profile",
-              {
-                method: "GET",
-                headers: {
-                  "Content-Type": "Application/Json",
-                  Authorization: `Bearer ${this.token}`,
-                },
-              }
-            );
-            const data = await resp.json();
-            this.user = data;
-          } catch (error) {
-            console.error(error);
-          }
-        },
+        // Blockchain-related methods
         async makePayment() {
           try {
             const clientId = this.user.id
@@ -347,10 +294,7 @@
           const clientDataFromBlockchain = await getClientById("[[ .SmartContractAddress ]]", this.user.id)
           this.unpaidValue = formatEther(clientDataFromBlockchain.unpaidBill)
         },
-        async renderClientUsageStats() {
-          this.stats = await getClientUsageStatistics("[[ .ProxyURL ]]", this.token)
-        },
-        watchWalletChange() {
+        async watchWalletChange() {
           const vm = this;
           watchConnections(WAGMI_CONFIG, {
             onChange(data) {
@@ -361,6 +305,157 @@
               vm.isWalletConnected = true
             },
           })
+        },
+
+        // Client-related methods
+        async getUserDetails() {
+          const resp = await window.fetch(
+            "[[ .ProxyURL ]]/api/v1/client-profile",
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "Application/Json",
+                Authorization: `Bearer ${this.token}`,
+              },
+            }
+          );
+
+          if (!resp.ok) {
+            throw new Error(this.generateErrorFromStatusCode(resp.status));
+          }
+
+          const data = await resp.json();
+          this.user = data;
+        },
+        async logoutUser() {
+          this.token = null;
+          localStorage.removeItem("clientToken");
+          window.location.href = "[[ .ProxyURL ]]/";
+        },
+
+        // Statistics-related methods
+        async getClientUsageStatistics(token) {
+          const resp = await window.fetch(
+            "[[ .ProxyURL ]]/api/v1/usage-stats",
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "Application/Json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (!resp.ok) {
+            throw new Error(this.generateErrorFromStatusCode(resp.status));
+          }
+
+          const data = await resp.json();
+          return data.data
+        },
+        async renderClientUsageStats() {
+          this.stats = await this.getClientUsageStatistics(this.token)
+        },
+        async renderChart(ctx, data) {
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              datasets: [
+                {
+                  label: " Data usage (GB)",
+                  borderWidth: 3,
+                  data: data.last_thirty_days_statistic.details,
+                }
+              ]
+            },
+            options: {
+              parsing: {
+                xAxisKey: 'date',
+                yAxisKey: 'total'
+              },
+              plugins: {
+                legend: false,
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      let label = context.dataset.label || '';
+                      if (label) {
+                        label += ': ';
+                      }
+                      label += context.raw.total !== null ? context.raw.total : '0';
+                      return label;
+                    }
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  ticks: {
+                    callback: function (value) {
+                      return `${value !== null ? value : '0'} GB`;
+                    }
+                  }
+                }
+              }
+            }
+          });
+        },
+
+        // UI-related methods
+        async copyToClipboard(text) {
+          try {
+            this.isCopied = text
+            const textarea = document.createElement('textarea');
+            this.textarea = text;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'absolute';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            showToastMessage("Copied to the clipboard!", "success");
+          } catch (error) {
+            console.error(error)
+          }
+        },
+        async showToastMessage(message, type) {
+          this.toastMessage = message;
+          this.toastType = type;
+          this.showToast = true;
+          await this.sleep(2000)
+          this.showToast = false;
+        },
+        async showSidebar(value) {
+          this.sidebarShow = value
+          document.body.style.overflow = value ? "hidden" : "auto";
+        },
+
+
+        // Helper methods
+        async sleep(ms) {
+          return new Promise(resolve => setTimeout(resolve, ms));
+        },
+
+        generateErrorFromStatusCode(statusCode) {
+          switch (statusCode) {
+            case 401:
+              return "Unauthorized access. Please login again";
+            case 403:
+              return "Forbidden access. Please contact the administrator";
+            case 404:
+              return "Resource not found. Please contact the administrator";
+            case 500:
+              return "Internal server error. Please contact the administrator";
+            default:
+              return "An error occurred. Please contact the administrator";
+          }
+        },
+
+        async handleHttpCallError(error) {
+          await this.showToastMessage(error.message, "error")
+          if (error.message == "Unauthorized access. Please login again") {
+            window.location.href = "[[ .ProxyURL ]]/client-login-page"
+          }
         }
       },
       computed: {
@@ -373,8 +468,13 @@
           reconnect(WAGMI_CONFIG)
           setupWeb3Modal()
           this.watchWalletChange()
+
           this.getUserDetails().then(this.refreshUnpaidBill)
-          this.renderClientUsageStats().then(() => renderChart(document.getElementById("statisticChart"), this.stats))
+          .catch(async (err) => this.handleHttpCallError(err))
+          
+          this.renderClientUsageStats()
+          .then(() => this.renderChart(document.getElementById("statisticChart"), this.stats))
+          .catch(async (err) => this.handleHttpCallError(err))
         } catch (error) {
           showToastMessage("An error occurred while trying to render the page", "error")
         }
@@ -384,6 +484,7 @@
     app.config.compilerOptions.isCustomElement = tag => tag === 'w3m-button';
     app.mount("#app");
   </script>
+
 </body>
 
 </html>
