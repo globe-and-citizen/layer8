@@ -176,7 +176,7 @@ func TestRegisterUserHandler(t *testing.T) {
 	Ctl.RegisterUserHandler(rr, req)
 
 	// Check the status code
-	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, http.StatusCreated, rr.Code)
 
 	// Decode the response body
 	var response utils.Response
@@ -186,8 +186,8 @@ func TestRegisterUserHandler(t *testing.T) {
 
 	// Now assert the fields directly
 	assert.True(t, response.Status)
-	assert.Equal(t, "OK!", response.Message)
-	assert.Equal(t, "User registered successfully", response.Data.(string))
+	assert.Equal(t, "User registered successfully", response.Message)
+	assert.Equal(t, map[string]interface{}{}, response.Data)
 }
 
 func TestRegisterClientHandler(t *testing.T) {
@@ -211,7 +211,7 @@ func TestRegisterClientHandler(t *testing.T) {
 	Ctl.RegisterClientHandler(rr, req)
 
 	// Check the status code
-	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, http.StatusCreated, rr.Code)
 
 	// Decode the response body
 	var response utils.Response
@@ -221,8 +221,8 @@ func TestRegisterClientHandler(t *testing.T) {
 
 	// Now assert the fields directly
 	assert.True(t, response.Status)
-	assert.Equal(t, "OK!", response.Message)
-	assert.Equal(t, "Client registered successfully", response.Data.(string))
+	assert.Equal(t, "Client registered successfully", response.Message)
+	assert.Equal(t, map[string]interface{}{}, response.Data)
 }
 
 func TestLoginPrecheckHandler(t *testing.T) {
@@ -504,8 +504,8 @@ func TestVerifyEmailHandler_Success(t *testing.T) {
 	response := decodeResponseBodyForResponse(t, rr)
 
 	assert.True(t, response.Status)
-	assert.Equal(t, "OK!", response.Message)
-	assert.Equal(t, "Verification email sent", response.Data)
+	assert.Equal(t, "Verification email sent", response.Message)
+	assert.Equal(t, map[string]interface{}{}, response.Data)
 }
 
 func TestCheckEmailVerificationCode_InvalidAuthenticationToken(t *testing.T) {
@@ -747,7 +747,7 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 
 	assert.True(t, response.Status)
 	assert.Equal(t, "Your email was successfully verified!", response.Message)
-	assert.Equal(t, "Email verified!", response.Data)
+	assert.Equal(t, map[string]interface{}{}, response.Data)
 }
 
 func TestUpdateDisplayNameHandler(t *testing.T) {
@@ -793,8 +793,8 @@ func TestUpdateDisplayNameHandler(t *testing.T) {
 
 	// Now assert the fields directly
 	assert.True(t, response.Status)
-	assert.Equal(t, "OK!", response.Message)
-	assert.Equal(t, "Display name updated successfully", response.Data.(string))
+	assert.Equal(t, "Display name updated successfully", response.Message)
+	assert.Equal(t, map[string]interface{}{}, response.Data)
 }
 
 // Javokhir started the testing
