@@ -24,7 +24,6 @@ const SecretSize = 32
 
 var WorkingDirectory string
 
-// Response is used for static shape json return
 type Response struct {
 	Status  bool        `json:"status"`
 	Message string      `json:"message"`
@@ -68,8 +67,8 @@ func CheckPassword(password string, salt string, hash string) bool {
 	return SaltAndHashPassword(password, salt) == hash
 }
 
-func BuildResponse(w http.ResponseWriter, message string, data interface{}) Response {
-	w.WriteHeader(http.StatusOK)
+func BuildResponse(w http.ResponseWriter, statusCode int, message string, data interface{}) Response {
+	w.WriteHeader(statusCode)
 	res := Response{
 		Status:  true,
 		Message: message,
