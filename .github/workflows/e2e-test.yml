@@ -123,5 +123,8 @@ jobs:
           for attempt in {1..30}; do sleep 2; if curl -s http://localhost:5001/ > /dev/null; then break; fi; done
 
       - name: Run Cypress
-        run: npx cypress run
-        working-directory: ./server/assets-v1/templates
+        uses: cypress-io/github-action@v6
+        with:
+          run: npx cypress run
+          spec: ./cypress/e2e/client_and_user_portal/*.cy.js
+          working-directory: ./test/cypress
