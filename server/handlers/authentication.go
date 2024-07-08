@@ -50,6 +50,9 @@ func (a *authenticationHandlerImpl) getLoginHandler(w http.ResponseWriter, r *ht
 			http.Redirect(w, r, next, http.StatusSeeOther)
 			return
 		}
+	} else if token == nil && err != nil {
+		a.parseLoginWithErr(w, r, err)
+		return
 	}
 
 	a.parseHTML(w, "assets-v1/templates/src/pages/oauth_portal/login.html",
@@ -84,11 +87,11 @@ func (a *authenticationHandlerImpl) postLoginHandler(w http.ResponseWriter, r *h
 		Value: token,
 		Path:  "/",
 	})
-
 	http.Redirect(w, r, next, http.StatusSeeOther)
 }
 
 func (a *authenticationHandlerImpl) parseLoginWithErr(w http.ResponseWriter, r *http.Request, err error) {
+	w.WriteHeader(http.StatusUnauthorized)
 	a.parseHTML(w,
 		"assets-v1/templates/src/pages/oauth_portal/login.html",
 		map[string]interface{}{
