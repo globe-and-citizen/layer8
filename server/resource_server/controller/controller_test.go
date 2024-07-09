@@ -747,51 +747,135 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 }
 
 func TestUpdateDisplayNameHandler(t *testing.T) {
-	// Generate a Mock JWT token
-	tokenString, err := utils.GenerateToken(models.User{
-		ID:       1,
-		Username: "test_user",
+	// Helper function to create a request with a request body
+	createRequest := func(body []byte, token string) *http.Request {
+		req, err := http.NewRequest("POST", "/api/v1/update-display-name", bytes.NewBuffer(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		return req
+	}
+
+	t.Run("Successful Update", func(t *testing.T) {
+		// Generate a mock JWT token
+		tokenString, err := utils.GenerateToken(models.User{
+			ID:       1,
+			Username: "test_user",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Mock request body
+		requestBody := []byte(`{"display_name": "test_user"}`)
+
+		// Create request
+		req := createRequest(requestBody, tokenString)
+
+		// Create a mock service and set it in the request context
+		mockService := &MockService{}
+		req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+		// Create a ResponseRecorder to record the response
+		rr := httptest.NewRecorder()
+
+		// Call the handler function
+		Ctl.UpdateDisplayNameHandler(rr, req)
+
+		// Check the status code
+		assert.Equal(t, http.StatusOK, rr.Code)
+
+		// Decode the response body
+		var response utils.Response
+		if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+			t.Fatal(err)
+		}
+
+		// Assert the fields directly
+		assert.True(t, response.Status)
+		assert.Equal(t, "OK!", response.Message)
+		assert.Nil(t, response.Error)
+		assert.Equal(t, "Display name updated successfully", response.Data.(string))
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	// Mock request body
-	requestBody := []byte(`{"display_name": "test_user"}`)
+	t.Run("Invalid Token", func(t *testing.T) {
+		// Generate a mock JWT token (invalid)
+		invalidTokenString := "invalidToken"
 
-	// Create a mock request
-	req, err := http.NewRequest("POST", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
-	if err != nil {
-		t.Fatal(err)
-	}
+		// Mock request body
+		requestBody := []byte(`{"display_name": "test_user"}`)
 
-	// Set the Authorization header
-	req.Header.Set("Authorization", "Bearer "+tokenString)
+		// Create request with invalid token
+		req := createRequest(requestBody, invalidTokenString)
 
-	// Create a mock service and set it in the request context
-	mockService := &MockService{}
-	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+		// Create a mock service and set it in the request context
+		mockService := &MockService{}
+		req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 
-	// Create a ResponseRecorder to record the response
-	rr := httptest.NewRecorder()
+		// Create a ResponseRecorder to record the response
+		rr := httptest.NewRecorder()
 
-	// Call the handler function
-	Ctl.UpdateDisplayNameHandler(rr, req)
+		// Call the handler function
+		Ctl.UpdateDisplayNameHandler(rr, req)
 
-	// Check the status code
-	assert.Equal(t, http.StatusOK, rr.Code)
+		// Check the status code
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	// Decode the response body
-	var response utils.Response
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
-		t.Fatal(err)
-	}
+		// Decode the error response
+		var errorResp utils.Response
+		if err := json.NewDecoder(rr.Body).Decode(&errorResp); err != nil {
+			t.Fatal(err)
+		}
 
-	// Now assert the fields directly
-	assert.True(t, response.Status)
-	assert.Equal(t, "OK!", response.Message)
-	assert.Nil(t, response.Error)
-	assert.Equal(t, "Display name updated successfully", response.Data.(string))
+		// Validate the error response
+		assert.False(t, errorResp.Status)
+		assert.Equal(t, "Failed to update display name", errorResp.Message)
+		assert.NotNil(t, errorResp.Error)
+	})
+
+	t.Run("Invalid Request Body", func(t *testing.T) {
+		// Generate a mock JWT token
+		tokenString, err := utils.GenerateToken(models.User{
+			ID:       1,
+			Username: "test_user",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Mock request body with invalid JSON format
+		requestBody := []byte(`{"display_name":`)
+
+		// Create request
+		req := createRequest(requestBody, tokenString)
+
+		// Create a mock service and set it in the request context
+		mockService := &MockService{}
+		req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+		// Create a ResponseRecorder to record the response
+		rr := httptest.NewRecorder()
+
+		// Call the handler function
+		Ctl.UpdateDisplayNameHandler(rr, req)
+
+		// Check the status code
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+		// Decode the error response
+		var errorResp utils.Response
+		if err := json.NewDecoder(rr.Body).Decode(&errorResp); err != nil {
+			t.Fatal(err)
+		}
+
+		// Validate the error response
+		assert.False(t, errorResp.Status)
+		assert.Equal(t, "Failed to update display name", errorResp.Message)
+		assert.NotNil(t, errorResp.Error)
+	})
 }
 
 // Javokhir started the testing
@@ -865,6 +949,46 @@ func TestCheckBackendURIHandler(t *testing.T) {
 	}
 
 	assert.True(t, response)
+}
+
+func TestClientProfileHandler(t *testing.T) {
+	// Generate a Mock JWT token
+	tokenString, err := utils.GenerateClientToken("testuser")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a mock request
+	req, err := http.NewRequest("GET", "/api/v1/client-profile", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set the Authorization header
+	req.Header.Set("Authorization", "Bearer "+tokenString)
+
+	// Create a mock service and set it in the request context
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	// Create a ResponseRecorder to record the response
+	rr := httptest.NewRecorder()
+
+	// Call the handler function
+	Ctl.ClientProfileHandler(rr, req)
+
+	// Check the status code
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	// Decode the response body
+	var profileResp ProfileResponse
+	if err := json.NewDecoder(rr.Body).Decode(&profileResp); err != nil {
+		t.Fatal(err)
+	}
+
+	// Validate the profile response
+	assert.Equal(t, "testuser", profileResp.Username)
+	// Add more assertions based on your profile response structure
 }
 
 func setMockServiceInContext(req *http.Request) *http.Request {
