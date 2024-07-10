@@ -191,7 +191,7 @@
             }),
           });
           const registerResponseBody = await resp.json();
-          if (registerResponseBody.message === "OK!") {
+          if (resp.status === 201) {
             showToastMessage(registerResponseBody.message, "success");
             window.location.href = "[[ .ProxyURL ]]/client-login-page";
           } else if (registerResponseBody.message) {
