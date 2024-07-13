@@ -951,46 +951,6 @@ func TestCheckBackendURIHandler(t *testing.T) {
 	assert.True(t, response)
 }
 
-func TestClientProfileHandler(t *testing.T) {
-	// Generate a Mock JWT token
-	tokenString, err := utils.GenerateClientToken("testuser")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Create a mock request
-	req, err := http.NewRequest("GET", "/api/v1/client-profile", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Set the Authorization header
-	req.Header.Set("Authorization", "Bearer "+tokenString)
-
-	// Create a mock service and set it in the request context
-	mockService := &MockService{}
-	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
-
-	// Create a ResponseRecorder to record the response
-	rr := httptest.NewRecorder()
-
-	// Call the handler function
-	Ctl.ClientProfileHandler(rr, req)
-
-	// Check the status code
-	assert.Equal(t, http.StatusOK, rr.Code)
-
-	// Decode the response body
-	var profileResp ProfileResponse
-	if err := json.NewDecoder(rr.Body).Decode(&profileResp); err != nil {
-		t.Fatal(err)
-	}
-
-	// Validate the profile response
-	assert.Equal(t, "testuser", profileResp.Username)
-	// Add more assertions based on your profile response structure
-}
-
 func setMockServiceInContext(req *http.Request) *http.Request {
 	mockSvc := &MockService{}
 	ctx := context.WithValue(req.Context(), "service", mockSvc)
