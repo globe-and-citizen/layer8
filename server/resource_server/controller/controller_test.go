@@ -8,6 +8,7 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
+	testutils "globe-and-citizen/layer8/server/utils"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -24,10 +25,12 @@ var authenticationToken, _ = utils.GenerateToken(
 		Username: "test_user",
 	},
 )
+var emailProof = []byte("email_proof")
 
 const verificationCode = "123467"
-const emailProof = "email_proof"
 const userEmail = "user@email.com"
+const userId = 1
+const userSalt = "salt"
 
 func decodeResponseBody(t *testing.T, rr *httptest.ResponseRecorder) utils.Response {
 	var response utils.Response
@@ -49,8 +52,9 @@ func decodeResponseBody(t *testing.T, rr *httptest.ResponseRecorder) utils.Respo
 type MockService struct {
 	verifyEmail                        func(userID uint, userEmail string) error
 	checkEmailVerificationCode         func(userID uint, code string) error
-	generateZkProofOfEmailVerification func(userID uint) (string, error)
-	saveProofOfEmailVerification       func(userID uint, verificationCode string, zkProof string) error
+	findUser                           func(userID uint) (models.User, error)
+	generateZkProofOfEmailVerification func(user models.User, request dto.CheckEmailVerificationCodeDTO) ([]byte, error)
+	saveProofOfEmailVerification       func(userID uint, verificationCode string, zkProof []byte) error
 }
 
 func (ms *MockService) RegisterUser(req dto.RegisterUserDTO) error {
@@ -86,6 +90,10 @@ func (ms *MockService) ProfileUser(userID uint) (models.ProfileResponseOutput, e
 	return models.ProfileResponseOutput{}, fmt.Errorf("user not found")
 }
 
+func (ms *MockService) FindUser(userID uint) (models.User, error) {
+	return ms.findUser(userID)
+}
+
 func (ms *MockService) VerifyEmail(userID uint, userEmail string) error {
 	return ms.verifyEmail(userID, userEmail)
 }
@@ -94,12 +102,15 @@ func (ms *MockService) CheckEmailVerificationCode(userID uint, code string) erro
 	return ms.checkEmailVerificationCode(userID, code)
 }
 
-func (ms *MockService) GenerateZkProofOfEmailVerification(userID uint) (string, error) {
-	return ms.generateZkProofOfEmailVerification(userID)
+func (ms *MockService) GenerateZkProofOfEmailVerification(
+	user models.User,
+	request dto.CheckEmailVerificationCodeDTO,
+) ([]byte, error) {
+	return ms.generateZkProofOfEmailVerification(user, request)
 }
 
 func (ms *MockService) SaveProofOfEmailVerification(
-	userID uint, verificationCode string, zkProof string,
+	userID uint, verificationCode string, zkProof []byte,
 ) error {
 	return ms.saveProofOfEmailVerification(userID, verificationCode, zkProof)
 }
@@ -748,6 +759,43 @@ func TestCheckEmailVerificationCode_VerificationCodeIsInvalid(t *testing.T) {
 	assert.NotNil(t, response.Error)
 }
 
+func TestCheckEmailVerificationCode_UserNotFound(t *testing.T) {
+	requestBody := []byte(`{
+		"email": "user@email.com", 
+		"code": "123467"
+	}`)
+	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{
+		checkEmailVerificationCode: func(userID uint, code string) error {
+			if code != verificationCode {
+				t.Fatalf("Verification code mismatch, expected %s, got %s", verificationCode, code)
+			}
+			return nil
+		},
+		findUser: func(userId uint) (models.User, error) {
+			return models.User{}, fmt.Errorf("user was not found for id %d", userId)
+		},
+	}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.CheckEmailVerificationCode(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "User with provided id does not exist", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
 func TestCheckEmailVerificationCode_ZkEmailProofFailedToBeGenerated(t *testing.T) {
 	requestBody := []byte(`{
 		"email": "user@email.com", 
@@ -766,8 +814,20 @@ func TestCheckEmailVerificationCode_ZkEmailProofFailedToBeGenerated(t *testing.T
 			}
 			return nil
 		},
-		generateZkProofOfEmailVerification: func(userID uint) (string, error) {
-			return "", fmt.Errorf("failed to generate the zk email proof")
+		findUser: func(userID uint) (models.User, error) {
+			if userID != userId {
+				t.Fatalf("User id mismatch, expected %d, got %d", userId, userID)
+			}
+			return models.User{
+				ID:   userID,
+				Salt: userSalt,
+			}, nil
+		},
+		generateZkProofOfEmailVerification: func(
+			user models.User,
+			request dto.CheckEmailVerificationCodeDTO,
+		) ([]byte, error) {
+			return []byte{}, fmt.Errorf("failed to generate the zk email proof")
 		},
 	}
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
@@ -803,13 +863,25 @@ func TestCheckEmailVerificationCode_FailedToSaveProofOfEmailVerification(t *test
 			}
 			return nil
 		},
-		generateZkProofOfEmailVerification: func(userID uint) (string, error) {
+		findUser: func(userID uint) (models.User, error) {
+			if userID != userId {
+				t.Fatalf("User id mismatch, expected %d, got %d", userId, userID)
+			}
+			return models.User{
+				ID:   userID,
+				Salt: userSalt,
+			}, nil
+		},
+		generateZkProofOfEmailVerification: func(
+			user models.User,
+			request dto.CheckEmailVerificationCodeDTO,
+		) ([]byte, error) {
 			return emailProof, nil
 		},
 		saveProofOfEmailVerification: func(
-			userID uint, verificationCode string, zkProof string,
+			userID uint, verificationCode string, zkProof []byte,
 		) error {
-			if zkProof != emailProof {
+			if !testutils.Equal(zkProof, emailProof) {
 				t.Fatalf("Email proof mismatch: expected %s, got %s", emailProof, zkProof)
 			}
 			return fmt.Errorf("failed to save proof of email verification")
@@ -848,13 +920,25 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 			}
 			return nil
 		},
-		generateZkProofOfEmailVerification: func(userID uint) (string, error) {
+		findUser: func(userID uint) (models.User, error) {
+			if userID != userId {
+				t.Fatalf("User id mismatch, expected %d, got %d", userId, userID)
+			}
+			return models.User{
+				ID:   userID,
+				Salt: userSalt,
+			}, nil
+		},
+		generateZkProofOfEmailVerification: func(
+			user models.User,
+			request dto.CheckEmailVerificationCodeDTO,
+		) ([]byte, error) {
 			return emailProof, nil
 		},
 		saveProofOfEmailVerification: func(
-			userID uint, verificationCode string, zkProof string,
+			userID uint, verificationCode string, zkProof []byte,
 		) error {
-			if zkProof != emailProof {
+			if !testutils.Equal(zkProof, emailProof) {
 				t.Fatalf("Email proof mismatch: expected %s, got %s", emailProof, zkProof)
 			}
 			return nil
@@ -942,7 +1026,6 @@ func TestLoginClientHandler_RequestJsonIsMalformed(t *testing.T) {
 	Ctl.LoginClientHandler(rr, req)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-
 	response := decodeResponseBody(t, rr)
 
 	assert.False(t, response.Status)

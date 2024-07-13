@@ -270,15 +270,21 @@ func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	zkProof, err := service.GenerateZkProofOfEmailVerification(userID)
-	if err != nil {
-		utils.HandleError(w, http.StatusInternalServerError, "Failed to generate zk proof of email verification", err)
+	user, e := service.FindUser(userID)
+	if e != nil {
+		utils.HandleError(w, http.StatusBadRequest, "User with provided id does not exist", e)
 		return
 	}
 
-	err = service.SaveProofOfEmailVerification(userID, request.Code, zkProof)
-	if err != nil {
-		utils.HandleError(w, http.StatusInternalServerError, "Failed to save proof of the email verification procedure", err)
+	zkProof, e := service.GenerateZkProofOfEmailVerification(user, request)
+	if e != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to generate zk proof of email verification", e)
+		return
+	}
+
+	e = service.SaveProofOfEmailVerification(userID, request.Code, zkProof)
+	if e != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to save proof of the email verification procedure", e)
 		return
 	}
 

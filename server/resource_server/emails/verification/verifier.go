@@ -38,8 +38,8 @@ func NewEmailVerifier(
 	return verifier
 }
 
-func (v *EmailVerifier) GenerateVerificationCode(user *models.User, userEmail string) string {
-	return v.codeGenerator.GenerateCode(userEmail)
+func (v *EmailVerifier) GenerateVerificationCode(user *models.User, userEmail string) (string, error) {
+	return v.codeGenerator.GenerateCode(user, userEmail)
 }
 
 func (v *EmailVerifier) SendVerificationEmail(

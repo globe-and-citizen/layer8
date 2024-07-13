@@ -43,22 +43,29 @@ func (ms *MailerSendService) SendEmail(email *models.Email) error {
 		Email: email.To,
 	}
 
-	personalization := []mailersend.Personalization{
-		{
-			Email: email.To,
-			Data: map[string]interface{}{
-				"code": email.Content.Code,
-				"user": email.Content.Username,
-			},
-		},
-	}
+	//personalization := []mailersend.Personalization{
+	//	{
+	//		Email: email.To,
+	//		Data: map[string]interface{}{
+	//			"code": email.Content.Code,
+	//			"user": email.Content.Username,
+	//		},
+	//	},
+	//}
 
 	message := mailerSendClient.Email.NewMessage()
 	message.SetFrom(from)
 	message.SetRecipients([]mailersend.Recipient{to})
 	message.SetSubject(email.Subject)
-	message.SetTemplateID(ms.templateId)
-	message.SetPersonalization(personalization)
+	message.SetText(
+		fmt.Sprintf(
+			"Hi, %s!\nYour verification code is: %s",
+			email.Content.Username,
+			email.Content.Code,
+		),
+	)
+	//message.SetTemplateID(ms.templateId)
+	//message.SetPersonalization(personalization)
 
 	response, e := mailerSendClient.Email.Send(ctx, message)
 	if e != nil {
