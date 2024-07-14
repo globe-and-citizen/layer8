@@ -1,7 +1,6 @@
 package service
 
 import (
-	"github.com/go-playground/validator/v10"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
@@ -42,10 +41,6 @@ func (s *service) RegisterUser(req dto.RegisterUserDTO) error {
 }
 
 func (s *service) RegisterClient(req dto.RegisterClientDTO) error {
-	if err := validator.New().Struct(req); err != nil {
-		return err
-	}
-
 	clientUUID := utils.GenerateUUID()
 	clientSecret := utils.GenerateSecret(utils.SecretSize)
 
@@ -99,9 +94,6 @@ func (s *service) GetClientDataByBackendURL(backendURL string) (models.ClientRes
 }
 
 func (s *service) LoginPreCheckUser(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error) {
-	if err := validator.New().Struct(req); err != nil {
-		return models.LoginPrecheckResponseOutput{}, err
-	}
 	username, salt, err := s.repository.LoginPreCheckUser(req)
 	if err != nil {
 		return models.LoginPrecheckResponseOutput{}, err
@@ -114,9 +106,6 @@ func (s *service) LoginPreCheckUser(req dto.LoginPrecheckDTO) (models.LoginPrech
 }
 
 func (s *service) LoginPreCheckClient(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error) {
-	if err := validator.New().Struct(req); err != nil {
-		return models.LoginPrecheckResponseOutput{}, err
-	}
 	username, salt, err := s.repository.LoginPreCheckClient(req)
 	if err != nil {
 		return models.LoginPrecheckResponseOutput{}, err
@@ -129,9 +118,6 @@ func (s *service) LoginPreCheckClient(req dto.LoginPrecheckDTO) (models.LoginPre
 }
 
 func (s *service) LoginUser(req dto.LoginUserDTO) (models.LoginUserResponseOutput, error) {
-	if err := validator.New().Struct(req); err != nil {
-		return models.LoginUserResponseOutput{}, err
-	}
 	user, err := s.repository.LoginUser(req)
 	if err != nil {
 		return models.LoginUserResponseOutput{}, err
@@ -144,9 +130,6 @@ func (s *service) LoginUser(req dto.LoginUserDTO) (models.LoginUserResponseOutpu
 }
 
 func (s *service) LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseOutput, error) {
-	if err := validator.New().Struct(req); err != nil {
-		return models.LoginUserResponseOutput{}, err
-	}
 	client, err := s.repository.LoginClient(req)
 	if err != nil {
 		return models.LoginUserResponseOutput{}, err
@@ -251,9 +234,6 @@ func (s *service) SaveProofOfEmailVerification(userId uint, verificationCode str
 }
 
 func (s *service) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
-	if err := validator.New().Struct(req); err != nil {
-		return err
-	}
 	return s.repository.UpdateDisplayName(userID, req)
 }
 

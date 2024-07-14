@@ -10,22 +10,22 @@ type RegisterUserDTO struct {
 }
 
 type LoginUserDTO struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Salt     string `json:"salt"`
+	Username string `json:"username" validate:"required"`
+	Password string `json:"password" validate:"required"`
+	Salt     string `json:"salt" validate:"required"`
 }
 
 type LoginClientDTO struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `json:"username" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 type LoginPrecheckDTO struct {
-	Username string `json:"username"`
+	Username string `json:"username" validate:"required"`
 }
 
 type UpdateDisplayNameDTO struct {
-	DisplayName string `json:"display_name"`
+	DisplayName string `json:"display_name" validate:"required"`
 }
 
 type RegisterClientDTO struct {

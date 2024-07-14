@@ -125,6 +125,12 @@
             }
           );
           const responseOne = await respOne.json();
+
+          if (responseOne.status === false) {
+              showToastMessage("Failed to get client profile", "error");
+              return;
+          }
+
           const respTwo = await window.fetch(
             "[[ .ProxyURL ]]/api/v1/login-user",
             {
