@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-playground/validator/v10"
-	"io"
 	"net/http"
 	"os"
 	"time"
@@ -63,8 +61,7 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
 func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
 	newService := r.Context().Value("service").(interfaces.IService)
 
-	var request dto.LoginClientDTO
-	err := decodeJson(w, r.Body, &request)
+	request, err := utils.DecodeJsonFromRequest[dto.LoginClientDTO](w, r.Body)
 	if err != nil {
 		return
 	}
@@ -106,8 +103,7 @@ func ClientProfileHandler(w http.ResponseWriter, r *http.Request) {
 func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 	newService := r.Context().Value("service").(interfaces.IService)
 
-	var request dto.RegisterUserDTO
-	err := decodeJson(w, r.Body, &request)
+	request, err := utils.DecodeJsonFromRequest[dto.RegisterUserDTO](w, r.Body)
 	if err != nil {
 		return
 	}
@@ -128,8 +124,7 @@ func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 func RegisterClientHandler(w http.ResponseWriter, r *http.Request) {
 	newService := r.Context().Value("service").(interfaces.IService)
 
-	var request dto.RegisterClientDTO
-	err := decodeJson(w, r.Body, &request)
+	request, err := utils.DecodeJsonFromRequest[dto.RegisterClientDTO](w, r.Body)
 	if err != nil {
 		return
 	}
@@ -151,8 +146,7 @@ func RegisterClientHandler(w http.ResponseWriter, r *http.Request) {
 func LoginPrecheckHandler(w http.ResponseWriter, r *http.Request) {
 	newService := r.Context().Value("service").(interfaces.IService)
 
-	var request dto.LoginPrecheckDTO
-	err := decodeJson(w, r.Body, &request)
+	request, err := utils.DecodeJsonFromRequest[dto.LoginPrecheckDTO](w, r.Body)
 	if err != nil {
 		return
 	}
@@ -172,8 +166,7 @@ func LoginPrecheckHandler(w http.ResponseWriter, r *http.Request) {
 func LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	newService := r.Context().Value("service").(interfaces.IService)
 
-	var request dto.LoginUserDTO
-	err := decodeJson(w, r.Body, &request)
+	request, err := utils.DecodeJsonFromRequest[dto.LoginUserDTO](w, r.Body)
 	if err != nil {
 		return
 	}
@@ -238,8 +231,7 @@ func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request dto.VerifyEmailDTO
-	err = decodeJson(w, r.Body, &request)
+	request, err := utils.DecodeJsonFromRequest[dto.VerifyEmailDTO](w, r.Body)
 	if err != nil {
 		return
 	}
@@ -267,8 +259,7 @@ func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request dto.CheckEmailVerificationCodeDTO
-	err = decodeJson(w, r.Body, &request)
+	request, err := utils.DecodeJsonFromRequest[dto.CheckEmailVerificationCodeDTO](w, r.Body)
 	if err != nil {
 		return
 	}
@@ -312,8 +303,7 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request dto.UpdateDisplayNameDTO
-	err = decodeJson(w, r.Body, &request)
+	request, err := utils.DecodeJsonFromRequest[dto.UpdateDisplayNameDTO](w, r.Body)
 	if err != nil {
 		return
 	}
@@ -390,8 +380,7 @@ func GetUsageStats(w http.ResponseWriter, r *http.Request) {
 func CheckBackendURI(w http.ResponseWriter, r *http.Request) {
 	newService := r.Context().Value("service").(interfaces.IService)
 
-	var request dto.CheckBackendURIDTO
-	err := decodeJson(w, r.Body, &request)
+	request, err := utils.DecodeJsonFromRequest[dto.CheckBackendURIDTO](w, r.Body)
 	if err != nil {
 		return
 	}
@@ -406,26 +395,4 @@ func CheckBackendURI(w http.ResponseWriter, r *http.Request) {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to check backend url", err)
 		return
 	}
-}
-
-func decodeJson(w http.ResponseWriter, byteBuffer io.ReadCloser, to any) error {
-	body, e := io.ReadAll(byteBuffer)
-	if e != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Error while reading request body", e)
-		return e
-	}
-
-	e = json.Unmarshal(body, to)
-	if e != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Request malformed: error while parsing json", e)
-		return e
-	}
-
-	e = validator.New().Struct(to)
-	if e != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Input json is invalid", e)
-		return e
-	}
-
-	return nil
 }
