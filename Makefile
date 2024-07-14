@@ -102,9 +102,9 @@ DB_NAME := $(shell cat server/.env | grep ^DB_NAME | cut -d '=' -f2)
 DB_USER := $(shell cat server/.env | grep ^DB_USER | cut -d '=' -f2)
 SP_MOCK := wgp
 set_client_creds:
-	client_id=$$(docker exec -it layer8-postgres psql -U $(DB_USER) -d $(DB_NAME) \
+	client_id=$$(docker exec layer8-postgres psql -U $(DB_USER) -d $(DB_NAME) \
 		-c "SELECT id FROM clients WHERE username='$(CLIENT_USERNAME)'" -t -A); \
-	client_secret=$$(docker exec -it layer8-postgres psql -U $(DB_USER) -d $(DB_NAME) \
+	client_secret=$$(docker exec layer8-postgres psql -U $(DB_USER) -d $(DB_NAME) \
 		-c "SELECT secret FROM clients WHERE username='$(CLIENT_USERNAME)'" -t -A); \
 	if [ -z "$$client_id" ]; then \
 		echo "Client not found"; \
