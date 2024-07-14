@@ -97,15 +97,15 @@ setup_and_run:
 mockgen:
 	mockgen -source=server/internals/service/service.go -destination=server/utils/mocks/internal_service_mock.go -package=mocks
 
-CLIENT_USERNAME := $(shell cat server/.env | grep TEST_CLIENT_USERNAME | cut -d '=' -f2)
-DB_NAME := $(shell cat server/.env | grep ^DB_NAME | cut -d '=' -f2)
-DB_USER := $(shell cat server/.env | grep ^DB_USER | cut -d '=' -f2)
 SP_MOCK := wgp
 set_client_creds:
-	client_id=$$(docker exec layer8-postgres psql -U $(DB_USER) -d $(DB_NAME) \
-		-c "SELECT id FROM clients WHERE username='$(CLIENT_USERNAME)'" -t -A); \
-	client_secret=$$(docker exec layer8-postgres psql -U $(DB_USER) -d $(DB_NAME) \
-		-c "SELECT secret FROM clients WHERE username='$(CLIENT_USERNAME)'" -t -A); \
+	db_name=$$(cat server/.env | grep ^DB_NAME | cut -d '=' -f2); \
+	db_user=$$(cat server/.env | grep ^DB_USER | cut -d '=' -f2); \
+	client_username=$$(cat server/.env | grep TEST_CLIENT_USERNAME | cut -d '=' -f2); \
+	client_id=$$(docker exec layer8-postgres psql -U $$db_user -d $$db_name \
+		-c "SELECT id FROM clients WHERE username='$$client_username'" -t -A); \
+	client_secret=$$(docker exec layer8-postgres psql -U $$db_user -d $$db_name \
+		-c "SELECT secret FROM clients WHERE username='$$client_username'" -t -A); \
 	if [ -z "$$client_id" ]; then \
 		echo "Client not found"; \
 	else \
