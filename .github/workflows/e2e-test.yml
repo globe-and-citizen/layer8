@@ -65,13 +65,15 @@ jobs:
         run: |
           sed -i "s/TEST_CLIENT_BACKEND_URL=localhost:8000/TEST_CLIENT_BACKEND_URL=localhost:6002/g" server/.env.dev
           sed -i "s/TEST_CLIENT_BACKEND_URI=http:\/\/localhost:8000/TEST_CLIENT_BACKEND_URI=http:\/\/localhost:6002/g" server/.env.dev
-          make setup_and_run &
+          make setup_local_dependency
+          make set_client_creds
+          make run_layer8server_local &
           for attempt in {1..30}; do sleep 2; if curl -s http://localhost:5001/ > /dev/null; then break; fi; done
 
       - name: Run WGP backend
         run: |
           cd ./sp_mocks/wgp/backend
-          echo "PORT=6002" > .env
+          echo "PORT=6002" >> .env
           echo "FRONTEND_URL=http://localhost:5173" >> .env
           echo "LAYER8_URL=http://localhost:5001" >> .env
           echo "BACKEND_URL=http://localhost:6002" >> .env
