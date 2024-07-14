@@ -91,5 +91,28 @@ setup_local_dependency:
 run_layer8server_local:
 	cd server && go run cmd/app/main.go
 
-setup_and_run:
+setup_and_run: 
 	make setup_local_dependency && make run_layer8server_local
+
+CLIENT_USERNAME := $(shell cat server/.env | grep TEST_CLIENT_USERNAME | cut -d '=' -f2)
+DB_NAME := $(shell cat server/.env | grep ^DB_NAME | cut -d '=' -f2)
+DB_USER := $(shell cat server/.env | grep ^DB_USER | cut -d '=' -f2)
+SP_MOCK := wgp
+set_client_creds:
+	client_id=$$(docker exec -it layer8-postgres psql -U $(DB_USER) -d $(DB_NAME) \
+		-c "SELECT id FROM clients WHERE username='$(CLIENT_USERNAME)'" -t -A); \
+	client_secret=$$(docker exec -it layer8-postgres psql -U $(DB_USER) -d $(DB_NAME) \
+		-c "SELECT secret FROM clients WHERE username='$(CLIENT_USERNAME)'" -t -A); \
+	if [ -z "$$client_id" ]; then \
+		echo "Client not found"; \
+	else \
+		if [ "$(SP_MOCK)" = "wgp" ]; then \
+			echo "LAYER8_CLIENT_ID=$$client_id" >> sp_mocks/wgp/backend/.env; \
+			echo "LAYER8_CLIENT_SECRET=$$client_secret" >> sp_mocks/wgp/backend/.env; \
+		elif [ "$(SP_MOCK)" = "imsharer" ]; then \
+			echo "LAYER8_CLIENT_ID=$$client_id" >> sp_mocks/imsharer/backend/.env; \
+			echo "LAYER8_CLIENT_SECRET=$$client_secret" >> sp_mocks/imsharer/backend/.env; \
+		else \
+			echo "Invalid SP_MOCK"; \
+		fi; \
+	fi
