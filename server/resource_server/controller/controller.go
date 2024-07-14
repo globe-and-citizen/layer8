@@ -59,6 +59,10 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
 }
 
 func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 
 	request, err := utils.DecodeJsonFromRequest[dto.LoginClientDTO](w, r.Body)
@@ -83,6 +87,10 @@ func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ClientProfileHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodGet) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 	tokenString := r.Header.Get("Authorization")
 	tokenString = tokenString[7:]
@@ -109,6 +117,10 @@ func ClientProfileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 
 	request, err := utils.DecodeJsonFromRequest[dto.RegisterUserDTO](w, r.Body)
@@ -134,6 +146,10 @@ func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func RegisterClientHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 
 	request, err := utils.DecodeJsonFromRequest[dto.RegisterClientDTO](w, r.Body)
@@ -160,6 +176,10 @@ func RegisterClientHandler(w http.ResponseWriter, r *http.Request) {
 
 // LoginPrecheckHandler handles login precheck requests and get the salt of the user from the database using the username from the request URL
 func LoginPrecheckHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 
 	request, err := utils.DecodeJsonFromRequest[dto.LoginPrecheckDTO](w, r.Body)
@@ -184,6 +204,10 @@ func LoginPrecheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LoginUserHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 
 	request, err := utils.DecodeJsonFromRequest[dto.LoginUserDTO](w, r.Body)
@@ -208,6 +232,10 @@ func LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ProfileHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodGet) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 	tokenString := r.Header.Get("Authorization")
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
@@ -234,6 +262,10 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetClientData(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodGet) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 	clientName := r.Header.Get("Name")
 
@@ -254,6 +286,10 @@ func GetClientData(w http.ResponseWriter, r *http.Request) {
 }
 
 func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 	tokenString := r.Header.Get("Authorization")
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
@@ -282,6 +318,10 @@ func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
 	service := r.Context().Value("service").(interfaces.IService)
 	tokenString := r.Header.Get("Authorization")
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
@@ -329,6 +369,10 @@ func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 	tokenString := r.Header.Get("Authorization")
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
@@ -361,6 +405,10 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUsageStats(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodGet) {
+		return
+	}
+
 	authToken := r.Header.Get("Authorization")
 	if authToken == "" {
 		utils.HandleError(w, http.StatusUnauthorized, "failed to show client usage statistics", errors.New("missing jwt token"))
@@ -421,6 +469,10 @@ func GetUsageStats(w http.ResponseWriter, r *http.Request) {
 }
 
 func CheckBackendURI(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 
 	request, err := utils.DecodeJsonFromRequest[dto.CheckBackendURIDTO](w, r.Body)
@@ -442,4 +494,19 @@ func CheckBackendURI(w http.ResponseWriter, r *http.Request) {
 			err,
 		)
 	}
+}
+
+func validateHttpMethod(w http.ResponseWriter, actualMethod string, expectedMethod string) bool {
+	if actualMethod != expectedMethod {
+		errorMessage := fmt.Sprintf("Invalid http method. Expected %s", expectedMethod)
+		utils.HandleError(
+			w,
+			http.StatusMethodNotAllowed,
+			errorMessage,
+			fmt.Errorf(errorMessage),
+		)
+		return false
+	}
+
+	return true
 }

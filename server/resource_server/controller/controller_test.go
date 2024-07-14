@@ -44,7 +44,6 @@ func decodeResponseBodyForResponse(t *testing.T, rr *httptest.ResponseRecorder) 
 	}
 	return response
 }
-
 func decodeResponseBodyForErrorResponse(t *testing.T, rr *httptest.ResponseRecorder) utils.Response {
 	var response utils.Response
 
@@ -166,6 +165,36 @@ func (m *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserRespo
 	}, nil
 }
 
+func TestRegisterUserHandler_InvalidHttpRequestMethod(t *testing.T) {
+	requestBody := []byte(`{
+		"email": "test@gcitizen.com",
+		"username": "test_user",
+		"first_name": "Test",
+		"last_name": "User",
+		"display_name": "user",
+		"country": "Unknown",
+		"password": "12345"
+	}`)
+
+	req, err := http.NewRequest("GET", "/api/v1/register-user", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	setMockServiceInContext(req)
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterUserHandler(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected POST", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
 func TestRegisterUserHandler_RequestJsonIsMalformed(t *testing.T) {
 	requestBody := []byte(`{
 		"email": "test@gcitizen.com",
@@ -236,6 +265,33 @@ func TestRegisterUserHandler_Success(t *testing.T) {
 	assert.True(t, response.IsSuccess)
 	assert.Equal(t, "User registered successfully", response.Message)
 	assert.Equal(t, nil, response.Data)
+}
+
+func TestRegisterClientHandler_InvalidHttpRequestMethod(t *testing.T) {
+	requestBody := []byte(`{
+		"name": "testclient", 
+		"redirect_uri": "https://gcitizen.com/callback", 
+		"username": "test_user", 
+		"password": "12345"
+	}`)
+
+	req, err := http.NewRequest("PUT", "/api/v1/register-client", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	setMockServiceInContext(req)
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterClientHandler(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected POST", response.Message)
+	assert.NotNil(t, response.Error)
 }
 
 func TestRegisterClientHandler_RequestJsonIsMalformed(t *testing.T) {
@@ -309,6 +365,30 @@ func TestRegisterClientHandler_Success(t *testing.T) {
 	assert.Equal(t, nil, response.Data)
 }
 
+func TestLoginPrecheckHandler_InvalidHttpRequestMethod(t *testing.T) {
+	requestBody := []byte(`{"username": "test_user"}`)
+
+	req, err := http.NewRequest("GET", "/api/v1/login-precheck", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginPrecheckHandler(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected POST", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
 func TestLoginPrecheckHandler_RequestJsonIsMalformed(t *testing.T) {
 	requestBody := []byte(`{"username": "test_user"}something_else`)
 	req, err := http.NewRequest("POST", "/api/v1/login-precheck", bytes.NewBuffer(requestBody))
@@ -364,6 +444,31 @@ func TestLoginPrecheckHandler_Success(t *testing.T) {
 	// Now assert the fields directly
 	assert.Equal(t, "test_user", response.Username)
 	assert.Equal(t, "ThisIsARandomSalt123!@#", response.Salt)
+}
+
+func TestLoginUserHandler_InvalidHttpRequestMethod(t *testing.T) {
+	requestBody := []byte(`{
+		"username": "test_user",
+		"password": "12345",
+		"salt": 	"ThisIsARandomSalt123!@#"}`)
+
+	req, err := http.NewRequest("GET", "/api/v1/login-user", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	setMockServiceInContext(req)
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginUserHandler(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected POST", response.Message)
+	assert.NotNil(t, response.Error)
 }
 
 func TestLoginUserHandler_RequestJsonIsMalformed(t *testing.T) {
@@ -426,6 +531,28 @@ func TestLoginUserHandler_Success(t *testing.T) {
 
 	// Now assert the fields directly
 	assert.Equal(t, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw", response.Token)
+}
+
+func TestProfileHandler_InvalidHttpRequestMethod(t *testing.T) {
+	req, err := http.NewRequest("POST", "/api/v1/profile", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+	setMockServiceInContext(req)
+
+	rr := httptest.NewRecorder()
+
+	Ctl.ProfileHandler(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected GET", response.Message)
+	assert.NotNil(t, response.Error)
 }
 
 func TestProfileHandler_InvalidAuthenticationToken(t *testing.T) {
@@ -519,7 +646,7 @@ func TestProfileHandler_Success(t *testing.T) {
 	assert.Equal(t, country, response.Country)
 }
 
-func TestGetClientData(t *testing.T) {
+func TestGetClientData_Success(t *testing.T) {
 	// Create a mock request
 	req, err := http.NewRequest("GET", "/api/v1/client", nil)
 	if err != nil {
@@ -553,6 +680,26 @@ func TestGetClientData(t *testing.T) {
 	assert.Equal(t, "", response.Secret)
 	assert.Equal(t, "testclient", response.Name)
 	assert.Equal(t, "https://gcitizen.com/callback", response.RedirectURI)
+}
+
+func TestVerifyEmailHandler_InvalidHttpRequestMethod(t *testing.T) {
+	requestBody := []byte(`{"email": "user@email.com"}`)
+	req, err := http.NewRequest("GET", "/api/v1/verify-email", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+
+	Ctl.VerifyEmailHandler(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected POST", response.Message)
+	assert.NotNil(t, response.Error)
 }
 
 func TestVerifyEmailHandler_InvalidAuthorizationToken(t *testing.T) {
@@ -684,6 +831,29 @@ func TestVerifyEmailHandler_Success(t *testing.T) {
 	assert.True(t, response.IsSuccess)
 	assert.Equal(t, "Verification email sent", response.Message)
 	assert.Equal(t, nil, response.Data)
+}
+
+func TestCheckEmailVerificationCode_InvalidHttpRequestMethod(t *testing.T) {
+	requestBody := []byte(`{
+		"email": "user@email.com",
+		"code": "123467"
+	}`)
+	req, err := http.NewRequest("PUT", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+
+	Ctl.CheckEmailVerificationCode(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected POST", response.Message)
+	assert.NotNil(t, response.Error)
 }
 
 func TestCheckEmailVerificationCode_InvalidAuthenticationToken(t *testing.T) {
@@ -1001,6 +1171,27 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 	assert.Equal(t, nil, response.Data)
 }
 
+func TestUpdateDisplayNameHandler_InvalidHttpRequestMethod(t *testing.T) {
+	requestBody := []byte(`{"display_name": "test_user"}`)
+
+	req, err := http.NewRequest("PUT", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+
+	Ctl.UpdateDisplayNameHandler(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected POST", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
 func TestUpdateDisplayNameHandler_AuthenticationTokenIsInvalid(t *testing.T) {
 	requestBody := []byte(`{"display_name": "test_user"}`)
 	req, err := http.NewRequest("POST", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
@@ -1077,6 +1268,27 @@ func TestUpdateDisplayNameHandler_Success(t *testing.T) {
 	assert.Nil(t, response.Error)
 }
 
+func TestLoginClientHandler_InvalidHttpRequestMethod(t *testing.T) {
+	reqBody := []byte(`{
+		"username": "testuser",
+		"password": "testpassword"
+	}`)
+
+	req := httptest.NewRequest("PUT", "/api/v1/login-client", bytes.NewBuffer(reqBody))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginClientHandler(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected POST", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
 func TestLoginClientHandler_RequestJsonIsMalformed(t *testing.T) {
 	loginReq := []byte(`{
 		"username": "testuser",
@@ -1122,6 +1334,25 @@ func TestLoginClientHandler_Success(t *testing.T) {
 
 	// Validate the response
 	assert.Equal(t, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw", tokenResp.Token)
+}
+
+func TestCheckBackendURIHandler_InvalidHttpRequestMethod(t *testing.T) {
+	reqBody := []byte(`{
+		"backend_uri": "https://example.com"
+	}`)
+	req := httptest.NewRequest("GET", "/api/v1/check-backend-uri", bytes.NewBuffer(reqBody))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.CheckBackendURI(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected POST", response.Message)
+	assert.NotNil(t, response.Error)
 }
 
 func TestCheckBackendURIHandler_RequestJsonIsMalformed(t *testing.T) {
