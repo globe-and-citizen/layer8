@@ -1091,7 +1091,7 @@ func TestServeFileHandler(t *testing.T) {
 		Ctl.ServeFileHandler(rr, req, "non-existent-file.html")
 
 		assert.Equal(t, http.StatusInternalServerError, rr.Code)
-		assert.Contains(t, rr.Body.String(), "open non-existent-file.html: The system cannot find the file specified.\n")
+		assert.Contains(t, rr.Body.String(), "open non-existent-file.html: no such file or directory\n")
 	})
 }
 // Javokhir finished the testing
