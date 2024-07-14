@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
@@ -125,9 +126,16 @@ func (ms *MockService) LoginPreCheckClient(req dto.LoginPrecheckDTO) (models.Log
 	return models.LoginPrecheckResponseOutput{}, nil
 }
 
-func (ms *MockService) ProfileClient(userID string) (models.ClientResponseOutput, error) {
-	// Mock implementation for testing purposes.
-	return models.ClientResponseOutput{}, nil
+func (ms *MockService) ProfileClient(username string) (models.ClientResponseOutput, error) {
+	if username == "john_doe" {
+		return models.ClientResponseOutput{
+			Secret:    "very_secret_key",
+			Name:      "john_doe",
+			RedirectURI:    "redirect_url.com",
+			BackendURI: "backend_url.com",
+		}, nil
+	}
+	return models.ClientResponseOutput{}, fmt.Errorf("user not found")
 }
 
 func (ms *MockService) GetClientDataByBackendURL(backendURL string) (models.ClientResponseOutput, error) {
@@ -957,4 +965,133 @@ func setMockServiceInContext(req *http.Request) *http.Request {
 	return req.WithContext(ctx)
 }
 
+func TestClientProfileHandler(t *testing.T) {
+	createRequestAndRecorder := func(tokenString string) (*http.Request, *httptest.ResponseRecorder) {
+		req, err := http.NewRequest("GET", "/api/v1/client-profile", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Authorization", "Bearer "+tokenString)
+		rr := httptest.NewRecorder()
+		return req, rr
+	}
+
+	// Test case: Valid token, valid profile
+	t.Run("ValidToken_ValidProfile", func(t *testing.T) {
+		tokenString, err := utils.GenerateClientToken(models.Client{
+			Username: "john_doe",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		mockService := &MockService{}
+
+		req, rr := createRequestAndRecorder(tokenString)
+		req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+		Ctl.ClientProfileHandler(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+
+		var response models.ClientResponseOutput
+		if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, "very_secret_key", response.Secret)
+		assert.Equal(t, "john_doe", response.Name)
+		assert.Equal(t, "redirect_url.com", response.RedirectURI)
+		assert.Equal(t, "backend_url.com", response.BackendURI)
+	})
+
+	// Test case: Invalid token
+	t.Run("InvalidToken", func(t *testing.T) {
+		tokenString := "invalid_token"
+
+		mockService := &MockService{}
+
+		req, rr := createRequestAndRecorder(tokenString)
+		req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+		Ctl.ClientProfileHandler(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+		var response utils.Response
+		if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, "Failed to get user profile, invalid token", response.Message)
+	})
+
+	// Test case: Profile not found
+	t.Run("ProfileNotFound", func(t *testing.T) {
+		tokenString, err := utils.GenerateClientToken(models.Client{
+			Username: "unknown_user",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		mockService := &MockService{}
+
+		req, rr := createRequestAndRecorder(tokenString)
+		req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+		Ctl.ClientProfileHandler(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+		var response utils.Response
+		if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, "Failed to get user profile, user not found", response.Message)
+	})
+}
+
+func TestServeFileHandler(t *testing.T) {
+	t.Run("Valid GET Request", func(t *testing.T) {
+		req, err := http.NewRequest(http.MethodGet, "/test", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rr := httptest.NewRecorder()
+
+		// Mock HTML file content
+		fileContent := "<html><body>Test HTML Content http://example.com</body></html>"
+		filePath := "test-file.html"
+
+		// Write mock HTML content to the file
+		err = os.WriteFile(filePath, []byte(fileContent), 0644)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.Remove(filePath) // Clean up after the test
+
+		Ctl.ServeFileHandler(rr, req, filePath)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Contains(t, rr.Body.String(), "Test HTML Content")
+		assert.Contains(t, rr.Body.String(), "http://example.com")
+	})
+
+	t.Run("File Not Found", func(t *testing.T) {
+		req, err := http.NewRequest(http.MethodGet, "/test", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rr := httptest.NewRecorder()
+
+		Ctl.ServeFileHandler(rr, req, "non-existent-file.html")
+
+		assert.Equal(t, http.StatusInternalServerError, rr.Code)
+		assert.Contains(t, rr.Body.String(), "open non-existent-file.html: The system cannot find the file specified.\n")
+	})
+}
 // Javokhir finished the testing
