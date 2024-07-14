@@ -36,8 +36,8 @@ func decodeResponseBodyForResponse(t *testing.T, rr *httptest.ResponseRecorder) 
 	return response
 }
 
-func decodeResponseBodyForErrorResponse(t *testing.T, rr *httptest.ResponseRecorder) utils.ErrorResponse {
-	var response utils.ErrorResponse
+func decodeResponseBodyForErrorResponse(t *testing.T, rr *httptest.ResponseRecorder) utils.Response {
+	var response utils.Response
 	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +185,7 @@ func TestRegisterUserHandler(t *testing.T) {
 	}
 
 	// Now assert the fields directly
-	assert.True(t, response.Status)
+	assert.True(t, response.IsSuccess)
 	assert.Equal(t, "User registered successfully", response.Message)
 	assert.Equal(t, map[string]interface{}{}, response.Data)
 }
@@ -220,7 +220,7 @@ func TestRegisterClientHandler(t *testing.T) {
 	}
 
 	// Now assert the fields directly
-	assert.True(t, response.Status)
+	assert.True(t, response.IsSuccess)
 	assert.Equal(t, "Client registered successfully", response.Message)
 	assert.Equal(t, map[string]interface{}{}, response.Data)
 }
@@ -395,7 +395,7 @@ func TestVerifyEmailHandler_InvalidAuthorizationToken(t *testing.T) {
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Request failed: invalid authorization token", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -418,7 +418,7 @@ func TestVerifyEmailHandler_MalformedRequestBodyJson(t *testing.T) {
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -441,7 +441,7 @@ func TestVerifyEmailHandler_RequestJsonSchemeIsInvalid(t *testing.T) {
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Input json is invalid", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -472,7 +472,7 @@ func TestVerifyEmailHandler_FailedToVerifyEmail(t *testing.T) {
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Failed to verify email", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -503,7 +503,7 @@ func TestVerifyEmailHandler_Success(t *testing.T) {
 
 	response := decodeResponseBodyForResponse(t, rr)
 
-	assert.True(t, response.Status)
+	assert.True(t, response.IsSuccess)
 	assert.Equal(t, "Verification email sent", response.Message)
 	assert.Equal(t, map[string]interface{}{}, response.Data)
 }
@@ -530,7 +530,7 @@ func TestCheckEmailVerificationCode_InvalidAuthenticationToken(t *testing.T) {
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Failed to verify user's token", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -557,7 +557,7 @@ func TestCheckEmailVerificationCode_MalformedRequestBody(t *testing.T) {
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Error while unmarshalling json", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -584,7 +584,7 @@ func TestCheckEmailVerificationCode_RequestJSONDoesNotMatchTheScheme(t *testing.
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Input json is invalid", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -618,7 +618,7 @@ func TestCheckEmailVerificationCode_VerificationCodeIsInvalid(t *testing.T) {
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Failed to verify code", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -655,7 +655,7 @@ func TestCheckEmailVerificationCode_ZkEmailProofFailedToBeGenerated(t *testing.T
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Failed to generate zk proof of email verification", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -700,7 +700,7 @@ func TestCheckEmailVerificationCode_FailedToSaveProofOfEmailVerification(t *test
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Failed to save proof of the email verification procedure", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -745,7 +745,7 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 
 	response := decodeResponseBodyForResponse(t, rr)
 
-	assert.True(t, response.Status)
+	assert.True(t, response.IsSuccess)
 	assert.Equal(t, "Your email was successfully verified!", response.Message)
 	assert.Equal(t, map[string]interface{}{}, response.Data)
 }
@@ -792,7 +792,7 @@ func TestUpdateDisplayNameHandler(t *testing.T) {
 	}
 
 	// Now assert the fields directly
-	assert.True(t, response.Status)
+	assert.True(t, response.IsSuccess)
 	assert.Equal(t, "Display name updated successfully", response.Message)
 	assert.Equal(t, map[string]interface{}{}, response.Data)
 }

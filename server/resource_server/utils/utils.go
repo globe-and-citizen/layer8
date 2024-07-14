@@ -25,15 +25,10 @@ const SecretSize = 32
 var WorkingDirectory string
 
 type Response struct {
-	Status  bool        `json:"status"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
-}
-
-type ErrorResponse struct {
-	Status  bool        `json:"status"`
-	Message string      `json:"message"`
-	Error   interface{} `json:"errors"`
+	IsSuccess bool        `json:"is_success"`
+	Message   string      `json:"message"`
+	Error     interface{} `json:"errors"`
+	Data      interface{} `json:"data"`
 }
 
 type EmptyObj struct{}
@@ -70,19 +65,20 @@ func CheckPassword(password string, salt string, hash string) bool {
 func BuildResponse(w http.ResponseWriter, statusCode int, message string, data interface{}) Response {
 	w.WriteHeader(statusCode)
 	res := Response{
-		Status:  true,
-		Message: message,
-		Data:    data,
+		IsSuccess: true,
+		Message:   message,
+		Data:      data,
 	}
+
 	return res
 }
 
-func BuildErrorResponse(message string, err string, data interface{}) ErrorResponse {
+func BuildErrorResponse(message string, err string, data interface{}) Response {
 	splittedError := strings.Split(err, "\n")
-	res := ErrorResponse{
-		Status:  false,
-		Message: message,
-		Error:   splittedError,
+	res := Response{
+		IsSuccess: false,
+		Message:   message,
+		Error:     splittedError,
 	}
 
 	return res
