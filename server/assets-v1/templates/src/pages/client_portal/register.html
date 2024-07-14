@@ -156,7 +156,6 @@
       const backend_uri = ref("");
       const username = ref("");
       const password = ref("");
-
       const isRegistered = ref(false);
       const isNameFocused = ref(false);
       const isRUFocused = ref(false);
@@ -178,7 +177,7 @@
             showToastMessage("Please enter all fields!", "error")
             return;
           }
-          await window.fetch("[[ .ProxyURL ]]/api/v1/register-client", {
+          const resp = await window.fetch("[[ .ProxyURL ]]/api/v1/register-client", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -191,20 +190,19 @@
               password: password.value,
             }),
           });
-          showToastMessage("Registration successful!", "success")
-          window.location.href = "[[ .ProxyURL ]]/client-login-page";
+          const registerResponseBody = await resp.json();
+          if (registerResponseBody.message === "OK!") {
+            showToastMessage(registerResponseBody.message, "success");
+            window.location.href = "[[ .ProxyURL ]]/client-login-page";
+          } else if (registerResponseBody.message) {
+            showToastMessage(registerResponseBody.message, "error");
+          } else {
+            showToastMessage("Something went wrong!", "error");
+          }
         } catch (error) {
           console.error(error);
           showToastMessage("Registration failed!", "error")
         }
-      };
-
-      const showToastMessage = (message, type) => {
-        toastMessage.value = message;
-        showToast.value = true;
-        setTimeout(() => {
-          showToast.value = false;
-        }, 3000);
       };
 
       const checkBackendUri = async () => {
@@ -230,6 +228,14 @@
           return false;
         }
       };
+      const showToastMessage = (message, type) => {
+        // Current param type is not used. But will be in the future
+        toastMessage.value = message;
+        showToast.value = true;
+        setTimeout(() => {
+          showToast.value = false;
+        }, 3000);
+      }
 
       const app = createApp({
         setup() {

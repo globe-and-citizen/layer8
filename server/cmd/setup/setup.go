@@ -94,6 +94,18 @@ func SetupPG() {
 		logrus.Fatal("failed to create postgresql migration instance: ", err)
 	}
 
+	_, err = db.Exec(`
+		UPDATE schema_migrations
+			 SET version = CASE 
+                WHEN dirty = true THEN version - 1
+                ELSE version
+              END,
+			  dirty = false;
+	`)
+	if err != nil {
+		logrus.Fatal("failed to update schema_migrations table: ", err)
+	}
+
 	if err := migration.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		logrus.Fatal("failed to latest schema to postgresql instance: ", err)
 	}

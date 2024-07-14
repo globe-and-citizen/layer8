@@ -94,6 +94,9 @@ run_layer8server_local:
 setup_and_run: 
 	make setup_local_dependency && make run_layer8server_local
 
+mockgen:
+	mockgen -source=server/internals/service/service.go -destination=server/utils/mocks/internal_service_mock.go -package=mocks
+
 CLIENT_USERNAME := $(shell cat server/.env | grep TEST_CLIENT_USERNAME | cut -d '=' -f2)
 DB_NAME := $(shell cat server/.env | grep ^DB_NAME | cut -d '=' -f2)
 DB_USER := $(shell cat server/.env | grep ^DB_USER | cut -d '=' -f2)
