@@ -128,6 +128,12 @@ const loginWithLayer8Popup = async () => {
   });
 }
 
+const loginWithLayer8Redirect = async () => {
+  const response = await layer8_interceptor.fetch(BACKEND_URL + "/api/login/layer8/auth")
+  const data = await response.json()
+  window.location.href = data.authURL;
+}
+
 const uploadProfilePicture = async (e) => {
   e.preventDefault();
   isLoading.value = true;
@@ -207,7 +213,10 @@ const uploadProfilePicture = async (e) => {
             Login Anonymously
           </button>
           <button class="btn " @click="loginWithLayer8Popup">
-            Login with Layer8
+            Login with Layer8 Popup
+          </button>
+          <button class="btn " @click="loginWithLayer8Redirect">
+            Login with Layer8 Redirect
           </button>
           <button class="btn " @click="logoutUser">Logout</button>
         </div>

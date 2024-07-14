@@ -24,8 +24,8 @@ onMounted(() => {
         })
             .then(res => res.json())
             .then(data => {
-                localStorage.setItem("token", data.token)
-                router.push({ name: 'stress-test' })
+                localStorage.setItem("L8_TOKEN", data.token)
+                router.push({ name: 'home' })
             })
             .catch(err => console.log(err))
     }, 1000);
