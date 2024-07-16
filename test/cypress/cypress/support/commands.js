@@ -42,3 +42,11 @@ Cypress.Commands.add('loginAnonymouslyWGP', () => {
     cy.wait(500)
     cy.contains('Login Anonymously').click()
 })
+
+Cypress.Commands.add('deleteRegisteredUser', (username, tableName) => {
+    return cy.task('deleteUser', { username, tableName }).then((result) => {
+        if (!result) {
+            throw new Error(`Failed to delete user: ${username}`);
+        }
+    });
+});

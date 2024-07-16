@@ -165,7 +165,7 @@ func (s *service) ProfileClient(userName string) (models.ClientResponseOutput, e
 	clientModel := models.ClientResponseOutput{
 		ID:          clientData.ID,
 		Secret:      clientData.Secret,
-		Name:        clientData.Username,
+		Name:        clientData.Name,
 		RedirectURI: clientData.RedirectURI,
 		BackendURI:  clientData.BackendURI,
 	}

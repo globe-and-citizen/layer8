@@ -83,16 +83,19 @@
                 </ul>
                 <div class="col-span-2 flex flex-col space-y-2">
                   <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
+                    placeholder="Name"
                     :value="user.name" />
                   <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
+                    placeholder="Redirect URI"
                     :value="user.redirect_uri" />
                   <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
                     :value="user.backend_uri" />
                   <div class="flex items-center space-x-2">
                     <input readonly
                       class="bg-[#ECF4FD] border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium shadow appearance-none"
+                      placeholder="UUID" 
                       :value="user.id" />
-                    <button v-if="isCopied != user.id" @click="copyToClipboard(user.id)">
+                    <button value="UUID" v-if="isCopied != user.id" @click="copyToClipboard(user.id)">
                       <svg fill="#000000" width="30px" height="30px" viewBox="0 0 16 16"
                         xmlns="http://www.w3.org/2000/svg">
                         <path d="M14 12V2H4V0h12v12h-2zM0 4h12v12H0V4zm2 2v8h8V6H2z" fill-rule="evenodd" />
@@ -111,8 +114,9 @@
                   <div class="flex items-center space-x-2">
                     <input readonly
                       class="bg-[#ECF4FD] border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
+                      placeholder="Secret"
                       :value="user.secret" />
-                    <button v-if="isCopied != user.secret" @click="copyToClipboard(user.secret)">
+                    <button value="Secret" v-if="isCopied != user.secret" @click="copyToClipboard(user.secret)">
                       <svg fill="#000000" width="30px" height="30px" viewBox="0 0 16 16"
                         xmlns="http://www.w3.org/2000/svg">
                         <path d="M14 12V2H4V0h12v12h-2zM0 4h12v12H0V4zm2 2v8h8V6H2z" fill-rule="evenodd" />
@@ -219,25 +223,26 @@
         console.error(error);
       }
     };
-    const getStats = async () => {
-      try {
-        const resp = await window.fetch(
-          "[[ .ProxyURL ]]/api/v1/usage-stats",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "Application/Json",
-              Authorization: `Bearer ${token.value}`,
-            },
-          }
-        );
-        const data = await resp.json();
 
-        return data.data
-      } catch (error) {
-        console.error(error);
-      }
-    };
+     const getStats = async () => {
+       try {
+         const resp = await window.fetch(
+           "[[ .ProxyURL ]]/api/v1/usage-stats",
+           {
+             method: "GET",
+             headers: {
+               "Content-Type": "Application/Json",
+               Authorization: `Bearer ${token.value}`,
+             },
+           }
+         );
+         const data = await resp.json();
+
+         return data.data
+       } catch (error) {
+         console.error(error);
+       }
+     };
 
     const copyToClipboard = async (text) => {
       try {
