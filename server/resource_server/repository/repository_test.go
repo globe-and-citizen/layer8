@@ -24,6 +24,7 @@ const userLastName = "last_name"
 const userSalt = "user_salt"
 const userPassword = "user_password"
 const userDisplayName = "display_name"
+const userCountry = "country"
 
 const verificationCode = "123456"
 
@@ -32,6 +33,7 @@ const clientUsername = "client_username"
 const clientName = "test_client"
 const clientSecret = "client_secret"
 const redirectUri = "https://gcitizen.com/callback"
+const backendUri = "https://gcitizen.com/backend"
 const clientSalt = "client_salt"
 const clientPassword = "client_password"
 
@@ -66,60 +68,208 @@ func SetUp(t *testing.T) {
 	repository = NewRepository(db)
 }
 
-func TestRegisterUser(t *testing.T) {
-	// Create a new mock DB and a GORM database connection
-	mockDB, _, err := sqlmock.New()
-	if err != nil {
-		t.Fatal("Failed to create mock DB:", err)
-	}
+func TestRegisterUser_FailToInsertANewUserRecord(t *testing.T) {
+	SetUp(t)
 	defer mockDB.Close()
 
-	db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{})
-	if err != nil {
-		t.Fatal("Failed to connect to mock DB:", err)
+	mock.ExpectBegin()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id"`,
+		),
+	).WithArgs(
+		username, userPassword, userFirstName, userLastName,
+		userSalt, sqlmock.AnyArg(), sqlmock.AnyArg(),
+	).WillReturnError(
+		fmt.Errorf("could not insert a new user record"),
+	)
+
+	mock.ExpectRollback()
+
+	userDto := dto.RegisterUserDTO{
+		Username:    username,
+		FirstName:   userFirstName,
+		LastName:    userLastName,
+		Country:     userCountry,
+		DisplayName: userDisplayName,
 	}
+	err = repository.RegisterUser(userDto, userPassword, userSalt)
 
-	// Create the user repository with the mock database connection
-	repo := NewRepository(db)
-
-	// Define a test user DTO
-	testUser := dto.RegisterUserDTO{
-		Username:    "test_user",
-		FirstName:   "Test",
-		LastName:    "User",
-		Password:    "TestPass123",
-		Country:     "Unknown",
-		DisplayName: "user",
-	}
-
-	// Call the RegisterUser function
-	repo.RegisterUser(testUser)
+	assert.NotNil(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
 }
 
-func TestRegisterClient(t *testing.T) {
-	// Create a new mock DB and a GORM database connection
-	mockDB, _, err := sqlmock.New()
-	if err != nil {
-		t.Fatal("Failed to create mock DB:", err)
-	}
+func TestRegisterUser_FailToInsertANewUserMetadataRecord(t *testing.T) {
+	SetUp(t)
 	defer mockDB.Close()
 
-	db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{})
-	if err != nil {
-		t.Fatal("Failed to connect to mock DB:", err)
+	mock.ExpectBegin()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id"`,
+		),
+	).WithArgs(
+		username, userPassword, userFirstName, userLastName, userSalt,
+		sqlmock.AnyArg(), sqlmock.AnyArg(),
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{
+				"id", "username", "password", "first_name", "last_name", "salt", "email_proof", "verification_code",
+			},
+		).AddRow(
+			userId, username, userPassword, userFirstName, userLastName, userSalt, emailProof, verificationCode,
+		),
+	)
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`INSERT INTO "user_metadata" ("user_id","key","value") VALUES ($1,$2,$3),($4,$5,$6),($7,$8,$9) RETURNING "id","created_at","updated_at"`,
+		),
+	).WithArgs(
+		userId, "email_verified", "false", userId, "country", userCountry, userId, "display_name", userDisplayName,
+	).WillReturnError(
+		fmt.Errorf("failed to insert a new user metadata record"),
+	)
+
+	mock.ExpectRollback()
+
+	userDto := dto.RegisterUserDTO{
+		Username:    username,
+		FirstName:   userFirstName,
+		LastName:    userLastName,
+		Country:     userCountry,
+		DisplayName: userDisplayName,
 	}
+	err = repository.RegisterUser(userDto, userPassword, userSalt)
 
-	// Create the client repository with the mock database connection
-	repo := NewRepository(db)
+	assert.NotNil(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
+}
 
-	// Define a test client DTO
-	testClient := dto.RegisterClientDTO{
-		Name:        "testclient",
-		RedirectURI: "https://gcitizen.com/callback",
+func TestRegisterUser_Success(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id"`,
+		),
+	).WithArgs(
+		username, userPassword, userFirstName, userLastName, userSalt,
+		sqlmock.AnyArg(), sqlmock.AnyArg(),
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{
+				"id", "username", "password", "first_name", "last_name", "salt", "email_proof", "verification_code",
+			},
+		).AddRow(
+			userId, username, userPassword, userFirstName, userLastName, userSalt, emailProof, verificationCode,
+		),
+	)
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`INSERT INTO "user_metadata" ("user_id","key","value") VALUES ($1,$2,$3),($4,$5,$6),($7,$8,$9) RETURNING "id","created_at","updated_at"`,
+		),
+	).WithArgs(
+		userId, "email_verified", "false", userId, "country", userCountry, userId, "display_name", userDisplayName,
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{"user_id", "key", "value"},
+		).AddRow(
+			userId, "email_verified", "false",
+		).AddRow(
+			userId, "country", userCountry,
+		).AddRow(
+			userId, "display_name", userDisplayName,
+		),
+	)
+
+	mock.ExpectCommit()
+
+	userDto := dto.RegisterUserDTO{
+		Username:    username,
+		FirstName:   userFirstName,
+		LastName:    userLastName,
+		Country:     userCountry,
+		DisplayName: userDisplayName,
 	}
+	err = repository.RegisterUser(userDto, userPassword, userSalt)
 
-	// Call the RegisterClient function
-	repo.RegisterClient(testClient)
+	assert.Nil(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
+}
+
+func TestRegisterClient_InsertQueryFailed(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(
+			`INSERT INTO "clients" ("id","secret","name","redirect_uri","backend_uri","username","password","salt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+		),
+	).WithArgs(
+		clientId, clientSecret, clientName, redirectUri, backendUri, clientUsername, clientPassword, clientSalt,
+	).WillReturnError(
+		fmt.Errorf("failed to insert client %s", clientId),
+	)
+
+	mock.ExpectRollback()
+
+	client := models.Client{
+		ID:          clientId,
+		Secret:      clientSecret,
+		Name:        clientName,
+		RedirectURI: redirectUri,
+		BackendURI:  backendUri,
+		Username:    clientUsername,
+		Password:    clientPassword,
+		Salt:        clientSalt,
+	}
+	err = repository.RegisterClient(client)
+
+	assert.NotNil(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
+}
+
+func TestRegisterClient_Success(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(
+			`INSERT INTO "clients" ("id","secret","name","redirect_uri","backend_uri","username","password","salt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+		),
+	).WithArgs(
+		clientId, clientSecret, clientName, redirectUri, backendUri, clientUsername, clientPassword, clientSalt,
+	).WillReturnResult(
+		sqlmock.NewResult(1, 1),
+	)
+
+	mock.ExpectCommit()
+
+	client := models.Client{
+		ID:          clientId,
+		Secret:      clientSecret,
+		Name:        clientName,
+		RedirectURI: redirectUri,
+		BackendURI:  backendUri,
+		Username:    clientUsername,
+		Password:    clientPassword,
+		Salt:        clientSalt,
+	}
+	err = repository.RegisterClient(client)
+
+	assert.Nil(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
 }
 
 func TestGetClientData_ClientDoesNotExist(t *testing.T) {

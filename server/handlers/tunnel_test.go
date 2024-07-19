@@ -7,7 +7,7 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
 	"globe-and-citizen/layer8/server/resource_server/repository"
-	resourceService "globe-and-citizen/layer8/server/resource_server/service"
+	"globe-and-citizen/layer8/server/resource_server/service"
 	resourceUtils "globe-and-citizen/layer8/server/resource_server/utils"
 	"io"
 	"net/http"
@@ -22,8 +22,12 @@ import (
 )
 
 func prepareInitTunnelRequest(clientBackendUrl string) *http.Request {
-	repo := repository.NewMemoryRepository()
-	repo.RegisterClient(dto.RegisterClientDTO{
+	resourceService := service.NewService(
+		repository.NewMemoryRepository(),
+		&verification.EmailVerifier{},
+		&zk.ProofProcessor{},
+	)
+	resourceService.RegisterClient(dto.RegisterClientDTO{
 		Name:        "name",
 		RedirectURI: "redirect_uri",
 		BackendURI:  resourceUtils.RemoveProtocolFromURL(clientBackendUrl),
@@ -36,7 +40,7 @@ func prepareInitTunnelRequest(clientBackendUrl string) *http.Request {
 		context.WithValue(
 			reqToInitTunnel.Context(),
 			"service",
-			resourceService.NewService(repo, &verification.EmailVerifier{}, &zk.ProofProcessor{}),
+			resourceService,
 		),
 	)
 
