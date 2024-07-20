@@ -8,6 +8,7 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -30,9 +31,17 @@ const userEmail = "user@email.com"
 
 func decodeResponseBody(t *testing.T, rr *httptest.ResponseRecorder) utils.Response {
 	var response utils.Response
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+
+	body, err := io.ReadAll(rr.Body)
+	if err != nil {
 		t.Fatal(err)
 	}
+
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	return response
 }
 
@@ -139,7 +148,46 @@ func (ms *MockService) CheckBackendURI(backendURL string) (bool, error) {
 	return true, nil
 }
 
-func TestRegisterUserHandler(t *testing.T) {
+func (m *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseOutput, error) {
+	// Mock implementation for LoginClient method
+	return models.LoginUserResponseOutput{
+		Token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw",
+	}, nil
+}
+
+func TestRegisterUserHandler_RequestJsonIsMalformed(t *testing.T) {
+	requestBody := []byte(`{
+		"email": "test@gcitizen.com",
+		"username": "test_user",
+		"first_name": "Test",
+		"last_name": "User",
+		"display_name": "user",
+		"country": "Unknown",
+		"password": "12345"
+	}something_else`)
+
+	req, err := http.NewRequest("POST", "/api/v1/register-user", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterUserHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestRegisterUserHandler_Success(t *testing.T) {
 	// Mock request body
 	requestBody := []byte(`{
 		"email": "test@gcitizen.com",
@@ -171,10 +219,7 @@ func TestRegisterUserHandler(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 
 	// Decode the response body
-	var response utils.Response
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
-		t.Fatal(err)
-	}
+	response := decodeResponseBody(t, rr)
 
 	// Now assert the fields directly
 	assert.True(t, response.Status)
@@ -183,9 +228,45 @@ func TestRegisterUserHandler(t *testing.T) {
 	assert.Equal(t, "User registered successfully", response.Data.(string))
 }
 
-func TestRegisterClientHandler(t *testing.T) {
+func TestRegisterClientHandler_RequestJsonIsMalformed(t *testing.T) {
+	requestBody := []byte(`{
+		"name": "testclient", 
+		"redirect_uri": "https://gcitizen.com/callback",
+		"backend_uri": "https://backend.com",
+		"username": "test_user", 
+		"password": "12345"
+	}something_else`)
+
+	req, err := http.NewRequest("POST", "/api/v1/register-client", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterClientHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestRegisterClientHandler_Success(t *testing.T) {
 	// Mock request body
-	requestBody := []byte(`{"name": "testclient", "redirect_uri": "https://gcitizen.com/callback", "username": "test_user", "password": "12345"}`)
+	requestBody := []byte(`{
+		"name": "testclient", 
+		"redirect_uri": "https://gcitizen.com/callback",
+		"backend_uri": "https://backend.com",
+		"username": "test_user", 
+		"password": "12345"
+	}`)
 
 	// Create a mock request
 	req, err := http.NewRequest("POST", "/api/v1/register-client", bytes.NewBuffer(requestBody))
@@ -219,7 +300,30 @@ func TestRegisterClientHandler(t *testing.T) {
 	assert.Equal(t, "Client registered successfully", response.Data.(string))
 }
 
-func TestLoginPrecheckHandler(t *testing.T) {
+func TestLoginPrecheckHandler_RequestJsonIsMalformed(t *testing.T) {
+	requestBody := []byte(`{"username": "test_user"}something_else`)
+	req, err := http.NewRequest("POST", "/api/v1/login-precheck", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginPrecheckHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestLoginPrecheckHandler_Success(t *testing.T) {
 	// Mock request body
 	requestBody := []byte(`{"username": "test_user"}`)
 
@@ -253,7 +357,33 @@ func TestLoginPrecheckHandler(t *testing.T) {
 	assert.Equal(t, "ThisIsARandomSalt123!@#", response.Salt)
 }
 
-func TestLoginUserHandler(t *testing.T) {
+func TestLoginUserHandler_RequestJsonIsMalformed(t *testing.T) {
+	requestBody := []byte(`{
+		"username": "test_user",
+		"password": "12345",
+		"salt": 	"ThisIsARandomSalt123!@#"}something_else`)
+	req, err := http.NewRequest("POST", "/api/v1/login-user", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginUserHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestLoginUserHandler_Success(t *testing.T) {
 	// Mock request body
 	requestBody := []byte(`{
 		"username": "test_user",
@@ -553,7 +683,7 @@ func TestCheckEmailVerificationCode_MalformedRequestBody(t *testing.T) {
 	response := decodeResponseBody(t, rr)
 
 	assert.False(t, response.Status)
-	assert.Equal(t, "Error while unmarshalling json", response.Message)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 	assert.NotNil(t, response.Error)
 }
 
@@ -746,91 +876,98 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 	assert.Nil(t, response.Error)
 }
 
-func TestUpdateDisplayNameHandler(t *testing.T) {
-	// Generate a Mock JWT token
-	tokenString, err := utils.GenerateToken(models.User{
-		ID:       1,
-		Username: "test_user",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Mock request body
-	requestBody := []byte(`{"display_name": "test_user"}`)
-
-	// Create a mock request
+func TestUpdateDisplayNameHandler_RequestJsonIsMalformed(t *testing.T) {
+	requestBody := []byte(`{"display_name": "test_user"}something_else`)
 	req, err := http.NewRequest("POST", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Set the Authorization header
-	req.Header.Set("Authorization", "Bearer "+tokenString)
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
 
-	// Create a mock service and set it in the request context
 	mockService := &MockService{}
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 
-	// Create a ResponseRecorder to record the response
 	rr := httptest.NewRecorder()
 
-	// Call the handler function
 	Ctl.UpdateDisplayNameHandler(rr, req)
 
-	// Check the status code
-	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	// Decode the response body
-	var response utils.Response
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestUpdateDisplayNameHandler_Success(t *testing.T) {
+	requestBody := []byte(`{"display_name": "test_user"}`)
+	req, err := http.NewRequest("POST", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Now assert the fields directly
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.UpdateDisplayNameHandler(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	var response = decodeResponseBody(t, rr)
+
 	assert.True(t, response.Status)
 	assert.Equal(t, "OK!", response.Message)
 	assert.Nil(t, response.Error)
 	assert.Equal(t, "Display name updated successfully", response.Data.(string))
 }
 
-// Javokhir started the testing
-func (m *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseOutput, error) {
-	// Mock implementation for LoginClient method
-	return models.LoginUserResponseOutput{
-		Token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw",
-	}, nil
-}
+func TestLoginClientHandler_RequestJsonIsMalformed(t *testing.T) {
+	loginReq := []byte(`{
+		"username": "testuser",
+		"password": "testpassword"
+	}something_else`)
 
-func TestLoginClientHandler(t *testing.T) {
-	// Prepare request body
-	loginReq := dto.LoginClientDTO{
-		Username: "testuser",
-		Password: "testpassword",
-	}
-	reqBody, err := json.Marshal(loginReq)
-	if err != nil {
-		t.Fatal(err)
-	}
+	req := httptest.NewRequest("POST", "/api/v1/login-client", bytes.NewBuffer(loginReq))
 
-	// Prepare request with request body
-	req := httptest.NewRequest("POST", "/api/v1/login-client", bytes.NewBuffer(reqBody))
-
-	// Set up mock service in request context
 	req = setMockServiceInContext(req)
 
-	// Create a response recorder to capture the handler's response
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginClientHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestLoginClientHandler_Success(t *testing.T) {
+	loginReq := []byte(`{
+		"username": "testuser",
+		"password": "testpassword"
+	}`)
+
+	req := httptest.NewRequest("POST", "/api/v1/login-client", bytes.NewBuffer(loginReq))
+
+	req = setMockServiceInContext(req)
+
 	w := httptest.NewRecorder()
 
-	// Call the handler function
 	Ctl.LoginClientHandler(w, req)
 
-	// Check the response status code
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	// Decode the response body
 	var tokenResp models.LoginUserResponseOutput
-	err = json.NewDecoder(w.Body).Decode(&tokenResp)
+	err := json.NewDecoder(w.Body).Decode(&tokenResp)
 	if err != nil {
 		t.Fatalf("failed to decode response body: %v", err)
 	}
@@ -839,7 +976,27 @@ func TestLoginClientHandler(t *testing.T) {
 	assert.Equal(t, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw", tokenResp.Token)
 }
 
-func TestCheckBackendURIHandler(t *testing.T) {
+func TestCheckBackendURIHandler_RequestJsonIsMalformed(t *testing.T) {
+	reqBody := []byte(`{
+		"backend_uri": "https://example.com"
+	}something_else`)
+	req := httptest.NewRequest("POST", "/api/v1/check-backend-uri", bytes.NewBuffer(reqBody))
+	req = setMockServiceInContext(req)
+
+	rr := httptest.NewRecorder()
+
+	Ctl.CheckBackendURI(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestCheckBackendURIHandler_Success(t *testing.T) {
 	checkReq := dto.CheckBackendURIDTO{
 		BackendURI: "https://example.com",
 	}
@@ -849,7 +1006,6 @@ func TestCheckBackendURIHandler(t *testing.T) {
 	}
 
 	req := httptest.NewRequest("POST", "/api/v1/check-backend-uri", bytes.NewBuffer(reqBody))
-
 	req = setMockServiceInContext(req)
 
 	w := httptest.NewRecorder()
@@ -872,5 +1028,3 @@ func setMockServiceInContext(req *http.Request) *http.Request {
 	ctx := context.WithValue(req.Context(), "service", mockSvc)
 	return req.WithContext(ctx)
 }
-
-// Javokhir finished the testing
