@@ -26,7 +26,6 @@ const userPassword = "user_password"
 const userDisplayName = "display_name"
 
 const verificationCode = "123456"
-const emailProof = "AbcdfTs"
 
 const clientId = "1"
 const clientUsername = "client_username"
@@ -37,6 +36,8 @@ const clientSalt = "client_salt"
 const clientPassword = "client_password"
 
 var timestamp = time.Date(2024, time.May, 24, 14, 0, 0, 0, time.UTC)
+
+var emailProof = []byte("AbcdfTs")
 
 var mockDB *sql.DB
 var mock sqlmock.Sqlmock

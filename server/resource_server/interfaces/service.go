@@ -13,10 +13,13 @@ type IService interface {
 	LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseOutput, error)
 	ProfileUser(userID uint) (models.ProfileResponseOutput, error)
 	ProfileClient(userID string) (models.ClientResponseOutput, error)
+	FindUser(userID uint) (models.User, error)
 	VerifyEmail(userID uint, userEmail string) error
 	CheckEmailVerificationCode(userID uint, code string) error
-	GenerateZkProofOfEmailVerification(userID uint) (string, error)
-	SaveProofOfEmailVerification(userID uint, verificationCode string, zkProof string) error
+	GenerateZkProofOfEmailVerification(
+		user models.User, request dto.CheckEmailVerificationCodeDTO,
+	) ([]byte, error)
+	SaveProofOfEmailVerification(userID uint, verificationCode string, zkProof []byte) error
 	UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error
 	RegisterClient(req dto.RegisterClientDTO) error
 	GetClientData(clientName string) (models.ClientResponseOutput, error)
