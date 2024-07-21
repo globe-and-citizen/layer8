@@ -13,9 +13,20 @@ const salt = "ajdjsjsaafktyowqqrtgpowrkdkdkfak"
 func TestMimcCircuit_ProverSucceeded(t *testing.T) {
 	verificationCode := "724b2c"
 
-	emailAsVariables, _ := utils.StringToCircuitVariables(email)
-	saltAsVariables, _ := utils.StringToCircuitVariables(salt)
-	codeAsVariables, _ := utils.ConvertCodeToCircuitVariables(verificationCode)
+	emailAsVariables, err := utils.StringToCircuitVariables(email)
+	if err != nil {
+		t.Fatalf("Unexpected error while converting email to circuit variables: %e", err)
+	}
+
+	saltAsVariables, err := utils.StringToCircuitVariables(salt)
+	if err != nil {
+		t.Fatalf("Unexpected error while converting salt to circuit variables: %e", err)
+	}
+
+	codeAsVariables, err := utils.ConvertCodeToCircuitVariables(verificationCode)
+	if err != nil {
+		t.Fatalf("Unexpected error while converting code to circuit variables: %e", err)
+	}
 
 	circuit := NewMimcCircuit()
 
@@ -33,9 +44,20 @@ func TestMimcCircuit_ProverSucceeded(t *testing.T) {
 func TestMimcCircuit_ProverFailed(t *testing.T) {
 	verificationCode := "724b2b"
 
-	emailAsVariables, _ := utils.StringToCircuitVariables(email)
-	saltAsVariables, _ := utils.StringToCircuitVariables(salt)
-	codeAsVariables, _ := utils.ConvertCodeToCircuitVariables(verificationCode)
+	emailAsVariables, err := utils.StringToCircuitVariables(email)
+	if err != nil {
+		t.Fatalf("Unexpected error while converting email to circuit variables: %e", err)
+	}
+
+	saltAsVariables, err := utils.StringToCircuitVariables(salt)
+	if err != nil {
+		t.Fatalf("Unexpected error while converting salt to circuit variables: %e", err)
+	}
+
+	codeAsVariables, err := utils.ConvertCodeToCircuitVariables(verificationCode)
+	if err != nil {
+		t.Fatalf("Unexpected error while converting code to circuit variables: %e", err)
+	}
 
 	circuit := NewMimcCircuit()
 

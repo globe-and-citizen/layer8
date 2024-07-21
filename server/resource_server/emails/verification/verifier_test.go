@@ -55,7 +55,7 @@ func TestGenerateVerificationCode(t *testing.T) {
 		now,
 	)
 
-	generatedCode, _ := verifier.GenerateVerificationCode(
+	generatedCode, err := verifier.GenerateVerificationCode(
 		&models.User{
 			ID:       userId,
 			Username: username,
@@ -63,6 +63,7 @@ func TestGenerateVerificationCode(t *testing.T) {
 		userEmail,
 	)
 
+	assert.Nil(t, err)
 	assert.Equal(t, generatedCode, verificationCode)
 }
 
