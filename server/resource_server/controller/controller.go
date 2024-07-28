@@ -73,8 +73,12 @@ func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(tokenResp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
@@ -84,7 +88,7 @@ func ClientProfileHandler(w http.ResponseWriter, r *http.Request) {
 	tokenString = tokenString[7:]
 	clientClaims, err := utils.ValidateClientToken(tokenString)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile, invalid token", err)
+		utils.HandleError(w, http.StatusUnauthorized, "Authentication error: invalid token", err)
 		return
 	}
 
@@ -95,8 +99,12 @@ func ClientProfileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(profileResp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile, error encoding response", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
@@ -116,8 +124,12 @@ func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	res := utils.BuildResponse(true, "OK!", "User registered successfully")
 	if err := json.NewEncoder(w).Encode(res); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
@@ -137,8 +149,12 @@ func RegisterClientHandler(w http.ResponseWriter, r *http.Request) {
 
 	res := utils.BuildResponse(true, "OK!", "Client registered successfully")
 	if err := json.NewEncoder(w).Encode(res); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to register client", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
@@ -158,8 +174,12 @@ func LoginPrecheckHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(loginPrecheckResp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
@@ -178,8 +198,12 @@ func LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(tokenResp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
@@ -189,7 +213,7 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
 	userID, err := utils.ValidateToken(tokenString)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile", err)
+		utils.HandleError(w, http.StatusUnauthorized, "Authentication error: invalid token", err)
 		return
 	}
 
@@ -200,8 +224,12 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(profileResp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
@@ -216,8 +244,12 @@ func GetClientData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(clientModel); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
@@ -227,7 +259,7 @@ func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
 	userID, err := utils.ValidateToken(tokenString)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Request failed: invalid authorization token", err)
+		utils.HandleError(w, http.StatusUnauthorized, "Authentication error: invalid token", err)
 		return
 	}
 
@@ -255,7 +287,7 @@ func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
 	userID, err := utils.ValidateToken(tokenString)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to verify user's token", err)
+		utils.HandleError(w, http.StatusUnauthorized, "Authentication error: invalid token", err)
 		return
 	}
 
@@ -305,7 +337,7 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
 	userID, err := utils.ValidateToken(tokenString)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)
+		utils.HandleError(w, http.StatusUnauthorized, "Authentication error: invalid token", err)
 		return
 	}
 
@@ -322,8 +354,12 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp := utils.BuildResponse(true, "OK!", "Display name updated successfully")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
@@ -378,8 +414,12 @@ func GetUsageStats(w http.ResponseWriter, r *http.Request) {
 
 	resp := utils.BuildResponse(true, "OK!", finalResponse)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get stats", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
@@ -398,7 +438,11 @@ func CheckBackendURI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to check backend url", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
