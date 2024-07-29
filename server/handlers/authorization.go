@@ -21,12 +21,12 @@ type AuthorizationHandler interface {
 
 type authorizationHandlerImpl struct {
 	service   svc.ServiceInterface
-	parseHTML func(w http.ResponseWriter, htmlFile string, params map[string]interface{})
+	parseHTML func(w http.ResponseWriter, statusCode int, htmlFile string, params map[string]interface{})
 }
 
 func NewAuthorizationHandler(
 	service svc.ServiceInterface,
-	htmlParserFunc func(w http.ResponseWriter, htmlFile string, params map[string]interface{}),
+	htmlParserFunc func(w http.ResponseWriter, statusCode int, htmlFile string, params map[string]interface{}),
 ) AuthorizationHandler {
 	return &authorizationHandlerImpl{
 		service:   service,
@@ -107,7 +107,7 @@ func (a *authorizationHandlerImpl) getAuthorizeHandler(w http.ResponseWriter, r 
 		return
 	}
 
-	a.parseHTML(w, "assets-v1/templates/src/pages/oauth_portal/authorize.html", map[string]interface{}{
+	a.parseHTML(w, http.StatusOK, "assets-v1/templates/src/pages/oauth_portal/authorize.html", map[string]interface{}{
 		"ClientName": client.Name,
 		"Scopes":     scopeDescriptions,
 		"Next":       next,
@@ -345,7 +345,7 @@ func (a *authorizationHandlerImpl) getError(w http.ResponseWriter, r *http.Reque
 		opts = append(opts, errors[v])
 	}
 
-	a.parseHTML(w, "assets-v1/templates/src/pages/oauth_portal/error.html", map[string]interface{}{
+	a.parseHTML(w, http.StatusBadRequest, "assets-v1/templates/src/pages/oauth_portal/error.html", map[string]interface{}{
 		"Errors": opts,
 	})
 }

@@ -31,7 +31,7 @@ func Test_GetLoginHandler_NoToken_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	serviceMock := mocks.NewMockServiceInterface(ctrl)
-	htmlParserMock := func(w http.ResponseWriter, htmlFile string, params map[string]interface{}) {
+	htmlParserMock := func(w http.ResponseWriter, statusCode int, htmlFile string, params map[string]interface{}) {
 		assert.Equal(t, expectedLoginHTMLPath, htmlFile)
 		assert.Equal(t, expectedHTMLParsingParams, params)
 	}
@@ -143,7 +143,7 @@ func Test_PostLoginHandler_TokenNotExists_OK(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 
-	htmlParserMock := func(w http.ResponseWriter, htmlFile string, params map[string]interface{}) {
+	htmlParserMock := func(w http.ResponseWriter, statusCode int, htmlFile string, params map[string]interface{}) {
 		assert.Equal(t, expectedLoginHTMLPath, htmlFile)
 		assert.Equal(t, expectedHTMLParsingParams, params)
 	}
@@ -188,7 +188,7 @@ func Test_PostLoginHandler_InvalidCredentials_OK(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 
-	htmlParserMock := func(w http.ResponseWriter, htmlFile string, params map[string]interface{}) {
+	htmlParserMock := func(w http.ResponseWriter, statusCode int, htmlFile string, params map[string]interface{}) {
 		assert.Equal(t, expectedLoginHTMLPath, htmlFile)
 		assert.Equal(t, expectedHTMLParsingParams, params)
 	}

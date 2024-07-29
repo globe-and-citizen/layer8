@@ -56,7 +56,7 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
 		return
 	}
 
-	utils.ParseHTML(w, filePath, map[string]interface{}{
+	utils.ParseHTML(w, http.StatusOK, filePath, map[string]interface{}{
 		"ProxyURL": os.Getenv("PROXY_URL"),
 	})
 }

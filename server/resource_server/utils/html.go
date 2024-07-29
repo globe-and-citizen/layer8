@@ -8,6 +8,7 @@ import (
 
 func ParseHTML(
 	w http.ResponseWriter,
+	statusCode int,
 	htmlFile string,
 	params map[string]interface{},
 ) {
@@ -18,6 +19,7 @@ func ParseHTML(
 		return
 	}
 
+	w.WriteHeader(statusCode)
 	if err := t.Execute(w, params); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
