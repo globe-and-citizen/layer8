@@ -22,16 +22,16 @@ func Test_GetLoginHandler_NoToken_OK(t *testing.T) {
 		proxyUrl                  = "http://localhost:5001"
 		expectedLoginHTMLPath     = "assets-v1/templates/src/pages/oauth_portal/login.html"
 		expectedHTMLParsingParams = map[string]interface{}{
-			"HasNext":  true,
-			"Next":     "/",
-			"ProxyURL": proxyUrl,
+			"Error":   "http: named cookie not present",
+			"HasNext": true,
+			"Next":    "",
 		}
 	)
 
 	ctrl := gomock.NewController(t)
 
 	serviceMock := mocks.NewMockServiceInterface(ctrl)
-	htmlParserMock := func(w http.ResponseWriter, htmlFile string, params map[string]interface{}) {
+	htmlParserMock := func(w http.ResponseWriter, statusCode int, htmlFile string, params map[string]interface{}) {
 		assert.Equal(t, expectedLoginHTMLPath, htmlFile)
 		assert.Equal(t, expectedHTMLParsingParams, params)
 	}
@@ -46,7 +46,7 @@ func Test_GetLoginHandler_NoToken_OK(t *testing.T) {
 	handler.Login(responseRecorder, req)
 
 	// Verify the results
-	assert.Equal(t, http.StatusOK, responseRecorder.Code)
+	assert.Equal(t, http.StatusUnauthorized, responseRecorder.Code)
 }
 
 func Test_GetLoginHandler_TokenExists_OK(t *testing.T) {
@@ -143,7 +143,7 @@ func Test_PostLoginHandler_TokenNotExists_OK(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 
-	htmlParserMock := func(w http.ResponseWriter, htmlFile string, params map[string]interface{}) {
+	htmlParserMock := func(w http.ResponseWriter, statusCode int, htmlFile string, params map[string]interface{}) {
 		assert.Equal(t, expectedLoginHTMLPath, htmlFile)
 		assert.Equal(t, expectedHTMLParsingParams, params)
 	}
@@ -165,7 +165,7 @@ func Test_PostLoginHandler_TokenNotExists_OK(t *testing.T) {
 	handler.Login(responseRecorder, req)
 
 	// Verify the results
-	assert.Equal(t, http.StatusOK, responseRecorder.Code)
+	assert.Equal(t, http.StatusUnauthorized, responseRecorder.Code)
 	assert.Len(t, responseRecorder.Result().Cookies(), 0)
 }
 
@@ -188,7 +188,7 @@ func Test_PostLoginHandler_InvalidCredentials_OK(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 
-	htmlParserMock := func(w http.ResponseWriter, htmlFile string, params map[string]interface{}) {
+	htmlParserMock := func(w http.ResponseWriter, statusCode int, htmlFile string, params map[string]interface{}) {
 		assert.Equal(t, expectedLoginHTMLPath, htmlFile)
 		assert.Equal(t, expectedHTMLParsingParams, params)
 	}
@@ -210,6 +210,6 @@ func Test_PostLoginHandler_InvalidCredentials_OK(t *testing.T) {
 	handler.Login(responseRecorder, req)
 
 	// Verify the results
-	assert.Equal(t, http.StatusOK, responseRecorder.Code)
+	assert.Equal(t, http.StatusUnauthorized, responseRecorder.Code)
 	assert.Len(t, responseRecorder.Result().Cookies(), 0)
 }

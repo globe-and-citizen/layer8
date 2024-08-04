@@ -13,12 +13,12 @@ type AuthenticationHandler interface {
 
 type authenticationHandlerImpl struct {
 	service   svc.ServiceInterface
-	parseHTML func(w http.ResponseWriter, htmlFile string, params map[string]interface{})
+	parseHTML func(w http.ResponseWriter, statusCode int, htmlFile string, params map[string]interface{})
 }
 
 func NewAuthenticationHandler(
 	service svc.ServiceInterface,
-	htmlParserFunc func(w http.ResponseWriter, htmlFile string, params map[string]interface{}),
+	htmlParserFunc func(w http.ResponseWriter, statusCode int, htmlFile string, params map[string]interface{}),
 ) AuthenticationHandler {
 	return &authenticationHandlerImpl{
 		service:   service,
@@ -42,17 +42,26 @@ func (a *authenticationHandlerImpl) getLoginHandler(w http.ResponseWriter, r *ht
 	if next == "" {
 		next = "/"
 	}
+
 	// check if the user is already logged in
 	token, err := r.Cookie("token")
-	if token != nil && err == nil {
-		user, err := a.service.GetUserByToken(token.Value)
-		if err == nil && user != nil {
-			http.Redirect(w, r, next, http.StatusSeeOther)
-			return
-		}
+	if err != nil && token == nil {
+		a.parseLoginWithErr(w, r, err)
+		return
 	}
 
-	a.parseHTML(w, "assets-v1/templates/src/pages/oauth_portal/login.html",
+	user, err := a.service.GetUserByToken(token.Value)
+	if err != nil {
+		a.parseLoginWithErr(w, r, err)
+		return
+	}
+
+	if user != nil {
+		http.Redirect(w, r, next, http.StatusSeeOther)
+		return
+	}
+
+	a.parseHTML(w, http.StatusOK, "assets-v1/templates/src/pages/oauth_portal/login.html",
 		map[string]interface{}{
 			"HasNext":  next != "",
 			"Next":     next,
@@ -84,12 +93,12 @@ func (a *authenticationHandlerImpl) postLoginHandler(w http.ResponseWriter, r *h
 		Value: token,
 		Path:  "/",
 	})
-
 	http.Redirect(w, r, next, http.StatusSeeOther)
 }
 
 func (a *authenticationHandlerImpl) parseLoginWithErr(w http.ResponseWriter, r *http.Request, err error) {
-	a.parseHTML(w,
+	w.WriteHeader(http.StatusUnauthorized)
+	a.parseHTML(w, http.StatusUnauthorized,
 		"assets-v1/templates/src/pages/oauth_portal/login.html",
 		map[string]interface{}{
 			"HasNext": true,

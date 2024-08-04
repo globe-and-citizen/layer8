@@ -37,7 +37,15 @@ var authenticationToken, _ = utils.GenerateToken(
 )
 var emailProof = []byte("email_proof")
 
-func decodeResponseBody(t *testing.T, rr *httptest.ResponseRecorder) utils.Response {
+func decodeResponseBodyForResponse(t *testing.T, rr *httptest.ResponseRecorder) utils.Response {
+	var response utils.Response
+	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+		t.Fatal(err)
+	}
+	return response
+}
+
+func decodeResponseBodyForErrorResponse(t *testing.T, rr *httptest.ResponseRecorder) utils.Response {
 	var response utils.Response
 
 	body, err := io.ReadAll(rr.Body)
@@ -183,9 +191,9 @@ func TestRegisterUserHandler_RequestJsonIsMalformed(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -219,16 +227,15 @@ func TestRegisterUserHandler_Success(t *testing.T) {
 	Ctl.RegisterUserHandler(rr, req)
 
 	// Check the status code
-	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, http.StatusCreated, rr.Code)
 
 	// Decode the response body
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForResponse(t, rr)
 
 	// Now assert the fields directly
-	assert.True(t, response.Status)
-	assert.Equal(t, "OK!", response.Message)
-	assert.Nil(t, response.Error)
-	assert.Equal(t, "User registered successfully", response.Data.(string))
+	assert.True(t, response.IsSuccess)
+	assert.Equal(t, "User registered successfully", response.Message)
+	assert.Equal(t, nil, response.Data)
 }
 
 func TestRegisterClientHandler_RequestJsonIsMalformed(t *testing.T) {
@@ -254,9 +261,9 @@ func TestRegisterClientHandler_RequestJsonIsMalformed(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -288,7 +295,7 @@ func TestRegisterClientHandler_Success(t *testing.T) {
 	Ctl.RegisterClientHandler(rr, req)
 
 	// Check the status code
-	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, http.StatusCreated, rr.Code)
 
 	// Decode the response body
 	var response utils.Response
@@ -297,10 +304,9 @@ func TestRegisterClientHandler_Success(t *testing.T) {
 	}
 
 	// Now assert the fields directly
-	assert.True(t, response.Status)
-	assert.Equal(t, "OK!", response.Message)
-	assert.Nil(t, response.Error)
-	assert.Equal(t, "Client registered successfully", response.Data.(string))
+	assert.True(t, response.IsSuccess)
+	assert.Equal(t, "Client registered successfully", response.Message)
+	assert.Equal(t, nil, response.Data)
 }
 
 func TestLoginPrecheckHandler_RequestJsonIsMalformed(t *testing.T) {
@@ -319,9 +325,9 @@ func TestLoginPrecheckHandler_RequestJsonIsMalformed(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -379,9 +385,9 @@ func TestLoginUserHandler_RequestJsonIsMalformed(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -439,9 +445,9 @@ func TestProfileHandler_InvalidAuthenticationToken(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Authentication error: invalid token", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -467,9 +473,9 @@ func TestProfileHandler_FailedToProfileUser(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Failed to get user profile", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -565,9 +571,9 @@ func TestVerifyEmailHandler_InvalidAuthorizationToken(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Authentication error: invalid token", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -588,9 +594,9 @@ func TestVerifyEmailHandler_MalformedRequestBodyJson(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -611,9 +617,9 @@ func TestVerifyEmailHandler_RequestJsonSchemeIsInvalid(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Input json is invalid", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -642,9 +648,9 @@ func TestVerifyEmailHandler_FailedToVerifyEmail(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Failed to verify email", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -673,12 +679,11 @@ func TestVerifyEmailHandler_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForResponse(t, rr)
 
-	assert.True(t, response.Status)
-	assert.Equal(t, "OK!", response.Message)
-	assert.Equal(t, "Verification email sent", response.Data)
-	assert.Nil(t, response.Error)
+	assert.True(t, response.IsSuccess)
+	assert.Equal(t, "Verification email sent", response.Message)
+	assert.Equal(t, nil, response.Data)
 }
 
 func TestCheckEmailVerificationCode_InvalidAuthenticationToken(t *testing.T) {
@@ -701,9 +706,9 @@ func TestCheckEmailVerificationCode_InvalidAuthenticationToken(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Authentication error: invalid token", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -728,9 +733,9 @@ func TestCheckEmailVerificationCode_MalformedRequestBody(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -755,9 +760,9 @@ func TestCheckEmailVerificationCode_RequestJSONDoesNotMatchTheScheme(t *testing.
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Input json is invalid", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -789,9 +794,9 @@ func TestCheckEmailVerificationCode_VerificationCodeIsInvalid(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Failed to verify code", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -826,9 +831,9 @@ func TestCheckEmailVerificationCode_UserNotFound(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "User with provided id does not exist", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -875,9 +880,9 @@ func TestCheckEmailVerificationCode_ZkEmailProofFailedToBeGenerated(t *testing.T
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Failed to generate zk proof of email verification", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -932,9 +937,9 @@ func TestCheckEmailVerificationCode_FailedToSaveProofOfEmailVerification(t *test
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Failed to save proof of the email verification procedure", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -989,12 +994,11 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForResponse(t, rr)
 
-	assert.True(t, response.Status)
+	assert.True(t, response.IsSuccess)
 	assert.Equal(t, "Your email was successfully verified!", response.Message)
-	assert.Equal(t, "Email verified!", response.Data)
-	assert.Nil(t, response.Error)
+	assert.Equal(t, nil, response.Data)
 }
 
 func TestUpdateDisplayNameHandler_AuthenticationTokenIsInvalid(t *testing.T) {
@@ -1015,9 +1019,9 @@ func TestUpdateDisplayNameHandler_AuthenticationTokenIsInvalid(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Authentication error: invalid token", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -1040,9 +1044,9 @@ func TestUpdateDisplayNameHandler_RequestJsonIsMalformed(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -1065,12 +1069,12 @@ func TestUpdateDisplayNameHandler_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	var response = decodeResponseBody(t, rr)
+	var response = decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.True(t, response.Status)
-	assert.Equal(t, "OK!", response.Message)
+	assert.True(t, response.IsSuccess)
+	assert.Equal(t, "Display name updated successfully", response.Message)
+	assert.Equal(t, nil, response.Data)
 	assert.Nil(t, response.Error)
-	assert.Equal(t, "Display name updated successfully", response.Data.(string))
 }
 
 func TestLoginClientHandler_RequestJsonIsMalformed(t *testing.T) {
@@ -1087,9 +1091,9 @@ func TestLoginClientHandler_RequestJsonIsMalformed(t *testing.T) {
 	Ctl.LoginClientHandler(rr, req)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -1133,9 +1137,9 @@ func TestCheckBackendURIHandler_RequestJsonIsMalformed(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 	assert.NotNil(t, response.Error)
 }

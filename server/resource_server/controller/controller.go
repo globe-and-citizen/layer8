@@ -53,7 +53,7 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
 		return
 	}
 
-	utils.ParseHTML(w, filePath, map[string]interface{}{
+	utils.ParseHTML(w, http.StatusOK, filePath, map[string]interface{}{
 		"ProxyURL": os.Getenv("PROXY_URL"),
 	})
 }
@@ -122,7 +122,7 @@ func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := utils.BuildResponse(true, "OK!", "User registered successfully")
+	res := utils.BuildResponseWithNoBody(w, http.StatusCreated, "User registered successfully")
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		utils.HandleError(
 			w,
@@ -147,7 +147,7 @@ func RegisterClientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := utils.BuildResponse(true, "OK!", "Client registered successfully")
+	res := utils.BuildResponseWithNoBody(w, http.StatusCreated, "Client registered successfully")
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		utils.HandleError(
 			w,
@@ -274,7 +274,7 @@ func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := utils.BuildResponse(true, "OK!", "Verification email sent")
+	response := utils.BuildResponseWithNoBody(w, http.StatusOK, "Verification email sent")
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Internal error happened", err)
@@ -320,11 +320,8 @@ func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := utils.BuildResponse(
-		true,
-		"Your email was successfully verified!",
-		"Email verified!",
-	)
+	response := utils.BuildResponseWithNoBody(w, http.StatusOK, "Your email was successfully verified!")
+
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Internal error happened", err)
@@ -352,7 +349,7 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := utils.BuildResponse(true, "OK!", "Display name updated successfully")
+	resp := utils.BuildResponseWithNoBody(w, http.StatusOK, "Display name updated successfully")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		utils.HandleError(
 			w,
@@ -412,7 +409,7 @@ func GetUsageStats(w http.ResponseWriter, r *http.Request) {
 		finalResponse.MonthToDate.ForecastedEndOfMonthUsage = (monthToDateTotal / 1000000000) + float64(totalDaysBeforeNextMonth)*thirtyDaysStatistic.Average
 	}
 
-	resp := utils.BuildResponse(true, "OK!", finalResponse)
+	resp := utils.BuildResponse(w, http.StatusOK, "Client usage statistics", finalResponse)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		utils.HandleError(
 			w,
