@@ -4,25 +4,29 @@ import (
 	"github.com/go-playground/validator/v10"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
-	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
+	"globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 	"time"
 )
 
 type service struct {
-	repository    interfaces.IRepository
-	emailVerifier *verification.EmailVerifier
+	repository     interfaces.IRepository
+	emailVerifier  *verification.EmailVerifier
+	proofProcessor zk.IProofProcessor
 }
 
-// Newservice creates a new instance of service
+// NewService creates a new instance of service
 func NewService(
 	repo interfaces.IRepository,
 	emailVerifier *verification.EmailVerifier,
+	proofProcessor zk.IProofProcessor,
 ) interfaces.IService {
 	return &service{
-		repository:    repo,
-		emailVerifier: emailVerifier,
+		repository:     repo,
+		emailVerifier:  emailVerifier,
+		proofProcessor: proofProcessor,
 	}
 }
 
@@ -165,11 +169,15 @@ func (s *service) ProfileClient(userName string) (models.ClientResponseOutput, e
 	clientModel := models.ClientResponseOutput{
 		ID:          clientData.ID,
 		Secret:      clientData.Secret,
-		Name:        clientData.Username,
+		Name:        clientData.Name,
 		RedirectURI: clientData.RedirectURI,
 		BackendURI:  clientData.BackendURI,
 	}
 	return clientModel, nil
+}
+
+func (s *service) FindUser(userID uint) (models.User, error) {
+	return s.repository.FindUser(userID)
 }
 
 func (s *service) VerifyEmail(userID uint, userEmail string) error {
@@ -178,7 +186,10 @@ func (s *service) VerifyEmail(userID uint, userEmail string) error {
 		return e
 	}
 
-	verificationCode := s.emailVerifier.GenerateVerificationCode(&user, userEmail)
+	verificationCode, err := s.emailVerifier.GenerateVerificationCode(&user, userEmail)
+	if err != nil {
+		return err
+	}
 
 	e = s.emailVerifier.SendVerificationEmail(&user, userEmail, verificationCode)
 	if e != nil {
@@ -207,14 +218,15 @@ func (s *service) CheckEmailVerificationCode(userId uint, code string) error {
 	return e
 }
 
-func (s *service) GenerateZkProofOfEmailVerification(userID uint) (string, error) {
-	return "mock_proof", nil
+func (s *service) GenerateZkProofOfEmailVerification(
+	user models.User,
+	request dto.CheckEmailVerificationCodeDTO,
+) ([]byte, error) {
+	return s.proofProcessor.GenerateProof(request.Email, user.Salt, request.Code)
 }
 
-func (s *service) SaveProofOfEmailVerification(userId uint, verificationCode string, zkProof string) error {
-	e := s.repository.SaveProofOfEmailVerification(userId, verificationCode, zkProof)
-
-	return e
+func (s *service) SaveProofOfEmailVerification(userId uint, verificationCode string, zkProof []byte) error {
+	return s.repository.SaveProofOfEmailVerification(userId, verificationCode, zkProof)
 }
 
 func (s *service) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {

@@ -178,7 +178,7 @@ func (r *Repository) ProfileClient(userID string) (models.Client, error) {
 }
 
 func (r *Repository) SaveProofOfEmailVerification(
-	userId uint, verificationCode string, emailProof string,
+	userId uint, verificationCode string, emailProof []byte,
 ) error {
 	tx := r.connection.Begin(&sql.TxOptions{Isolation: sql.LevelReadCommitted})
 
@@ -287,9 +287,9 @@ func (r *Repository) GetTTL(key string) ([]byte, error) {
 }
 
 func (r *Repository) IsBackendURIExists(backendURL string) (bool, error) {
-    var count int64
-    if err := r.connection.Model(&models.Client{}).Where("backend_uri = ?", backendURL).Count(&count).Error; err != nil {
-        return false, err
-    }
-    return count > 0, nil
+	var count int64
+	if err := r.connection.Model(&models.Client{}).Where("backend_uri = ?", backendURL).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

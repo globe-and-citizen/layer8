@@ -8,6 +8,8 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
+	l8utils "globe-and-citizen/layer8/server/utils"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -17,16 +19,23 @@ import (
 	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
 )
 
+const userId = 1
+const username = "test_user"
+const firstName = "first name"
+const lastName = "last name"
+const displayName = "display name"
+const country = "country"
+const verificationCode = "123467"
+const userEmail = "user@email.com"
+const userSalt = "salt"
+
 var authenticationToken, _ = utils.GenerateToken(
 	models.User{
-		ID:       1,
-		Username: "test_user",
+		ID:       userId,
+		Username: username,
 	},
 )
-
-const verificationCode = "123467"
-const emailProof = "email_proof"
-const userEmail = "user@email.com"
+var emailProof = []byte("email_proof")
 
 func decodeResponseBodyForResponse(t *testing.T, rr *httptest.ResponseRecorder) utils.Response {
 	var response utils.Response
@@ -38,9 +47,17 @@ func decodeResponseBodyForResponse(t *testing.T, rr *httptest.ResponseRecorder) 
 
 func decodeResponseBodyForErrorResponse(t *testing.T, rr *httptest.ResponseRecorder) utils.Response {
 	var response utils.Response
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+
+	body, err := io.ReadAll(rr.Body)
+	if err != nil {
 		t.Fatal(err)
 	}
+
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	return response
 }
 
@@ -48,8 +65,10 @@ func decodeResponseBodyForErrorResponse(t *testing.T, rr *httptest.ResponseRecor
 type MockService struct {
 	verifyEmail                        func(userID uint, userEmail string) error
 	checkEmailVerificationCode         func(userID uint, code string) error
-	generateZkProofOfEmailVerification func(userID uint) (string, error)
-	saveProofOfEmailVerification       func(userID uint, verificationCode string, zkProof string) error
+	findUser                           func(userID uint) (models.User, error)
+	generateZkProofOfEmailVerification func(user models.User, request dto.CheckEmailVerificationCodeDTO) ([]byte, error)
+	saveProofOfEmailVerification       func(userID uint, verificationCode string, zkProof []byte) error
+	profileUser                        func(userID uint) (models.ProfileResponseOutput, error)
 }
 
 func (ms *MockService) RegisterUser(req dto.RegisterUserDTO) error {
@@ -73,16 +92,11 @@ func (ms *MockService) LoginUser(req dto.LoginUserDTO) (models.LoginUserResponse
 }
 
 func (ms *MockService) ProfileUser(userID uint) (models.ProfileResponseOutput, error) {
-	if userID == 1 {
-		return models.ProfileResponseOutput{
-			Username:    "test_user",
-			FirstName:   "Test",
-			LastName:    "User",
-			DisplayName: "user",
-			Country:     "Unknown",
-		}, nil
-	}
-	return models.ProfileResponseOutput{}, fmt.Errorf("user not found")
+	return ms.profileUser(userID)
+}
+
+func (ms *MockService) FindUser(userID uint) (models.User, error) {
+	return ms.findUser(userID)
 }
 
 func (ms *MockService) VerifyEmail(userID uint, userEmail string) error {
@@ -93,12 +107,15 @@ func (ms *MockService) CheckEmailVerificationCode(userID uint, code string) erro
 	return ms.checkEmailVerificationCode(userID, code)
 }
 
-func (ms *MockService) GenerateZkProofOfEmailVerification(userID uint) (string, error) {
-	return ms.generateZkProofOfEmailVerification(userID)
+func (ms *MockService) GenerateZkProofOfEmailVerification(
+	user models.User,
+	request dto.CheckEmailVerificationCodeDTO,
+) ([]byte, error) {
+	return ms.generateZkProofOfEmailVerification(user, request)
 }
 
 func (ms *MockService) SaveProofOfEmailVerification(
-	userID uint, verificationCode string, zkProof string,
+	userID uint, verificationCode string, zkProof []byte,
 ) error {
 	return ms.saveProofOfEmailVerification(userID, verificationCode, zkProof)
 }
@@ -123,11 +140,6 @@ func (ms *MockService) GetClientData(clientName string) (models.ClientResponseOu
 	}, nil
 }
 
-// func (ms *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseOutput, error) {
-// 	// Mock implementation for testing purposes.
-// 	return models.LoginUserResponseOutput{}, nil
-// }
-
 func (ms *MockService) LoginPreCheckClient(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error) {
 	// Mock implementation for testing purposes.
 	return models.LoginPrecheckResponseOutput{}, nil
@@ -147,7 +159,46 @@ func (ms *MockService) CheckBackendURI(backendURL string) (bool, error) {
 	return true, nil
 }
 
-func TestRegisterUserHandler(t *testing.T) {
+func (m *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseOutput, error) {
+	// Mock implementation for LoginClient method
+	return models.LoginUserResponseOutput{
+		Token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw",
+	}, nil
+}
+
+func TestRegisterUserHandler_RequestJsonIsMalformed(t *testing.T) {
+	requestBody := []byte(`{
+		"email": "test@gcitizen.com",
+		"username": "test_user",
+		"first_name": "Test",
+		"last_name": "User",
+		"display_name": "user",
+		"country": "Unknown",
+		"password": "12345"
+	}something_else`)
+
+	req, err := http.NewRequest("POST", "/api/v1/register-user", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterUserHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestRegisterUserHandler_Success(t *testing.T) {
 	// Mock request body
 	requestBody := []byte(`{
 		"email": "test@gcitizen.com",
@@ -179,10 +230,7 @@ func TestRegisterUserHandler(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, rr.Code)
 
 	// Decode the response body
-	var response utils.Response
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
-		t.Fatal(err)
-	}
+	response := decodeResponseBody(t, rr)
 
 	// Now assert the fields directly
 	assert.True(t, response.IsSuccess)
@@ -190,9 +238,45 @@ func TestRegisterUserHandler(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{}, response.Data)
 }
 
-func TestRegisterClientHandler(t *testing.T) {
+func TestRegisterClientHandler_RequestJsonIsMalformed(t *testing.T) {
+	requestBody := []byte(`{
+		"name": "testclient", 
+		"redirect_uri": "https://gcitizen.com/callback",
+		"backend_uri": "https://backend.com",
+		"username": "test_user", 
+		"password": "12345"
+	}something_else`)
+
+	req, err := http.NewRequest("POST", "/api/v1/register-client", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterClientHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestRegisterClientHandler_Success(t *testing.T) {
 	// Mock request body
-	requestBody := []byte(`{"name": "testclient", "redirect_uri": "https://gcitizen.com/callback", "username": "test_user", "password": "12345"}`)
+	requestBody := []byte(`{
+		"name": "testclient", 
+		"redirect_uri": "https://gcitizen.com/callback",
+		"backend_uri": "https://backend.com",
+		"username": "test_user", 
+		"password": "12345"
+	}`)
 
 	// Create a mock request
 	req, err := http.NewRequest("POST", "/api/v1/register-client", bytes.NewBuffer(requestBody))
@@ -225,7 +309,30 @@ func TestRegisterClientHandler(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{}, response.Data)
 }
 
-func TestLoginPrecheckHandler(t *testing.T) {
+func TestLoginPrecheckHandler_RequestJsonIsMalformed(t *testing.T) {
+	requestBody := []byte(`{"username": "test_user"}something_else`)
+	req, err := http.NewRequest("POST", "/api/v1/login-precheck", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginPrecheckHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestLoginPrecheckHandler_Success(t *testing.T) {
 	// Mock request body
 	requestBody := []byte(`{"username": "test_user"}`)
 
@@ -259,7 +366,33 @@ func TestLoginPrecheckHandler(t *testing.T) {
 	assert.Equal(t, "ThisIsARandomSalt123!@#", response.Salt)
 }
 
-func TestLoginUserHandler(t *testing.T) {
+func TestLoginUserHandler_RequestJsonIsMalformed(t *testing.T) {
+	requestBody := []byte(`{
+		"username": "test_user",
+		"password": "12345",
+		"salt": 	"ThisIsARandomSalt123!@#"}something_else`)
+	req, err := http.NewRequest("POST", "/api/v1/login-user", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginUserHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestLoginUserHandler_Success(t *testing.T) {
 	// Mock request body
 	requestBody := []byte(`{
 		"username": "test_user",
@@ -295,50 +428,95 @@ func TestLoginUserHandler(t *testing.T) {
 	assert.Equal(t, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw", response.Token)
 }
 
-func TestProfileHandler(t *testing.T) {
-	// Generate a Mock JWT token
-	tokenString, err := utils.GenerateToken(models.User{
-		ID:       1,
-		Username: "test_user",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Create a mock request
+func TestProfileHandler_InvalidAuthenticationToken(t *testing.T) {
 	req, err := http.NewRequest("GET", "/api/v1/profile", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Set the Authorization header
-	req.Header.Set("Authorization", "Bearer "+tokenString)
+	req.Header.Set("Authorization", "Bearer invalid token")
 
-	// Create a mock service and set it in the request context
 	mockService := &MockService{}
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 
-	// Create a ResponseRecorder to record the response
 	rr := httptest.NewRecorder()
 
-	// Call the handler function
 	Ctl.ProfileHandler(rr, req)
 
-	// Check the status code
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Authentication error: invalid token", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestProfileHandler_FailedToProfileUser(t *testing.T) {
+	req, err := http.NewRequest("GET", "/api/v1/profile", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{
+		profileUser: func(userID uint) (models.ProfileResponseOutput, error) {
+			return models.ProfileResponseOutput{}, fmt.Errorf("could not profile user %d", userID)
+		},
+	}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.ProfileHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Failed to get user profile", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestProfileHandler_Success(t *testing.T) {
+	req, err := http.NewRequest("GET", "/api/v1/profile", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{
+		profileUser: func(userID uint) (models.ProfileResponseOutput, error) {
+			return models.ProfileResponseOutput{
+				Username:    username,
+				FirstName:   firstName,
+				LastName:    lastName,
+				DisplayName: displayName,
+				Country:     country,
+			}, nil
+		},
+	}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.ProfileHandler(rr, req)
+
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	// Decode the response body
 	var response models.ProfileResponseOutput
 	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
 		t.Fatal(err)
 	}
 
-	// Now assert the fields directly
-	assert.Equal(t, "test_user", response.Username)
-	assert.Equal(t, "Test", response.FirstName)
-	assert.Equal(t, "User", response.LastName)
-	assert.Equal(t, "user", response.DisplayName)
-	assert.Equal(t, "Unknown", response.Country)
+	assert.Equal(t, username, response.Username)
+	assert.Equal(t, firstName, response.FirstName)
+	assert.Equal(t, lastName, response.LastName)
+	assert.Equal(t, displayName, response.DisplayName)
+	assert.Equal(t, country, response.Country)
 }
 
 func TestGetClientData(t *testing.T) {
@@ -391,12 +569,12 @@ func TestVerifyEmailHandler_InvalidAuthorizationToken(t *testing.T) {
 
 	Ctl.VerifyEmailHandler(rr, req)
 
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
 	assert.False(t, response.IsSuccess)
-	assert.Equal(t, "Request failed: invalid authorization token", response.Message)
+	assert.Equal(t, "Authentication error: invalid token", response.Message)
 	assert.NotNil(t, response.Error)
 }
 
@@ -526,12 +704,12 @@ func TestCheckEmailVerificationCode_InvalidAuthenticationToken(t *testing.T) {
 
 	Ctl.CheckEmailVerificationCode(rr, req)
 
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
 	assert.False(t, response.IsSuccess)
-	assert.Equal(t, "Failed to verify user's token", response.Message)
+	assert.Equal(t, "Authentication error: invalid token", response.Message)
 	assert.NotNil(t, response.Error)
 }
 
@@ -558,7 +736,7 @@ func TestCheckEmailVerificationCode_MalformedRequestBody(t *testing.T) {
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
 	assert.False(t, response.IsSuccess)
-	assert.Equal(t, "Error while unmarshalling json", response.Message)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 	assert.NotNil(t, response.Error)
 }
 
@@ -623,6 +801,43 @@ func TestCheckEmailVerificationCode_VerificationCodeIsInvalid(t *testing.T) {
 	assert.NotNil(t, response.Error)
 }
 
+func TestCheckEmailVerificationCode_UserNotFound(t *testing.T) {
+	requestBody := []byte(`{
+		"email": "user@email.com", 
+		"code": "123467"
+	}`)
+	req, err := http.NewRequest("POST", "/api/v1/check-email-verification-code", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{
+		checkEmailVerificationCode: func(userID uint, code string) error {
+			if code != verificationCode {
+				t.Fatalf("Verification code mismatch, expected %s, got %s", verificationCode, code)
+			}
+			return nil
+		},
+		findUser: func(userId uint) (models.User, error) {
+			return models.User{}, fmt.Errorf("user was not found for id %d", userId)
+		},
+	}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.CheckEmailVerificationCode(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "User with provided id does not exist", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
 func TestCheckEmailVerificationCode_ZkEmailProofFailedToBeGenerated(t *testing.T) {
 	requestBody := []byte(`{
 		"email": "user@email.com", 
@@ -641,8 +856,20 @@ func TestCheckEmailVerificationCode_ZkEmailProofFailedToBeGenerated(t *testing.T
 			}
 			return nil
 		},
-		generateZkProofOfEmailVerification: func(userID uint) (string, error) {
-			return "", fmt.Errorf("failed to generate the zk email proof")
+		findUser: func(userID uint) (models.User, error) {
+			if userID != userId {
+				t.Fatalf("User id mismatch, expected %d, got %d", userId, userID)
+			}
+			return models.User{
+				ID:   userID,
+				Salt: userSalt,
+			}, nil
+		},
+		generateZkProofOfEmailVerification: func(
+			user models.User,
+			request dto.CheckEmailVerificationCodeDTO,
+		) ([]byte, error) {
+			return []byte{}, fmt.Errorf("failed to generate the zk email proof")
 		},
 	}
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
@@ -678,13 +905,25 @@ func TestCheckEmailVerificationCode_FailedToSaveProofOfEmailVerification(t *test
 			}
 			return nil
 		},
-		generateZkProofOfEmailVerification: func(userID uint) (string, error) {
+		findUser: func(userID uint) (models.User, error) {
+			if userID != userId {
+				t.Fatalf("User id mismatch, expected %d, got %d", userId, userID)
+			}
+			return models.User{
+				ID:   userID,
+				Salt: userSalt,
+			}, nil
+		},
+		generateZkProofOfEmailVerification: func(
+			user models.User,
+			request dto.CheckEmailVerificationCodeDTO,
+		) ([]byte, error) {
 			return emailProof, nil
 		},
 		saveProofOfEmailVerification: func(
-			userID uint, verificationCode string, zkProof string,
+			userID uint, verificationCode string, zkProof []byte,
 		) error {
-			if zkProof != emailProof {
+			if !l8utils.Equal(zkProof, emailProof) {
 				t.Fatalf("Email proof mismatch: expected %s, got %s", emailProof, zkProof)
 			}
 			return fmt.Errorf("failed to save proof of email verification")
@@ -723,13 +962,25 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 			}
 			return nil
 		},
-		generateZkProofOfEmailVerification: func(userID uint) (string, error) {
+		findUser: func(userID uint) (models.User, error) {
+			if userID != userId {
+				t.Fatalf("User id mismatch, expected %d, got %d", userId, userID)
+			}
+			return models.User{
+				ID:   userID,
+				Salt: userSalt,
+			}, nil
+		},
+		generateZkProofOfEmailVerification: func(
+			user models.User,
+			request dto.CheckEmailVerificationCodeDTO,
+		) ([]byte, error) {
 			return emailProof, nil
 		},
 		saveProofOfEmailVerification: func(
-			userID uint, verificationCode string, zkProof string,
+			userID uint, verificationCode string, zkProof []byte,
 		) error {
-			if zkProof != emailProof {
+			if !l8utils.Equal(zkProof, emailProof) {
 				t.Fatalf("Email proof mismatch: expected %s, got %s", emailProof, zkProof)
 			}
 			return nil
@@ -750,90 +1001,121 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{}, response.Data)
 }
 
-func TestUpdateDisplayNameHandler(t *testing.T) {
-	// Generate a Mock JWT token
-	tokenString, err := utils.GenerateToken(models.User{
-		ID:       1,
-		Username: "test_user",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Mock request body
+func TestUpdateDisplayNameHandler_AuthenticationTokenIsInvalid(t *testing.T) {
 	requestBody := []byte(`{"display_name": "test_user"}`)
-
-	// Create a mock request
 	req, err := http.NewRequest("POST", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Set the Authorization header
-	req.Header.Set("Authorization", "Bearer "+tokenString)
+	req.Header.Set("Authorization", "Bearer invalid token")
 
-	// Create a mock service and set it in the request context
 	mockService := &MockService{}
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 
-	// Create a ResponseRecorder to record the response
 	rr := httptest.NewRecorder()
 
-	// Call the handler function
 	Ctl.UpdateDisplayNameHandler(rr, req)
 
-	// Check the status code
-	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 
-	// Decode the response body
-	var response utils.Response
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
-		t.Fatal(err)
-	}
+	response := decodeResponseBody(t, rr)
 
-	// Now assert the fields directly
-	assert.True(t, response.IsSuccess)
-	assert.Equal(t, "Display name updated successfully", response.Message)
-	assert.Equal(t, map[string]interface{}{}, response.Data)
+	assert.False(t, response.Status)
+	assert.Equal(t, "Authentication error: invalid token", response.Message)
+	assert.NotNil(t, response.Error)
 }
 
-// Javokhir started the testing
-func (m *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseOutput, error) {
-	// Mock implementation for LoginClient method
-	return models.LoginUserResponseOutput{
-		Token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw",
-	}, nil
-}
-
-func TestLoginClientHandler(t *testing.T) {
-	// Prepare request body
-	loginReq := dto.LoginClientDTO{
-		Username: "testuser",
-		Password: "testpassword",
-	}
-	reqBody, err := json.Marshal(loginReq)
+func TestUpdateDisplayNameHandler_RequestJsonIsMalformed(t *testing.T) {
+	requestBody := []byte(`{"display_name": "test_user"}something_else`)
+	req, err := http.NewRequest("POST", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Prepare request with request body
-	req := httptest.NewRequest("POST", "/api/v1/login-client", bytes.NewBuffer(reqBody))
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
 
-	// Set up mock service in request context
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.UpdateDisplayNameHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestUpdateDisplayNameHandler_Success(t *testing.T) {
+	requestBody := []byte(`{"display_name": "test_user"}`)
+	req, err := http.NewRequest("POST", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.UpdateDisplayNameHandler(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	var response = decodeResponseBody(t, rr)
+
+	assert.True(t, response.IsSuccess)
+	assert.Equal(t, "Display name updated successfully", response.Message)
+	assert.Equal(t, map[string]interface{}{}, response.Data)
+  assert.Nil(t, response.Error)
+}
+
+func TestLoginClientHandler_RequestJsonIsMalformed(t *testing.T) {
+	loginReq := []byte(`{
+		"username": "testuser",
+		"password": "testpassword"
+	}something_else`)
+	req := httptest.NewRequest("POST", "/api/v1/login-client", bytes.NewBuffer(loginReq))
+
 	req = setMockServiceInContext(req)
 
-	// Create a response recorder to capture the handler's response
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginClientHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestLoginClientHandler_Success(t *testing.T) {
+	loginReq := []byte(`{
+		"username": "testuser",
+		"password": "testpassword"
+	}`)
+
+	req := httptest.NewRequest("POST", "/api/v1/login-client", bytes.NewBuffer(loginReq))
+
+	req = setMockServiceInContext(req)
+
 	w := httptest.NewRecorder()
 
-	// Call the handler function
 	Ctl.LoginClientHandler(w, req)
 
-	// Check the response status code
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	// Decode the response body
 	var tokenResp models.LoginUserResponseOutput
-	err = json.NewDecoder(w.Body).Decode(&tokenResp)
+	err := json.NewDecoder(w.Body).Decode(&tokenResp)
 	if err != nil {
 		t.Fatalf("failed to decode response body: %v", err)
 	}
@@ -842,7 +1124,27 @@ func TestLoginClientHandler(t *testing.T) {
 	assert.Equal(t, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw", tokenResp.Token)
 }
 
-func TestCheckBackendURIHandler(t *testing.T) {
+func TestCheckBackendURIHandler_RequestJsonIsMalformed(t *testing.T) {
+	reqBody := []byte(`{
+		"backend_uri": "https://example.com"
+	}something_else`)
+	req := httptest.NewRequest("POST", "/api/v1/check-backend-uri", bytes.NewBuffer(reqBody))
+	req = setMockServiceInContext(req)
+
+	rr := httptest.NewRecorder()
+
+	Ctl.CheckBackendURI(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBody(t, rr)
+
+	assert.False(t, response.Status)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestCheckBackendURIHandler_Success(t *testing.T) {
 	checkReq := dto.CheckBackendURIDTO{
 		BackendURI: "https://example.com",
 	}
@@ -852,7 +1154,6 @@ func TestCheckBackendURIHandler(t *testing.T) {
 	}
 
 	req := httptest.NewRequest("POST", "/api/v1/check-backend-uri", bytes.NewBuffer(reqBody))
-
 	req = setMockServiceInContext(req)
 
 	w := httptest.NewRecorder()
@@ -875,5 +1176,3 @@ func setMockServiceInContext(req *http.Request) *http.Request {
 	ctx := context.WithValue(req.Context(), "service", mockSvc)
 	return req.WithContext(ctx)
 }
-
-// Javokhir finished the testing

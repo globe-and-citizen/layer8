@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
 	"globe-and-citizen/layer8/server/resource_server/repository"
 	resourceService "globe-and-citizen/layer8/server/resource_server/service"
 	resourceUtils "globe-and-citizen/layer8/server/resource_server/utils"
@@ -35,7 +36,7 @@ func prepareInitTunnelRequest(clientBackendUrl string) *http.Request {
 		context.WithValue(
 			reqToInitTunnel.Context(),
 			"service",
-			resourceService.NewService(repo, &verification.EmailVerifier{}),
+			resourceService.NewService(repo, &verification.EmailVerifier{}, &zk.ProofProcessor{}),
 		),
 	)
 

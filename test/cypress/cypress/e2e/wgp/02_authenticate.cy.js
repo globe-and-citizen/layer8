@@ -73,6 +73,28 @@ describe('authenticate user to WGP', () => {
         cy.get('h1').should('contain', 'Welcome testuser!')
     })
 
+    it('logs in with oauth', () => {
+        cy.loginWGP()
+
+        cy.contains('Login with Layer8 Redirect').click()
+        cy.get('input[name="username"]').type("tester")
+        cy.get('input[name="password"]').type("12341234")
+        cy.get('input[type="submit"]').click()
+        
+        // authorize the app
+        cy.contains("Authorize").should("exist")
+        cy.get('input[type="submit"]').click()
+
+        // ensure the app is redirected to the callback page
+        cy.url().should('contain', '/oauth2/callback')
+
+        // wait for the welcome page to load
+        cy.wait(500)
+
+        // check that the welcome page is displayed
+        cy.get('h1').should('contain', 'Welcome testuser!')
+    })
+
     it('logs out the user', () => {
         cy.loginAnonymouslyWGP()
 

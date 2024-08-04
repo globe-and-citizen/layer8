@@ -1,6 +1,7 @@
 package code
 
 import (
+	"globe-and-citizen/layer8/server/resource_server/models"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -16,10 +17,10 @@ func NewRandomCodeGenerator(verificationCodeSize int) *RandomCodeGenerator {
 	return g
 }
 
-func (g *RandomCodeGenerator) GenerateCode(emailAddress string) string {
+func (g *RandomCodeGenerator) GenerateCode(user *models.User, emailAddress string) (string, error) {
 	verificationCode := make([]string, g.verificationCodeSize)
 	for i := 0; i < g.verificationCodeSize; i++ {
 		verificationCode[i] = strconv.Itoa(rand.Intn(10))
 	}
-	return strings.Join(verificationCode, "")
+	return strings.Join(verificationCode, ""), nil
 }

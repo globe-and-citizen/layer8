@@ -12,6 +12,7 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/emails/sender"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
 	"io/fs"
 	"log"
 	"net/http"
@@ -114,11 +115,6 @@ func main() {
 		os.Getenv("LAYER8_EMAIL_DOMAIN"),
 	)
 
-	verificationCodeSize, e := strconv.Atoi(os.Getenv("VERIFICATION_CODE_SIZE"))
-	if e != nil {
-		log.Fatalf("could not read verification code size from .env: %e", e)
-	}
-
 	verificationCodeValidityDuration, e :=
 		time.ParseDuration(os.Getenv("VERIFICATION_CODE_VALIDITY_DURATION"))
 	if e != nil {
@@ -131,14 +127,14 @@ func main() {
 			os.Getenv("MAILER_SEND_API_KEY"),
 			os.Getenv("MAILER_SEND_TEMPLATE_ID"),
 		),
-		code.NewRandomCodeGenerator(verificationCodeSize),
+		code.NewMIMCCodeGenerator(),
 		verificationCodeValidityDuration,
 		time.Now,
 	)
 
 	// Run server (which never returns)
 	Server(
-		svc.NewService(resourceRepository, emailVerifier),
+		svc.NewService(resourceRepository, emailVerifier, zk.NewProofProcessor()),
 		oauthService,
 	)
 }

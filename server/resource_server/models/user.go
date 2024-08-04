@@ -7,7 +7,7 @@ type User struct {
 	FirstName        string `gorm:"column:first_name; not null" json:"first_name"`
 	LastName         string `gorm:"column:last_name; not null" json:"last_name"`
 	Salt             string `gorm:"column:salt; not null" json:"salt"`
-	EmailProof       string `gorm:"column:email_proof; not null" json:"email_proof"`
+	EmailProof       []byte `gorm:"column:email_proof; not null" json:"email_proof"`
 	VerificationCode string `gorm:"column:verification_code; not null" json:"verification_code"`
 }
 

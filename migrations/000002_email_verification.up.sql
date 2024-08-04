@@ -1,5 +1,5 @@
 ALTER TABLE users 
-    ADD COLUMN email_proof character varying(255),
+    ADD COLUMN email_proof bytea,
     ADD COLUMN verification_code character varying(10),
     DROP COLUMN email;
 

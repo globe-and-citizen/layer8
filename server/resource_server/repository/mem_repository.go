@@ -99,7 +99,7 @@ func (r *MemoryRepository) FindUser(userId uint) (models.User, error) {
 		FirstName:        userData["first_name"],
 		LastName:         userData["last_name"],
 		Salt:             userData["salt"],
-		EmailProof:       userData["email_proof"],
+		EmailProof:       []byte(userData["email_proof"]),
 		VerificationCode: userData["verification_code"],
 	}, nil
 }
@@ -213,7 +213,7 @@ func (r *MemoryRepository) ProfileClient(username string) (models.Client, error)
 }
 
 func (r *MemoryRepository) SaveProofOfEmailVerification(
-	userId uint, verificationCode string, emailProof string,
+	userId uint, verificationCode string, emailProof []byte,
 ) error {
 	userData, e := r.getUserData(userId)
 	if e != nil {
@@ -221,7 +221,7 @@ func (r *MemoryRepository) SaveProofOfEmailVerification(
 	}
 
 	userData["verification_code"] = verificationCode
-	userData["email_proof"] = emailProof
+	userData["email_proof"] = string(emailProof)
 	userData["email_verified"] = "true"
 
 	delete(r.verificationDataStorage, strconv.Itoa(int(userId)))
@@ -392,11 +392,11 @@ func (r *MemoryRepository) GetTTL(key string) ([]byte, error) {
 }
 
 func (r *MemoryRepository) IsBackendURIExists(backendURL string) (bool, error) {
-    for _, data := range r.storage {
-        backend, ok := data["backend_uri"]
-        if ok && backend == backendURL {
-            return true, nil
-        }
-    }
-    return false, nil
+	for _, data := range r.storage {
+		backend, ok := data["backend_uri"]
+		if ok && backend == backendURL {
+			return true, nil
+		}
+	}
+	return false, nil
 }
