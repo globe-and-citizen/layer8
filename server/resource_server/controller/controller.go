@@ -4,12 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"time"
-
-	"github.com/go-playground/validator/v10"
 
 	"globe-and-citizen/layer8/server/resource_server/db"
 	"globe-and-citizen/layer8/server/resource_server/dto"
@@ -324,7 +321,7 @@ func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := utils.BuildResponseWithNoBody(w, http.StatusOK, "Your email was successfully verified!")
-	
+
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Internal error happened", err)
