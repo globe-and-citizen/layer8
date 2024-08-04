@@ -42,16 +42,22 @@ func (a *authenticationHandlerImpl) getLoginHandler(w http.ResponseWriter, r *ht
 	if next == "" {
 		next = "/"
 	}
+
 	// check if the user is already logged in
 	token, err := r.Cookie("token")
-	if token != nil && err == nil {
-		user, err := a.service.GetUserByToken(token.Value)
-		if err == nil && user != nil {
-			http.Redirect(w, r, next, http.StatusSeeOther)
-			return
-		}
-	} else if token == nil && err != nil {
+	if err != nil && token == nil {
 		a.parseLoginWithErr(w, r, err)
+		return
+	}
+
+	user, err := a.service.GetUserByToken(token.Value)
+	if err != nil {
+		a.parseLoginWithErr(w, r, err)
+		return
+	}
+
+	if user != nil {
+		http.Redirect(w, r, next, http.StatusSeeOther)
 		return
 	}
 
@@ -63,43 +69,6 @@ func (a *authenticationHandlerImpl) getLoginHandler(w http.ResponseWriter, r *ht
 		},
 	)
 }
-
-// func (a *authenticationHandlerImpl) getLoginHandler(w http.ResponseWriter, r *http.Request) {
-// 	next := r.URL.Query().Get("next")
-// 	if next == "" {
-// 		next = "/"
-// 	}
-// 	// check if the user is already logged in
-// 	token, err := r.Cookie("token")
-// 	if err != nil {
-// 		a.parseHTML(w, http.StatusUnauthorized, "assets-v1/templates/src/pages/oauth_portal/login.html", map[string]interface{}{
-// 			"HasNext":  next != "",
-// 			"Next":     next,
-// 			"ProxyURL": os.Getenv("PROXY_URL"),
-// 		},
-// 		)
-// 		return
-// 	}
-
-// 	user, err := a.service.GetUserByToken(token.Value)
-// 	if err != nil {
-// 		a.parseLoginWithErr(w, r, err)
-// 		return
-// 	}
-
-// 	if user == nil {
-// 		a.parseHTML(w, http.StatusUnauthorized, "assets-v1/templates/src/pages/oauth_portal/login.html", map[string]interface{}{
-// 			"HasNext":  next != "",
-// 			"Next":     next,
-// 			"ProxyURL": os.Getenv("PROXY_URL"),
-// 		},
-// 		)
-// 	}
-
-// 	http.Redirect(w, r, next, http.StatusSeeOther)
-
-// 	return
-// }
 
 func (a *authenticationHandlerImpl) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 	next := r.URL.Query().Get("next")

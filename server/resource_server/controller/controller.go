@@ -117,7 +117,7 @@ func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := utils.BuildResponse(w, http.StatusCreated, "User registered successfully", utils.EmptyObj{})
+	res := utils.BuildResponseWithNoBody(w, http.StatusCreated, "User registered successfully")
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
 		return
@@ -138,7 +138,7 @@ func RegisterClientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := utils.BuildResponse(w, http.StatusCreated, "Client registered successfully", utils.EmptyObj{})
+	res := utils.BuildResponseWithNoBody(w, http.StatusCreated, "Client registered successfully")
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to register client", err)
 		return
@@ -259,7 +259,7 @@ func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := utils.BuildResponse(w, http.StatusOK, "Verification email sent", utils.EmptyObj{})
+	response := utils.BuildResponseWithNoBody(w, http.StatusOK, "Verification email sent")
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Internal error happened", err)
@@ -313,7 +313,7 @@ func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := utils.BuildResponse(w, http.StatusOK, "Your email was successfully verified!", utils.EmptyObj{})
+	response := utils.BuildResponseWithNoBody(w, http.StatusOK, "Your email was successfully verified!")
 	e = json.NewEncoder(w).Encode(response)
 	if e != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Internal error happened", e)
@@ -342,7 +342,7 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := utils.BuildResponse(w, http.StatusOK, "Display name updated successfully", utils.EmptyObj{})
+	resp := utils.BuildResponseWithNoBody(w, http.StatusOK, "Display name updated successfully")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)
 		return

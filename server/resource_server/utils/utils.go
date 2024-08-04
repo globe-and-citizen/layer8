@@ -73,6 +73,16 @@ func BuildResponse(w http.ResponseWriter, statusCode int, message string, data i
 	return res
 }
 
+func BuildResponseWithNoBody(w http.ResponseWriter, statusCode int, message string) Response {
+	w.WriteHeader(statusCode)
+	res := Response{
+		IsSuccess: true,
+		Message:   message,
+	}
+
+	return res
+}
+
 func BuildErrorResponse(message string, err string, data interface{}) Response {
 	splittedError := strings.Split(err, "\n")
 	res := Response{
