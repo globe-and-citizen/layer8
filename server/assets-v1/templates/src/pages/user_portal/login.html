@@ -124,9 +124,9 @@
               }),
             }
           );
-          const responseOne = await respOne.json();
+          const responseBody = await respOne.json();
 
-          if (responseOne.status === false) {
+          if (respOne.status !== 200) {
               showToastMessage("Failed to get client profile", "error");
               return;
           }
@@ -141,7 +141,7 @@
               body: JSON.stringify({
                 username: loginUsername.value,
                 password: loginPassword.value,
-                salt: responseOne.salt,
+                salt: responseBody.salt,
               }),
             }
           );

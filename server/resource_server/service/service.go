@@ -30,10 +30,6 @@ func NewService(
 }
 
 func (s *service) RegisterUser(req dto.RegisterUserDTO) error {
-	if err := validator.New().Struct(req); err != nil {
-		return err
-	}
-
 	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
 	hashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
 

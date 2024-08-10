@@ -251,9 +251,9 @@ func TestRegisterUserHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Input json is invalid", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -377,9 +377,9 @@ func TestRegisterClientHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Input json is invalid", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -489,9 +489,9 @@ func TestLoginPrecheckHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) 
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Input json is invalid", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -600,9 +600,9 @@ func TestLoginUserHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Input json is invalid", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -1370,9 +1370,9 @@ func TestUpdateDisplayNameHandler_RequiredRequestJsonFieldsAreMissing(t *testing
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Input json is invalid", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -1459,9 +1459,9 @@ func TestLoginClientHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Input json is invalid", response.Message)
 	assert.NotNil(t, response.Error)
 }
@@ -1542,9 +1542,9 @@ func TestCheckBackendURIHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBody(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.False(t, response.Status)
+	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Input json is invalid", response.Message)
 	assert.NotNil(t, response.Error)
 }
