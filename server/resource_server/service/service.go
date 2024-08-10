@@ -34,7 +34,11 @@ func (s *service) RegisterUser(req dto.RegisterUserDTO) error {
 	if err := validator.New().Struct(req); err != nil {
 		return err
 	}
-	return s.repository.RegisterUser(req)
+
+	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
+	hashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
+
+	return s.repository.RegisterUser(req, hashedAndSaltedPass, rmSalt)
 }
 
 func (s *service) RegisterClient(req dto.RegisterClientDTO) error {
@@ -42,9 +46,26 @@ func (s *service) RegisterClient(req dto.RegisterClientDTO) error {
 		return err
 	}
 
+	clientUUID := utils.GenerateUUID()
+	clientSecret := utils.GenerateSecret(utils.SecretSize)
+
+	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
+	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
+
 	req.BackendURI = utils.RemoveProtocolFromURL(req.BackendURI)
 
-	return s.repository.RegisterClient(req)
+	client := models.Client{
+		ID:          clientUUID,
+		Secret:      clientSecret,
+		Name:        req.Name,
+		RedirectURI: req.RedirectURI,
+		BackendURI:  req.BackendURI,
+		Username:    req.Username,
+		Password:    HashedAndSaltedPass,
+		Salt:        rmSalt,
+	}
+
+	return s.repository.RegisterClient(client)
 }
 
 func (s *service) GetClientData(clientName string) (models.ClientResponseOutput, error) {

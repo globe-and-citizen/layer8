@@ -85,7 +85,8 @@ func main() {
 		os.Setenv("PROXY_URL", *ProxyURL)
 
 		resourceRepository = rsRepo.NewMemoryRepository()
-		resourceRepository.RegisterUser(dto.RegisterUserDTO{
+		service := svc.NewService(resourceRepository, &verification.EmailVerifier{}, &zk.ProofProcessor{})
+		service.RegisterUser(dto.RegisterUserDTO{
 			Username:    "tester",
 			FirstName:   "Test",
 			LastName:    "User",

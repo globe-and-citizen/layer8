@@ -9,7 +9,7 @@ import (
 
 type IRepository interface {
 	// Resource Server methods
-	RegisterUser(req dto.RegisterUserDTO) error
+	RegisterUser(req dto.RegisterUserDTO, hashedPassword string, salt string) error
 	FindUser(userId uint) (models.User, error)
 	LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string, error)
 	LoginPreCheckClient(req dto.LoginPrecheckDTO) (string, string, error)
@@ -21,7 +21,7 @@ type IRepository interface {
 	SaveEmailVerificationData(data models.EmailVerificationData) error
 	GetEmailVerificationData(userId uint) (models.EmailVerificationData, error)
 	UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error
-	RegisterClient(req dto.RegisterClientDTO) error
+	RegisterClient(client models.Client) error
 	GetClientData(clientName string) (models.Client, error)
 	GetClientDataByBackendURL(backendURL string) (models.Client, error)
 	IsBackendURIExists(backendURL string) (bool, error)

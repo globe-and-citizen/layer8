@@ -26,7 +26,7 @@ func NewMemoryRepository() interfaces.IRepository {
 	}
 }
 
-func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO) error {
+func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO, hashedPassword string, salt string) error {
 	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
 	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt) // what if two user's use the same password?
 	userID := fmt.Sprintf("%d", len(r.storage))
@@ -54,19 +54,19 @@ func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO) error {
 	return nil
 }
 
-func (r *MemoryRepository) RegisterClient(req dto.RegisterClientDTO) error {
-	if _, ok := r.storage[req.Username]; ok {
+func (r *MemoryRepository) RegisterClient(client models.Client) error {
+	if _, ok := r.storage[client.Username]; ok {
 		return fmt.Errorf("Client username already registered.")
 	}
 	clientUUID := utils.GenerateUUID()
 	clientSecret := utils.GenerateSecret(utils.SecretSize)
-	r.storage[req.Username] = map[string]string{
+	r.storage[client.Username] = map[string]string{
 		"id":           clientUUID,
 		"secret":       clientSecret,
-		"redirect_uri": req.RedirectURI,
-		"backend_uri":  req.BackendURI,
-		"username":     req.Username,
-		"password":     req.Password,
+		"redirect_uri": client.RedirectURI,
+		"backend_uri":  client.BackendURI,
+		"username":     client.Username,
+		"password":     client.Password,
 	}
 	return nil
 }

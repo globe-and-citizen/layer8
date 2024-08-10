@@ -2,11 +2,11 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	serverModels "globe-and-citizen/layer8/server/models"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/models"
-	"globe-and-citizen/layer8/server/resource_server/utils"
 	"time"
 
 	"gorm.io/gorm"
@@ -22,20 +22,21 @@ func NewRepository(db *gorm.DB) interfaces.IRepository {
 	}
 }
 
-func (r *Repository) RegisterUser(req dto.RegisterUserDTO) error {
-	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
-	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
-
+func (r *Repository) RegisterUser(req dto.RegisterUserDTO, hashedPassword string, salt string) error {
 	user := models.User{
 		Username:  req.Username,
-		Password:  HashedAndSaltedPass,
+		Password:  hashedPassword,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
-		Salt:      rmSalt,
+		Salt:      salt,
 	}
 
-	if err := r.connection.Create(&user).Error; err != nil {
-		return err
+	tx := r.connection.Begin()
+
+	err := tx.Create(&user).Error
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("could not create user: %e", err)
 	}
 
 	userMetadata := []models.UserMetadata{
@@ -56,10 +57,13 @@ func (r *Repository) RegisterUser(req dto.RegisterUserDTO) error {
 		},
 	}
 
-	if err := r.connection.Create(&userMetadata).Error; err != nil {
-		r.connection.Delete(&user)
-		return err
+	err = tx.Create(&userMetadata).Error
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("could not create user metadata entry: %e", err)
 	}
+
+	tx.Commit()
 
 	return nil
 }
@@ -75,27 +79,9 @@ func (r *Repository) FindUser(userId uint) (models.User, error) {
 	return user, e
 }
 
-func (r *Repository) RegisterClient(req dto.RegisterClientDTO) error {
-
-	clientUUID := utils.GenerateUUID()
-	clientSecret := utils.GenerateSecret(utils.SecretSize)
-
-	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
-	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
-
-	client := models.Client{
-		ID:          clientUUID,
-		Secret:      clientSecret,
-		Name:        req.Name,
-		RedirectURI: req.RedirectURI,
-		BackendURI:  req.BackendURI,
-		Username:    req.Username,
-		Password:    HashedAndSaltedPass,
-		Salt:        rmSalt,
-	}
-
+func (r *Repository) RegisterClient(client models.Client) error {
 	if err := r.connection.Create(&client).Error; err != nil {
-		return err
+		return fmt.Errorf("failed to create a new client record: %e", err)
 	}
 
 	return nil

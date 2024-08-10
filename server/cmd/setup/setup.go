@@ -8,7 +8,10 @@ import (
 	"fmt"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/resource_server/dto"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
 	"globe-and-citizen/layer8/server/resource_server/repository"
+	"globe-and-citizen/layer8/server/resource_server/service"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 	"io"
 	"os"
@@ -111,10 +114,15 @@ func SetupPG() {
 	}
 
 	config.InitDB()
-	resourceRepository := repository.NewRepository(config.DB)
+
+	resourceService := service.NewService(
+		repository.NewRepository(config.DB),
+		&verification.EmailVerifier{},
+		&zk.ProofProcessor{},
+	)
 
 	if os.Getenv("CREATE_TEST_USER") == "true" {
-		resourceRepository.RegisterUser(
+		resourceService.RegisterUser(
 			dto.RegisterUserDTO{
 				Password:    os.Getenv("TEST_USER_PASSWORD"),
 				Username:    os.Getenv("TEST_USER_USERNAME"),
@@ -127,8 +135,9 @@ func SetupPG() {
 	}
 
 	if os.Getenv("CREATE_TEST_CLIENT") == "true" {
-		resourceRepository.RegisterClient(
+		resourceService.RegisterClient(
 			dto.RegisterClientDTO{
+				Name:        os.Getenv("TEST_CLIENT_NAME"),
 				Password:    os.Getenv("TEST_CLIENT_PASSWORD"),
 				Username:    os.Getenv("TEST_CLIENT_USERNAME"),
 				RedirectURI: os.Getenv("TEST_CLIENT_REDIRECT_URI"),
