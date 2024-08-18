@@ -168,6 +168,7 @@ try{
   layer8_interceptor.initEncryptedTunnel({
     providers: [BACKEND_URLs], // An array of service providers you want to connect to
     proxy: PROXY_URL, // Your local proxy instance. Necessary only if the mode is "dev".
+    "staticPath": "/anything", // The path to serve static files from.
   }, "dev") // If omitted, the default, hardcoded, production proxy is used. 
 }catch(err){
   console.log(".initEncryptedTunnel error: ", err)
@@ -225,7 +226,7 @@ const layer8 = require('layer8_middleware');
 
 // Node Initialization
 app.use(layer8.tunnel); // for the encrypted tunnel
-app.use('/media', layer8.static('uploads')); // in order to connect a public folder
+app.use('/media', layer8.static('uploads')); // in order to connect a public folder, should be same as the `staticPath`
 
 // Usage
 app.get('/', (req, res) => {
