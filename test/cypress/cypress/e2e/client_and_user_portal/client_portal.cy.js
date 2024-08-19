@@ -4,6 +4,28 @@ const password = 'password123';
 const redirect_uri = 'https://redirecturl.com';
 const backend_uri = 'https://backendurl.com';
 
+describe('Visit Resource Server Page', () => {
+  beforeEach(() => {
+    cy.visit('http://localhost:5001')
+  })
+
+  it('display the main resource server page', () => {
+    cy.get('h1').should('contain', 'Welcome page!')
+    cy.get('button').should('contain', 'Login as a User')
+    cy.get('button').should('contain', 'Login as a Client')
+  })
+
+  it('check login as a user button', () => {
+    cy.get('button').contains('Login as a User').click()
+    cy.url().should('include', 'http://localhost:5001/user-login-page')
+  })
+
+  it('check login as a client button', () => {
+    cy.get('button').contains('Login as a Client').click()
+    cy.url().should('include', 'http://localhost:5001/client-login-page')
+  })
+})
+
 describe('Register Client Page', () => {
   beforeEach(() => {
     cy.visit('http://localhost:5001/client-register-page')
@@ -37,7 +59,7 @@ describe('Register Client Page', () => {
   })
 })
 
-describe('Login Page', () => {
+describe('Login Client Page', () => {
   beforeEach(() => {
     cy.visit('http://localhost:5001/client-login-page')
   })
@@ -120,6 +142,10 @@ describe('Login Page', () => {
     cy.window().then((window) => {
       expect(window.document.execCommand).to.have.been.calledOnceWith('copy');
     });
+  });
+
+  it('Logging out', () => {
+    cy.get('div').contains('Log out').click();
   });
 })
 

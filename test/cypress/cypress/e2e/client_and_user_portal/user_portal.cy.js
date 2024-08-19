@@ -82,6 +82,10 @@ describe('Authentication Page', () => {
     cy.get('button').should('contain', 'Save change')
     cy.get('button').should('contain', 'Verify Email')
   })
+
+  it('Logging out', () => {
+    cy.get('div').contains('Log out').click();
+  });
 })
 
 describe('Delete User', () => {
