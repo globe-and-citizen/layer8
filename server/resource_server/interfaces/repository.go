@@ -11,6 +11,7 @@ type IRepository interface {
 	// Resource Server methods
 	RegisterUser(req dto.RegisterUserDTO, hashedPassword string, salt string) error
 	FindUser(userId uint) (models.User, error)
+	FindUserForUsername(username string) (models.User, error)
 	LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string, error)
 	LoginPreCheckClient(req dto.LoginPrecheckDTO) (string, string, error)
 	LoginUser(req dto.LoginUserDTO) (models.User, error)
@@ -25,6 +26,11 @@ type IRepository interface {
 	GetClientData(clientName string) (models.Client, error)
 	GetClientDataByBackendURL(backendURL string) (models.Client, error)
 	IsBackendURIExists(backendURL string) (bool, error)
+	SavePasswordResetToken(token models.PasswordResetTokenData) error
+	GetPasswordResetTokenData(token []byte) (models.PasswordResetTokenData, error)
+	UpdateUserPassword(username string, password string) error
+	SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) error
+	GetZkSnarksKeys() (models.ZkSnarksKeyPair, error)
 	// Oauth2 methods
 	LoginUserPrecheck(username string) (string, error)
 	GetUser(username string) (*serverModel.User, error)

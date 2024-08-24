@@ -1,13 +1,19 @@
 package service
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"github.com/go-playground/validator/v10"
 	"globe-and-citizen/layer8/server/resource_server/dto"
+	"globe-and-citizen/layer8/server/resource_server/emails/sender"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/models"
+	"globe-and-citizen/layer8/server/resource_server/tokens"
 	"globe-and-citizen/layer8/server/resource_server/utils"
+	"os"
 	"time"
 )
 
@@ -201,6 +207,10 @@ func (s *service) FindUser(userID uint) (models.User, error) {
 	return s.repository.FindUser(userID)
 }
 
+func (s *service) FindUserForUsername(username string) (models.User, error) {
+	return s.repository.FindUserForUsername(username)
+}
+
 func (s *service) VerifyEmail(userID uint, userEmail string) error {
 	user, e := s.repository.FindUser(userID)
 	if e != nil {
@@ -263,4 +273,93 @@ func (s *service) CheckBackendURI(backendURL string) (bool, error) {
 		return false, err
 	}
 	return response, nil
+}
+
+func (s *service) VerifyUserEmailProof(user *models.User, emailVerificationCode string) error {
+	return s.proofProcessor.VerifyProof(emailVerificationCode, user.Salt, user.EmailProof)
+}
+
+func (s *service) GeneratePasswordResetToken() ([]byte, error) {
+	return tokens.GeneratePasswordResetToken()
+}
+
+func (s *service) SavePasswordResetToken(token []byte, user *models.User) error {
+	hashedToken := hash(token)
+
+	err := s.repository.SavePasswordResetToken(
+		models.PasswordResetTokenData{
+			Username:  user.Username,
+			Token:     hashedToken[:],
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		},
+	)
+
+	return err
+}
+
+func (s *service) SendPasswordResetToken(tokenBytes []byte, user *models.User, userEmail string) error {
+	passwordResetUrl := fmt.Sprintf(
+		"%s/api/v1/verify-password-reset-token?token=%s",
+		os.Getenv("PROXY_URL"),
+		hex.EncodeToString(tokenBytes),
+	)
+
+	emailService := sender.NewMailerSendService(os.Getenv("MAILER_SEND_API_KEY"))
+	err := emailService.SendEmail(
+		&models.Email{
+			SenderAddress: fmt.Sprintf(
+				"%s@%s",
+				os.Getenv("LAYER8_EMAIL_USERNAME"),
+				os.Getenv("LAYER8_EMAIL_DOMAIN"),
+			),
+			RecipientAddress:     userEmail,
+			RecipientDisplayName: user.Username,
+			Subject:              "Reset your password on the Layer8 portal",
+			Content: fmt.Sprintf(
+				"Use the following link to reset your password: %s",
+				passwordResetUrl,
+			),
+		},
+	)
+
+	return err
+}
+
+func (s *service) GetPasswordResetTokenData(token string) (models.PasswordResetTokenData, error) {
+	decodedBytes, err := hex.DecodeString(token)
+	if err != nil {
+		return models.PasswordResetTokenData{}, fmt.Errorf("failed to decode bytes from token: %e", err)
+	}
+
+	hashedToken := hash(decodedBytes)
+
+	tokenData, err := s.repository.GetPasswordResetTokenData(hashedToken[:])
+	if err != nil {
+		return models.PasswordResetTokenData{}, err
+	}
+
+	return tokenData, nil
+}
+
+func (s *service) ValidatePasswordResetTokenData(tokenData models.PasswordResetTokenData) error {
+	if tokenData.ExpiresAt.Before(time.Now()) {
+		return fmt.Errorf("token is expired. Please run the password reset process again")
+	}
+
+	return nil
+}
+
+func (s *service) UpdateUserPassword(req dto.UpdatePasswordDTO) error {
+	user, err := s.repository.FindUserForUsername(req.Username)
+	if err != nil {
+		return err
+	}
+
+	hashedPassword := utils.SaltAndHashPassword(req.NewPassword, user.Salt)
+
+	return s.repository.UpdateUserPassword(req.Username, hashedPassword)
+}
+
+func hash(data []byte) [32]byte {
+	return sha256.Sum256(data)
 }

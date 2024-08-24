@@ -48,3 +48,14 @@ type CheckEmailVerificationCodeDTO struct {
 	Email string `json:"email" validate:"required,email"`
 	Code  string `json:"code" validate:"required"`
 }
+
+type PasswordResetDTO struct {
+	Username              string `json:"username" validate:"required"`
+	Email                 string `json:"email" validate:"required,email"`
+	EmailVerificationCode string `json:"email_verification_code" validate:"required"`
+}
+
+type UpdatePasswordDTO struct {
+	Username    string `json:"username" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required"`
+}

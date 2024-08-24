@@ -8,7 +8,6 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
-	l8utils "globe-and-citizen/layer8/server/utils"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -1093,7 +1092,7 @@ func TestCheckEmailVerificationCode_FailedToSaveProofOfEmailVerification(t *test
 		saveProofOfEmailVerification: func(
 			userID uint, verificationCode string, zkProof []byte,
 		) error {
-			if !l8utils.Equal(zkProof, emailProof) {
+			if !utils.Equal(zkProof, emailProof) {
 				t.Fatalf("Email proof mismatch: expected %s, got %s", emailProof, zkProof)
 			}
 			return fmt.Errorf("failed to save proof of email verification")
@@ -1150,7 +1149,7 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 		saveProofOfEmailVerification: func(
 			userID uint, verificationCode string, zkProof []byte,
 		) error {
-			if !l8utils.Equal(zkProof, emailProof) {
+			if !utils.Equal(zkProof, emailProof) {
 				t.Fatalf("Email proof mismatch: expected %s, got %s", emailProof, zkProof)
 			}
 			return nil

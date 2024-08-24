@@ -47,13 +47,15 @@ func (v *EmailVerifier) SendVerificationEmail(
 ) error {
 	return v.emailSenderService.SendEmail(
 		&models.Email{
-			From:    v.adminEmailAddress,
-			To:      userEmail,
-			Subject: "Verify your email at the Layer8 service",
-			Content: models.VerificationEmailContent{
-				Username: user.Username,
-				Code:     verificationCode,
-			},
+			SenderAddress:        v.adminEmailAddress,
+			RecipientAddress:     userEmail,
+			RecipientDisplayName: user.Username,
+			Subject:              "Verify your email at the Layer8 service",
+			Content: fmt.Sprintf(
+				"Hi, %s!\nYour verification code is: %s",
+				user.Username,
+				verificationCode,
+			),
 		},
 	)
 }

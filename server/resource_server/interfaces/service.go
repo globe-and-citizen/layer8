@@ -14,6 +14,7 @@ type IService interface {
 	ProfileUser(userID uint) (models.ProfileResponseOutput, error)
 	ProfileClient(userID string) (models.ClientResponseOutput, error)
 	FindUser(userID uint) (models.User, error)
+	FindUserForUsername(username string) (models.User, error)
 	VerifyEmail(userID uint, userEmail string) error
 	CheckEmailVerificationCode(userID uint, code string) error
 	GenerateZkProofOfEmailVerification(
@@ -25,4 +26,11 @@ type IService interface {
 	GetClientData(clientName string) (models.ClientResponseOutput, error)
 	GetClientDataByBackendURL(backendURL string) (models.ClientResponseOutput, error)
 	CheckBackendURI(backendURL string) (bool, error)
+	GeneratePasswordResetToken() ([]byte, error)
+	SavePasswordResetToken(token []byte, user *models.User) error
+	SendPasswordResetToken(token []byte, user *models.User, userEmail string) error
+	VerifyUserEmailProof(user *models.User, emailVerificationCode string) error
+	GetPasswordResetTokenData(token string) (models.PasswordResetTokenData, error)
+	ValidatePasswordResetTokenData(tokenData models.PasswordResetTokenData) error
+	UpdateUserPassword(req dto.UpdatePasswordDTO) error
 }

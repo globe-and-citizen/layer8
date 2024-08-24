@@ -79,6 +79,17 @@ func (r *Repository) FindUser(userId uint) (models.User, error) {
 	return user, e
 }
 
+func (r *Repository) FindUserForUsername(username string) (models.User, error) {
+	var user models.User
+	err := r.connection.Where("username = ?", username).First(&user).Error
+
+	if err != nil {
+		return models.User{}, err
+	}
+
+	return user, nil
+}
+
 func (r *Repository) RegisterClient(client models.Client) error {
 	if err := r.connection.Create(&client).Error; err != nil {
 		return fmt.Errorf("failed to create a new client record: %e", err)
@@ -238,6 +249,56 @@ func (r *Repository) GetEmailVerificationData(userId uint) (models.EmailVerifica
 
 func (r *Repository) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
 	return r.connection.Model(&models.UserMetadata{}).Where("user_id = ? AND key = ?", userID, "display_name").Update("value", req.DisplayName).Error
+}
+
+func (r *Repository) SavePasswordResetToken(tokenEntry models.PasswordResetTokenData) error {
+	tx := r.connection.Begin(&sql.TxOptions{Isolation: sql.LevelReadCommitted})
+
+	tx.Where(
+		models.PasswordResetTokenData{Username: tokenEntry.Username},
+	).Assign(tokenEntry).FirstOrCreate(&models.PasswordResetTokenData{})
+
+	if tx.Error != nil {
+		tx.Rollback()
+		return tx.Error
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
+func (r *Repository) GetPasswordResetTokenData(token []byte) (models.PasswordResetTokenData, error) {
+	var tokenRow models.PasswordResetTokenData
+
+	err := r.connection.Where("token = ?", token).First(&tokenRow).Error
+	if err != nil {
+		return models.PasswordResetTokenData{}, err
+	}
+
+	return tokenRow, nil
+}
+
+func (r *Repository) UpdateUserPassword(username string, password string) error {
+	return r.connection.Model(&models.User{}).
+		Where("username = ?", username).
+		Update("password", password).
+		Error
+}
+
+func (r *Repository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) error {
+	return r.connection.Create(&keyPair).Error
+}
+
+func (r *Repository) GetZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
+	var keyPair models.ZkSnarksKeyPair
+	err := r.connection.Model(&models.ZkSnarksKeyPair{}).Last(&keyPair).Error
+
+	if err != nil {
+		return models.ZkSnarksKeyPair{}, err
+	}
+
+	return keyPair, nil
 }
 
 func (r *Repository) LoginUserPrecheck(username string) (string, error) {

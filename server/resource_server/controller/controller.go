@@ -46,16 +46,29 @@ func InputVerificationCodePage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/email/input-verification-code.html")
 }
 
-func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
+func PasswordResetRequestPage(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/password_reset/reset-request.html")
+}
+
+func ServeFileHandlerWithArgs(
+	w http.ResponseWriter,
+	r *http.Request,
+	filePath string,
+	args map[string]interface{},
+) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Println(w, http.StatusText(http.StatusMethodNotAllowed))
 		return
 	}
 
-	utils.ParseHTML(w, http.StatusOK, filePath, map[string]interface{}{
-		"ProxyURL": os.Getenv("PROXY_URL"),
-	})
+	args["ProxyURL"] = os.Getenv("PROXY_URL")
+
+	utils.ParseHTML(w, http.StatusOK, filePath, args)
+}
+
+func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
+	ServeFileHandlerWithArgs(w, r, filePath, map[string]interface{}{})
 }
 
 func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
@@ -493,6 +506,126 @@ func CheckBackendURI(w http.ResponseWriter, r *http.Request) {
 			"Internal error: could not encode response into json",
 			err,
 		)
+	}
+}
+
+func ResetUserPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.PasswordResetDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	user, err := newService.FindUserForUsername(request.Username)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "User not found for username", err)
+		return
+	}
+
+	err = newService.VerifyUserEmailProof(&user, request.EmailVerificationCode)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to check if the provided email was verified", err)
+		return
+	}
+
+	token, err := newService.GeneratePasswordResetToken()
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to generate the token", err)
+		return
+	}
+
+	err = newService.SendPasswordResetToken(token, &user, request.Email)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to send the reset link", err)
+		return
+	}
+
+	err = newService.SavePasswordResetToken(token, &user)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to save the password reset token", err)
+		return
+	}
+
+	resp := utils.BuildResponseWithNoBody(
+		w,
+		http.StatusOK,
+		"We have sent email with a reset password link to your email address",
+	)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: failed to encode response into json",
+			err,
+		)
+	}
+}
+
+func VerifyPasswordResetTokenHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodGet) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	err := r.ParseForm()
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Error while parsing the query parameters", err)
+		return
+	}
+
+	token := r.Form.Get("token")
+
+	tokenData, err := newService.GetPasswordResetTokenData(token)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Token does not exist", err)
+		return
+	}
+
+	err = newService.ValidatePasswordResetTokenData(tokenData)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to validate password reset token", err)
+		return
+	}
+
+	ServeFileHandlerWithArgs(
+		w,
+		r,
+		"assets-v1/templates/src/pages/user_portal/password_reset/input-new-password.html",
+		map[string]interface{}{
+			"USERNAME": tokenData.Username,
+		},
+	)
+}
+
+func UpdateUserPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.UpdatePasswordDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	err = newService.UpdateUserPassword(request)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to update user's password", err)
+		return
+	}
+
+	response := utils.BuildResponseWithNoBody(
+		w, http.StatusCreated, "Your password was updated successfully!",
+	)
+	if err := json.NewEncoder(w).Encode(&response); err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to encode the response", err)
 	}
 }
 

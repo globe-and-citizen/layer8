@@ -400,3 +400,27 @@ func (r *MemoryRepository) IsBackendURIExists(backendURL string) (bool, error) {
 	}
 	return false, nil
 }
+
+func (r *MemoryRepository) FindUserForUsername(username string) (models.User, error) {
+	return models.User{}, nil
+}
+
+func (r *MemoryRepository) SavePasswordResetToken(token models.PasswordResetTokenData) error {
+	return nil
+}
+
+func (r *MemoryRepository) GetPasswordResetTokenData(token []byte) (models.PasswordResetTokenData, error) {
+	return models.PasswordResetTokenData{}, nil
+}
+
+func (r *MemoryRepository) UpdateUserPassword(username string, password string) error {
+	return nil
+}
+
+func (r *MemoryRepository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) error {
+	return nil
+}
+
+func (r *MemoryRepository) GetZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
+	return models.ZkSnarksKeyPair{}, nil
+}

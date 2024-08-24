@@ -7,10 +7,8 @@ import (
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk/circuit"
 	"globe-and-citizen/layer8/server/resource_server/utils"
-	"log"
 )
 
 type IProofProcessor interface {
@@ -23,25 +21,18 @@ type ProofProcessor struct {
 
 	provingKey      groth16.ProvingKey
 	verificationKey groth16.VerifyingKey
-
-	circuit *circuit.MimcCircuit
 }
 
-func NewProofProcessor() *ProofProcessor {
+func NewProofProcessor(
+	cs constraint.ConstraintSystem,
+	provingKey groth16.ProvingKey,
+	verificationKey groth16.VerifyingKey,
+) *ProofProcessor {
 	g := new(ProofProcessor)
 
-	g.circuit = circuit.NewMimcCircuit()
-
-	var err error
-	g.cs, err = frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, g.circuit)
-	if err != nil {
-		log.Fatalf("Error while generating zk-snarks constraint system: %e", err)
-	}
-
-	g.provingKey, g.verificationKey, err = groth16.Setup(g.cs)
-	if err != nil {
-		log.Fatalf("Error happened during the groth16 setup: %e", err)
-	}
+	g.cs = cs
+	g.provingKey = provingKey
+	g.verificationKey = verificationKey
 
 	return g
 }

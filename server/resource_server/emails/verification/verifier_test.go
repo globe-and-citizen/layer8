@@ -31,8 +31,8 @@ var mockCodeGenerator code.Generator
 func SetUp() {
 	mockSenderService = &mocks.MockEmailSenderService{
 		SendEmailFunc: func(email *models.Email) error {
-			if email.To != userEmail ||
-				email.From != adminEmail ||
+			if email.RecipientAddress != userEmail ||
+				email.SenderAddress != adminEmail ||
 				email.Content.Username != username ||
 				email.Content.Code != verificationCode {
 				return fmt.Errorf("")

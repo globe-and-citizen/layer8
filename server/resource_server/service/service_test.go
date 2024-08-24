@@ -8,12 +8,12 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/service"
+	"globe-and-citizen/layer8/server/resource_server/utils"
 	"globe-and-citizen/layer8/server/resource_server/utils/mocks"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	testutils "globe-and-citizen/layer8/server/utils"
 )
 
 const userId uint = 1
@@ -60,6 +60,36 @@ type mockRepository struct {
 	setUserEmailVerified         func(userID uint) error
 	registerUser                 func(req dto.RegisterUserDTO, hashedPassword string, salt string) error
 	registerClient               func(client models.Client) error
+}
+
+func (m *mockRepository) FindUserForUsername(username string) (models.User, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *mockRepository) SavePasswordResetToken(token models.PasswordResetTokenData) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *mockRepository) GetPasswordResetTokenData(token []byte) (models.PasswordResetTokenData, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *mockRepository) UpdateUserPassword(username string, password string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *mockRepository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *mockRepository) GetZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (m *mockRepository) FindUser(userId uint) (models.User, error) {
@@ -762,5 +792,5 @@ func TestGenerateZkProofOfEmailVerification_Success(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.True(t, testutils.Equal(zkProof, proof))
+	assert.True(t, utils.Equal(zkProof, proof))
 }

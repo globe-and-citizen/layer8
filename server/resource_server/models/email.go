@@ -1,13 +1,9 @@
 package models
 
 type Email struct {
-	From    string
-	To      string
-	Subject string
-	Content VerificationEmailContent
-}
-
-type VerificationEmailContent struct {
-	Username string
-	Code     string
+	SenderAddress        string
+	RecipientAddress     string
+	RecipientDisplayName string
+	Subject              string
+	Content              string
 }

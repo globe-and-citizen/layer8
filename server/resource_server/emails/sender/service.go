@@ -13,17 +13,16 @@ type EmailService interface {
 	SendEmail(email *models.Email) error
 }
 
+const Layer8EmailDisplayName = "Layer8 team"
 const emailSendTimeout = time.Second * 10
 
 type MailerSendService struct {
-	apiKey     string
-	templateId string
+	apiKey string
 }
 
-func NewMailerSendService(apiKey string, templateId string) *MailerSendService {
+func NewMailerSendService(apiKey string) *MailerSendService {
 	ms := new(MailerSendService)
 	ms.apiKey = apiKey
-	ms.templateId = templateId
 	return ms
 }
 
@@ -35,37 +34,19 @@ func (ms *MailerSendService) SendEmail(email *models.Email) error {
 	defer cancel()
 
 	from := mailersend.From{
-		Name:  "Layer8 team",
-		Email: email.From,
+		Name:  Layer8EmailDisplayName,
+		Email: email.SenderAddress,
 	}
 	to := mailersend.Recipient{
-		Name:  email.Content.Username,
-		Email: email.To,
+		Name:  email.RecipientDisplayName,
+		Email: email.RecipientAddress,
 	}
-
-	//personalization := []mailersend.Personalization{
-	//	{
-	//		Email: email.To,
-	//		Data: map[string]interface{}{
-	//			"code": email.Content.Code,
-	//			"user": email.Content.Username,
-	//		},
-	//	},
-	//}
 
 	message := mailerSendClient.Email.NewMessage()
 	message.SetFrom(from)
 	message.SetRecipients([]mailersend.Recipient{to})
 	message.SetSubject(email.Subject)
-	message.SetText(
-		fmt.Sprintf(
-			"Hi, %s!\nYour verification code is: %s",
-			email.Content.Username,
-			email.Content.Code,
-		),
-	)
-	//message.SetTemplateID(ms.templateId)
-	//message.SetPersonalization(personalization)
+	message.SetText(email.Content)
 
 	response, e := mailerSendClient.Email.Send(ctx, message)
 	if e != nil {

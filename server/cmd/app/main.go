@@ -5,6 +5,9 @@ import (
 	"embed"
 	"flag"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/constraint"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
 	"globe-and-citizen/layer8/server/opentelemetry"
@@ -13,6 +16,7 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
+	"globe-and-citizen/layer8/server/resource_server/models"
 	"io/fs"
 	"log"
 	"net/http"
@@ -124,18 +128,50 @@ func main() {
 
 	emailVerifier := verification.NewEmailVerifier(
 		adminEmailAddress,
-		sender.NewMailerSendService(
-			os.Getenv("MAILER_SEND_API_KEY"),
-			os.Getenv("MAILER_SEND_TEMPLATE_ID"),
-		),
+		sender.NewMailerSendService(os.Getenv("MAILER_SEND_API_KEY")),
 		code.NewMIMCCodeGenerator(),
 		verificationCodeValidityDuration,
 		time.Now,
 	)
 
+	generateNewKeys, err := strconv.ParseBool(os.Getenv("GENERATE_NEW_ZK_SNARKS_KEYS"))
+	if err != nil {
+		log.Fatalf("Error while parsing GENERATE_NEW_ZK_SNARKS_KEYS flag: %e", err)
+	}
+
+	var cs constraint.ConstraintSystem
+	var provingKey groth16.ProvingKey
+	var verificationKey groth16.VerifyingKey
+
+	if generateNewKeys {
+		cs, provingKey, verificationKey = zk.RunZkSnarksSetup()
+
+		err = resourceRepository.SaveZkSnarksKeyPair(
+			models.ZkSnarksKeyPair{
+				ProvingKey:      utils.WriteBytes(provingKey),
+				VerificationKey: utils.WriteBytes(verificationKey),
+			},
+		)
+	} else {
+		zkSnarksKeyPair, err := resourceRepository.GetZkSnarksKeys()
+		if err != nil {
+			log.Fatalf("Error while reading zk-snarks keys from the database: %e", err)
+		}
+
+		cs = zk.GenerateConstraintSystem()
+
+		provingKey = groth16.NewProvingKey(ecc.BN254)
+		utils.ReadBytes[groth16.ProvingKey](provingKey, zkSnarksKeyPair.ProvingKey)
+
+		verificationKey = groth16.NewVerifyingKey(ecc.BN254)
+		utils.ReadBytes[groth16.VerifyingKey](verificationKey, zkSnarksKeyPair.VerificationKey)
+	}
+
+	proofProcessor := zk.NewProofProcessor(cs, provingKey, verificationKey)
+
 	// Run server (which never returns)
 	Server(
-		svc.NewService(resourceRepository, emailVerifier, zk.NewProofProcessor()),
+		svc.NewService(resourceRepository, emailVerifier, proofProcessor),
 		oauthService,
 	)
 }
@@ -210,6 +246,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.ClientHandler(w, r)
 			case path == "/client-login-page":
 				Ctl.LoginClientPage(w, r)
+			case path == "/password-reset-request-page":
+				Ctl.PasswordResetRequestPage(w, r)
 			case path == "/client-profile":
 				Ctl.ClientProfilePage(w, r)
 			case path == "/api/v1/register-user":
@@ -238,6 +276,13 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.GetUsageStats(w, r)
 			case path == "/api/v1/check-backend-uri":
 				Ctl.CheckBackendURI(w, r)
+			case path == "/api/v1/reset-user-password":
+				Ctl.ResetUserPasswordHandler(w, r)
+			case path == "/api/v1/verify-password-reset-token":
+				Ctl.VerifyPasswordResetTokenHandler(w, r)
+			case path == "/api/v1/update-password":
+				Ctl.UpdateUserPasswordHandler(w, r)
+
 			case path == "/favicon.ico":
 				faviconPath := workingDirectory + "/dist/favicon.ico"
 				http.ServeFile(w, r, faviconPath)
