@@ -227,6 +227,37 @@ func TestRegisterUserHandler_RequestJsonIsMalformed(t *testing.T) {
 	assert.NotNil(t, response.Error)
 }
 
+func TestRegisterUserHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
+	requestBody := []byte(`{
+		"email": "test@gcitizen.com",
+		"first_name": "Test",
+		"last_name": "User",
+		"display_name": "user",
+		"country": "Unknown",
+		"password": "12345"
+	}`)
+
+	req, err := http.NewRequest("POST", "/api/v1/register-user", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterUserHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Input json is invalid", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
 func TestRegisterUserHandler_Success(t *testing.T) {
 	// Mock request body
 	requestBody := []byte(`{
@@ -324,6 +355,35 @@ func TestRegisterClientHandler_RequestJsonIsMalformed(t *testing.T) {
 	assert.NotNil(t, response.Error)
 }
 
+func TestRegisterClientHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
+	requestBody := []byte(`{
+		"name": "testclient", 
+		"redirect_uri": "https://gcitizen.com/callback",
+		"backend_uri": "https://backend.com",
+		"username": "test_user"
+	}`)
+
+	req, err := http.NewRequest("POST", "/api/v1/register-client", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterClientHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Input json is invalid", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
 func TestRegisterClientHandler_Success(t *testing.T) {
 	// Mock request body
 	requestBody := []byte(`{
@@ -412,6 +472,30 @@ func TestLoginPrecheckHandler_RequestJsonIsMalformed(t *testing.T) {
 	assert.NotNil(t, response.Error)
 }
 
+func TestLoginPrecheckHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
+	requestBody := []byte(`{}`)
+
+	req, err := http.NewRequest("POST", "/api/v1/login-precheck", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginPrecheckHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Input json is invalid", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
 func TestLoginPrecheckHandler_Success(t *testing.T) {
 	// Mock request body
 	requestBody := []byte(`{"username": "test_user"}`)
@@ -494,6 +578,32 @@ func TestLoginUserHandler_RequestJsonIsMalformed(t *testing.T) {
 
 	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestLoginUserHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
+	requestBody := []byte(`{
+		"username": "test_user",
+		"password": "12345"
+	}`)
+	req, err := http.NewRequest("POST", "/api/v1/login-user", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginUserHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Input json is invalid", response.Message)
 	assert.NotNil(t, response.Error)
 }
 
@@ -1242,6 +1352,31 @@ func TestUpdateDisplayNameHandler_RequestJsonIsMalformed(t *testing.T) {
 	assert.NotNil(t, response.Error)
 }
 
+func TestUpdateDisplayNameHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
+	requestBody := []byte(`{}`)
+	req, err := http.NewRequest("POST", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.UpdateDisplayNameHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Input json is invalid", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
 func TestUpdateDisplayNameHandler_Success(t *testing.T) {
 	requestBody := []byte(`{"display_name": "test_user"}`)
 	req, err := http.NewRequest("POST", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
@@ -1310,6 +1445,27 @@ func TestLoginClientHandler_RequestJsonIsMalformed(t *testing.T) {
 	assert.NotNil(t, response.Error)
 }
 
+func TestLoginClientHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
+	loginReq := []byte(`{
+		"username": "testuser"
+	}`)
+
+	req := httptest.NewRequest("POST", "/api/v1/login-client", bytes.NewBuffer(loginReq))
+	req = setMockServiceInContext(req)
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginClientHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Input json is invalid", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
 func TestLoginClientHandler_Success(t *testing.T) {
 	loginReq := []byte(`{
 		"username": "testuser",
@@ -1372,6 +1528,24 @@ func TestCheckBackendURIHandler_RequestJsonIsMalformed(t *testing.T) {
 
 	assert.False(t, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestCheckBackendURIHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
+	reqBody := []byte(`{}`)
+	req := httptest.NewRequest("POST", "/api/v1/check-backend-uri", bytes.NewBuffer(reqBody))
+	req = setMockServiceInContext(req)
+
+	rr := httptest.NewRecorder()
+
+	Ctl.CheckBackendURI(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Input json is invalid", response.Message)
 	assert.NotNil(t, response.Error)
 }
 
