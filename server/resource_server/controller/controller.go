@@ -348,13 +348,13 @@ func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	zkProof, err := service.GenerateZkProofOfEmailVerification(user, request)
+	zkProof, zkKeyPairId, err := service.GenerateZkProofOfEmailVerification(user, request)
 	if err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Failed to generate zk proof of email verification", err)
 		return
 	}
 
-	err = service.SaveProofOfEmailVerification(userID, request.Code, zkProof)
+	err = service.SaveProofOfEmailVerification(userID, request.Code, zkProof, zkKeyPairId)
 	if err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Failed to save proof of the email verification procedure", err)
 		return

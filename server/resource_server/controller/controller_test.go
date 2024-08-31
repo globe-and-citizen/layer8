@@ -8,7 +8,6 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
-	l8utils "globe-and-citizen/layer8/server/utils"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -28,6 +27,8 @@ const country = "country"
 const verificationCode = "123467"
 const userEmail = "user@email.com"
 const userSalt = "salt"
+
+const zkKeyPairId uint = 2
 
 var authenticationToken, _ = utils.GenerateToken(
 	models.User{
@@ -65,8 +66,8 @@ type MockService struct {
 	verifyEmail                        func(userID uint, userEmail string) error
 	checkEmailVerificationCode         func(userID uint, code string) error
 	findUser                           func(userID uint) (models.User, error)
-	generateZkProofOfEmailVerification func(user models.User, request dto.CheckEmailVerificationCodeDTO) ([]byte, error)
-	saveProofOfEmailVerification       func(userID uint, verificationCode string, zkProof []byte) error
+	generateZkProofOfEmailVerification func(user models.User, request dto.CheckEmailVerificationCodeDTO) ([]byte, uint, error)
+	saveProofOfEmailVerification       func(userID uint, verificationCode string, zkProof []byte, zkKeyPairId uint) error
 	profileUser                        func(userID uint) (models.ProfileResponseOutput, error)
 }
 
@@ -109,14 +110,14 @@ func (ms *MockService) CheckEmailVerificationCode(userID uint, code string) erro
 func (ms *MockService) GenerateZkProofOfEmailVerification(
 	user models.User,
 	request dto.CheckEmailVerificationCodeDTO,
-) ([]byte, error) {
+) ([]byte, uint, error) {
 	return ms.generateZkProofOfEmailVerification(user, request)
 }
 
 func (ms *MockService) SaveProofOfEmailVerification(
-	userID uint, verificationCode string, zkProof []byte,
+	userID uint, verificationCode string, zkProof []byte, zkKeyPairId uint,
 ) error {
-	return ms.saveProofOfEmailVerification(userID, verificationCode, zkProof)
+	return ms.saveProofOfEmailVerification(userID, verificationCode, zkProof, zkKeyPairId)
 }
 
 func (ms *MockService) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
@@ -1148,8 +1149,8 @@ func TestCheckEmailVerificationCode_ZkEmailProofFailedToBeGenerated(t *testing.T
 		generateZkProofOfEmailVerification: func(
 			user models.User,
 			request dto.CheckEmailVerificationCodeDTO,
-		) ([]byte, error) {
-			return []byte{}, fmt.Errorf("failed to generate the zk email proof")
+		) ([]byte, uint, error) {
+			return []byte{}, zkKeyPairId, fmt.Errorf("failed to generate the zk email proof")
 		},
 	}
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
@@ -1197,14 +1198,17 @@ func TestCheckEmailVerificationCode_FailedToSaveProofOfEmailVerification(t *test
 		generateZkProofOfEmailVerification: func(
 			user models.User,
 			request dto.CheckEmailVerificationCodeDTO,
-		) ([]byte, error) {
-			return emailProof, nil
+		) ([]byte, uint, error) {
+			return emailProof, zkKeyPairId, nil
 		},
 		saveProofOfEmailVerification: func(
-			userID uint, verificationCode string, zkProof []byte,
+			userID uint, verificationCode string, zkProof []byte, zkKeyId uint,
 		) error {
-			if !l8utils.Equal(zkProof, emailProof) {
+			if !utils.Equal(zkProof, emailProof) {
 				t.Fatalf("Email proof mismatch: expected %s, got %s", emailProof, zkProof)
+			}
+			if zkKeyId != zkKeyPairId {
+				t.Fatalf("Unexpected zk key pair id: expected %d, got %d", zkKeyPairId, zkKeyId)
 			}
 			return fmt.Errorf("failed to save proof of email verification")
 		},
@@ -1254,14 +1258,17 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 		generateZkProofOfEmailVerification: func(
 			user models.User,
 			request dto.CheckEmailVerificationCodeDTO,
-		) ([]byte, error) {
-			return emailProof, nil
+		) ([]byte, uint, error) {
+			return emailProof, zkKeyPairId, nil
 		},
 		saveProofOfEmailVerification: func(
-			userID uint, verificationCode string, zkProof []byte,
+			userID uint, verificationCode string, zkProof []byte, zkKeyId uint,
 		) error {
-			if !l8utils.Equal(zkProof, emailProof) {
+			if !utils.Equal(zkProof, emailProof) {
 				t.Fatalf("Email proof mismatch: expected %s, got %s", emailProof, zkProof)
+			}
+			if zkKeyId != zkKeyPairId {
+				t.Fatalf("Unexpected zk key pair id: expected %d, got %d", zkKeyPairId, zkKeyId)
 			}
 			return nil
 		},

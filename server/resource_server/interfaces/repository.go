@@ -17,7 +17,7 @@ type IRepository interface {
 	LoginClient(req dto.LoginClientDTO) (models.Client, error)
 	ProfileUser(userID uint) (models.User, []models.UserMetadata, error)
 	ProfileClient(username string) (models.Client, error)
-	SaveProofOfEmailVerification(userID uint, verificationCode string, proof []byte) error
+	SaveProofOfEmailVerification(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error
 	SaveEmailVerificationData(data models.EmailVerificationData) error
 	GetEmailVerificationData(userId uint) (models.EmailVerificationData, error)
 	UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error
@@ -25,6 +25,8 @@ type IRepository interface {
 	GetClientData(clientName string) (models.Client, error)
 	GetClientDataByBackendURL(backendURL string) (models.Client, error)
 	IsBackendURIExists(backendURL string) (bool, error)
+	SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (uint, error)
+	GetZkSnarksKeys() (models.ZkSnarksKeyPair, error)
 	// Oauth2 methods
 	LoginUserPrecheck(username string) (string, error)
 	GetUser(username string) (*serverModel.User, error)

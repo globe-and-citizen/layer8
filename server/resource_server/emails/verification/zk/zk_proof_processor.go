@@ -7,41 +7,36 @@ import (
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk/circuit"
 	"globe-and-citizen/layer8/server/resource_server/utils"
-	"log"
 )
 
 type IProofProcessor interface {
-	GenerateProof(emailAddress string, salt string, verificationCode string) ([]byte, error)
+	GenerateProof(emailAddress string, salt string, verificationCode string) ([]byte, uint, error)
 	VerifyProof(verificationCode string, salt string, proofBytes []byte) error
 }
 
 type ProofProcessor struct {
 	cs constraint.ConstraintSystem
 
-	provingKey      groth16.ProvingKey
-	verificationKey groth16.VerifyingKey
+	provingKey   groth16.ProvingKey
+	verifyingKey groth16.VerifyingKey
 
-	circuit *circuit.MimcCircuit
+	zkKeyPairId uint
 }
 
-func NewProofProcessor() *ProofProcessor {
+func NewProofProcessor(
+	cs constraint.ConstraintSystem,
+	zkKeyPairId uint,
+	provingKey groth16.ProvingKey,
+	verifyingKey groth16.VerifyingKey,
+) *ProofProcessor {
 	g := new(ProofProcessor)
 
-	g.circuit = circuit.NewMimcCircuit()
-
-	var err error
-	g.cs, err = frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, g.circuit)
-	if err != nil {
-		log.Fatalf("Error while generating zk-snarks constraint system: %e", err)
-	}
-
-	g.provingKey, g.verificationKey, err = groth16.Setup(g.cs)
-	if err != nil {
-		log.Fatalf("Error happened during the groth16 setup: %e", err)
-	}
+	g.cs = cs
+	g.zkKeyPairId = zkKeyPairId
+	g.provingKey = provingKey
+	g.verifyingKey = verifyingKey
 
 	return g
 }
@@ -50,19 +45,19 @@ func (pv *ProofProcessor) GenerateProof(
 	emailAddress string,
 	salt string,
 	verificationCode string,
-) ([]byte, error) {
+) ([]byte, uint, error) {
 	emailAsCircuitVariables, err := utils.StringToCircuitVariables(emailAddress)
 	if err != nil {
-		return []byte{}, err
+		return []byte{}, 0, err
 	}
 	saltAsCircuitVariables, err := utils.StringToCircuitVariables(salt)
 	if err != nil {
-		return []byte{}, err
+		return []byte{}, 0, err
 	}
 
 	codeAsCircuitVariables, err := utils.ConvertCodeToCircuitVariables(verificationCode)
 	if err != nil {
-		return []byte{}, err
+		return []byte{}, 0, err
 	}
 
 	circ := &circuit.MimcCircuit{
@@ -76,21 +71,21 @@ func (pv *ProofProcessor) GenerateProof(
 		ecc.BN254.ScalarField(),
 	)
 	if err != nil {
-		return []byte{}, fmt.Errorf("error while generating zk-snarks witness: %e", err)
+		return []byte{}, 0, fmt.Errorf("error while generating zk-snarks witness: %e", err)
 	}
 
 	proof, err := groth16.Prove(pv.cs, pv.provingKey, witness)
 	if err != nil {
-		return []byte{}, err
+		return []byte{}, 0, err
 	}
 
 	var byteBuffer bytes.Buffer
 	_, err = proof.WriteTo(&byteBuffer)
 	if err != nil {
-		return []byte{}, fmt.Errorf("error while writing proof to byte buffer: %e", err)
+		return []byte{}, 0, fmt.Errorf("error while writing proof to byte buffer: %e", err)
 	}
 
-	return byteBuffer.Bytes(), nil
+	return byteBuffer.Bytes(), pv.zkKeyPairId, nil
 }
 
 func (pv *ProofProcessor) VerifyProof(
@@ -127,7 +122,7 @@ func (pv *ProofProcessor) VerifyProof(
 		return fmt.Errorf("error while retrieving public witness: %e", err)
 	}
 
-	err = groth16.Verify(proof, pv.verificationKey, publicWitness)
+	err = groth16.Verify(proof, pv.verifyingKey, publicWitness)
 
 	if err != nil {
 		return fmt.Errorf("could not verify proof: %e", err)

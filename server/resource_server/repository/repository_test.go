@@ -8,6 +8,7 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/models"
+	"globe-and-citizen/layer8/server/resource_server/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"regexp"
@@ -37,9 +38,13 @@ const backendUri = "https://gcitizen.com/backend"
 const clientSalt = "client_salt"
 const clientPassword = "client_password"
 
+const zkKeyPairId uint = 2
+
 var timestamp = time.Date(2024, time.May, 24, 14, 0, 0, 0, time.UTC)
 
 var emailProof = []byte("AbcdfTs")
+var provingKey = []byte("proving key")
+var verifyingKey = []byte("verifying key")
 
 var mockDB *sql.DB
 var mock sqlmock.Sqlmock
@@ -76,11 +81,11 @@ func TestRegisterUser_FailToInsertANewUserRecord(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id"`,
+			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code","zk_key_pair_id") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "id"`,
 		),
 	).WithArgs(
 		username, userPassword, userFirstName, userLastName,
-		userSalt, sqlmock.AnyArg(), sqlmock.AnyArg(),
+		userSalt, sqlmock.AnyArg(), sqlmock.AnyArg(), 0,
 	).WillReturnError(
 		fmt.Errorf("could not insert a new user record"),
 	)
@@ -108,18 +113,18 @@ func TestRegisterUser_FailToInsertANewUserMetadataRecord(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id"`,
+			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code","zk_key_pair_id") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "id"`,
 		),
 	).WithArgs(
 		username, userPassword, userFirstName, userLastName, userSalt,
-		sqlmock.AnyArg(), sqlmock.AnyArg(),
+		sqlmock.AnyArg(), sqlmock.AnyArg(), 0,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{
-				"id", "username", "password", "first_name", "last_name", "salt", "email_proof", "verification_code",
+				"id", "username", "password", "first_name", "last_name", "salt", "email_proof", "verification_code", "zk_key_pair_id",
 			},
 		).AddRow(
-			userId, username, userPassword, userFirstName, userLastName, userSalt, emailProof, verificationCode,
+			userId, username, userPassword, userFirstName, userLastName, userSalt, emailProof, verificationCode, 0,
 		),
 	)
 
@@ -156,18 +161,18 @@ func TestRegisterUser_Success(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id"`,
+			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code","zk_key_pair_id") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "id"`,
 		),
 	).WithArgs(
 		username, userPassword, userFirstName, userLastName, userSalt,
-		sqlmock.AnyArg(), sqlmock.AnyArg(),
+		sqlmock.AnyArg(), sqlmock.AnyArg(), 0,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{
-				"id", "username", "password", "first_name", "last_name", "salt", "email_proof", "verification_code",
+				"id", "username", "password", "first_name", "last_name", "salt", "email_proof", "verification_code", "zk_key_pair_id",
 			},
 		).AddRow(
-			userId, username, userPassword, userFirstName, userLastName, userSalt, emailProof, verificationCode,
+			userId, username, userPassword, userFirstName, userLastName, userSalt, emailProof, verificationCode, 0,
 		),
 	)
 
@@ -850,16 +855,16 @@ func TestSaveProofOfEmailVerification_UsersTableUpdateFails(t *testing.T) {
 	mock.ExpectBegin()
 
 	mock.ExpectExec(
-		regexp.QuoteMeta(`UPDATE "users" SET "email_proof"=$1,"verification_code"=$2 WHERE id = $3`),
+		regexp.QuoteMeta(`UPDATE "users" SET "email_proof"=$1,"verification_code"=$2,"zk_key_pair_id"=$3 WHERE id = $4`),
 	).WithArgs(
-		emailProof, verificationCode, userId,
+		emailProof, verificationCode, zkKeyPairId, userId,
 	).WillReturnError(
 		fmt.Errorf(""),
 	)
 
 	mock.ExpectRollback()
 
-	err = repository.SaveProofOfEmailVerification(userId, verificationCode, emailProof)
+	err = repository.SaveProofOfEmailVerification(userId, verificationCode, emailProof, zkKeyPairId)
 
 	assert.Error(t, err)
 
@@ -875,9 +880,9 @@ func TestSaveProofOfEmailVerification_DeletingEmailVerificationDataFails(t *test
 	mock.ExpectBegin()
 
 	mock.ExpectExec(
-		regexp.QuoteMeta(`UPDATE "users" SET "email_proof"=$1,"verification_code"=$2 WHERE id = $3`),
+		regexp.QuoteMeta(`UPDATE "users" SET "email_proof"=$1,"verification_code"=$2,"zk_key_pair_id"=$3 WHERE id = $4`),
 	).WithArgs(
-		emailProof, verificationCode, userId,
+		emailProof, verificationCode, zkKeyPairId, userId,
 	).WillReturnResult(
 		sqlmock.NewResult(0, 1),
 	)
@@ -892,7 +897,7 @@ func TestSaveProofOfEmailVerification_DeletingEmailVerificationDataFails(t *test
 
 	mock.ExpectRollback()
 
-	err = repository.SaveProofOfEmailVerification(userId, verificationCode, emailProof)
+	err = repository.SaveProofOfEmailVerification(userId, verificationCode, emailProof, zkKeyPairId)
 
 	assert.Error(t, err)
 
@@ -908,9 +913,9 @@ func TestSaveProofOfEmailVerification_SettingUserStatusAsVerifiedFails(t *testin
 	mock.ExpectBegin()
 
 	mock.ExpectExec(
-		regexp.QuoteMeta(`UPDATE "users" SET "email_proof"=$1,"verification_code"=$2 WHERE id = $3`),
+		regexp.QuoteMeta(`UPDATE "users" SET "email_proof"=$1,"verification_code"=$2,"zk_key_pair_id"=$3 WHERE id = $4`),
 	).WithArgs(
-		emailProof, verificationCode, userId,
+		emailProof, verificationCode, zkKeyPairId, userId,
 	).WillReturnResult(
 		sqlmock.NewResult(0, 1),
 	)
@@ -936,7 +941,7 @@ func TestSaveProofOfEmailVerification_SettingUserStatusAsVerifiedFails(t *testin
 
 	mock.ExpectRollback()
 
-	err = repository.SaveProofOfEmailVerification(userId, verificationCode, emailProof)
+	err = repository.SaveProofOfEmailVerification(userId, verificationCode, emailProof, zkKeyPairId)
 
 	assert.Error(t, err)
 
@@ -952,9 +957,9 @@ func TestSaveProofOfEmailVerification_Success(t *testing.T) {
 	mock.ExpectBegin()
 
 	mock.ExpectExec(
-		regexp.QuoteMeta(`UPDATE "users" SET "email_proof"=$1,"verification_code"=$2 WHERE id = $3`),
+		regexp.QuoteMeta(`UPDATE "users" SET "email_proof"=$1,"verification_code"=$2,"zk_key_pair_id"=$3 WHERE id = $4`),
 	).WithArgs(
-		emailProof, verificationCode, userId,
+		emailProof, verificationCode, zkKeyPairId, userId,
 	).WillReturnResult(
 		sqlmock.NewResult(0, 1),
 	)
@@ -980,11 +985,113 @@ func TestSaveProofOfEmailVerification_Success(t *testing.T) {
 
 	mock.ExpectCommit()
 
-	err = repository.SaveProofOfEmailVerification(userId, verificationCode, emailProof)
+	err = repository.SaveProofOfEmailVerification(userId, verificationCode, emailProof, zkKeyPairId)
 
 	assert.Nil(t, err)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("There were unfulfilled expectations: %s", err)
 	}
+}
+
+func TestSaveZkSnarksKeyPair_FailedToSaveZkKeyPair(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`INSERT INTO "zk_snarks_key_pairs" ("proving_key","verifying_key") VALUES ($1,$2) RETURNING "id"`,
+		),
+	).WithArgs(
+		provingKey, verifyingKey,
+	).WillReturnError(
+		fmt.Errorf(""),
+	)
+
+	mock.ExpectRollback()
+
+	_, err = repository.SaveZkSnarksKeyPair(
+		models.ZkSnarksKeyPair{
+			ProvingKey:   provingKey,
+			VerifyingKey: verifyingKey,
+		},
+	)
+
+	assert.NotNil(t, err)
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestSaveZkSnarksKeyPair_Success(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`INSERT INTO "zk_snarks_key_pairs" ("proving_key","verifying_key") VALUES ($1,$2) RETURNING "id"`,
+		),
+	).WithArgs(
+		provingKey, verifyingKey,
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{"id"},
+		).AddRow(zkKeyPairId),
+	)
+
+	mock.ExpectCommit()
+
+	actualZkTableId, err := repository.SaveZkSnarksKeyPair(
+		models.ZkSnarksKeyPair{
+			ProvingKey:   provingKey,
+			VerifyingKey: verifyingKey,
+		},
+	)
+
+	assert.Nil(t, err)
+	assert.Equal(t, zkKeyPairId, actualZkTableId)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestGetZkSnarksKeys_FailedToGetNewestZkSnarksKeys(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(`SELECT * FROM "zk_snarks_key_pairs" ORDER BY "zk_snarks_key_pairs"."id" DESC LIMIT 1`),
+	).WillReturnError(
+		fmt.Errorf(""),
+	)
+
+	_, err = repository.GetZkSnarksKeys()
+
+	assert.NotNil(t, err)
+}
+
+func TestGetZkSnarksKeys_Success(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(`SELECT * FROM "zk_snarks_key_pairs" ORDER BY "zk_snarks_key_pairs"."id" DESC LIMIT 1`),
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{"id", "proving_key", "verifying_key"},
+		).AddRow(
+			zkKeyPairId, provingKey, verifyingKey,
+		),
+	)
+
+	zkKeyPair, err := repository.GetZkSnarksKeys()
+
+	assert.Nil(t, err)
+	assert.True(t, utils.Equal(provingKey, zkKeyPair.ProvingKey))
+	assert.True(t, utils.Equal(verifyingKey, zkKeyPair.VerifyingKey))
 }

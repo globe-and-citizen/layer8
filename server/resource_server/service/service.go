@@ -221,12 +221,14 @@ func (s *service) CheckEmailVerificationCode(userId uint, code string) error {
 func (s *service) GenerateZkProofOfEmailVerification(
 	user models.User,
 	request dto.CheckEmailVerificationCodeDTO,
-) ([]byte, error) {
+) ([]byte, uint, error) {
 	return s.proofProcessor.GenerateProof(request.Email, user.Salt, request.Code)
 }
 
-func (s *service) SaveProofOfEmailVerification(userId uint, verificationCode string, zkProof []byte) error {
-	return s.repository.SaveProofOfEmailVerification(userId, verificationCode, zkProof)
+func (s *service) SaveProofOfEmailVerification(
+	userId uint, verificationCode string, zkProof []byte, zkKeyPairId uint,
+) error {
+	return s.repository.SaveProofOfEmailVerification(userId, verificationCode, zkProof, zkKeyPairId)
 }
 
 func (s *service) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {

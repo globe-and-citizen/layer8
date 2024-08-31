@@ -7,14 +7,31 @@ import (
 
 const email = "myemail@gmail.com"
 const salt = "ajdjsjsaafktyowqqrtgpowrkdkdkfak"
+const zkKeyPairId uint = 2
 
 func TestGenerateProof_VerificationCodeIsInvalid(t *testing.T) {
 	verificationCode := "724b20"
 
-	zkProofProcessor := NewProofProcessor()
-	_, err := zkProofProcessor.GenerateProof(email, salt, verificationCode)
+	cs, provingKey, verifyingKey := RunZkSnarksSetup()
+	zkProofProcessor := NewProofProcessor(cs, zkKeyPairId, provingKey, verifyingKey)
+	_, _, err := zkProofProcessor.GenerateProof(email, salt, verificationCode)
 
 	assert.NotNil(t, err)
+}
+
+func TestGenerateProof_Success(t *testing.T) {
+	verificationCode := "724b2c"
+
+	cs, provingKey, verifyingKey := RunZkSnarksSetup()
+	zkProofProcessor := NewProofProcessor(cs, zkKeyPairId, provingKey, verifyingKey)
+	proof, actualZkKeyPairId, err := zkProofProcessor.GenerateProof(email, salt, verificationCode)
+
+	assert.Nil(t, err)
+	assert.Equal(t, zkKeyPairId, actualZkKeyPairId)
+	assert.True(t, len(proof) > 0)
+
+	err = zkProofProcessor.VerifyProof(verificationCode, salt, proof)
+	assert.Nil(t, err)
 }
 
 func TestVerifyProof_ProofIsInvalid(t *testing.T) {
@@ -23,21 +40,9 @@ func TestVerifyProof_ProofIsInvalid(t *testing.T) {
 		proof[i] = byte(i)
 	}
 
-	zkProofProcessor := NewProofProcessor()
+	cs, provingKey, verifyingKey := RunZkSnarksSetup()
+	zkProofProcessor := NewProofProcessor(cs, zkKeyPairId, provingKey, verifyingKey)
 	err := zkProofProcessor.VerifyProof("123456", salt, proof)
 
 	assert.NotNil(t, err)
-}
-
-func TestGenerateProof_Success(t *testing.T) {
-	verificationCode := "724b2c"
-
-	zkProofProcessor := NewProofProcessor()
-	proof, err := zkProofProcessor.GenerateProof(email, salt, verificationCode)
-
-	assert.Nil(t, err)
-	assert.True(t, len(proof) > 0)
-
-	err = zkProofProcessor.VerifyProof(verificationCode, salt, proof)
-	assert.Nil(t, err)
 }
