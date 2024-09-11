@@ -7,7 +7,8 @@ const PROXY_URL =  import.meta.env.VITE_PROXY_URL
 try{
   layer8_interceptor.initEncryptedTunnel({
     providers: [BACKEND_URL],
-    proxy: PROXY_URL // works
+    proxy: PROXY_URL,
+    "staticPath": "/anything",
   }, "dev")
 }catch(err){
   console.log(".initEncryptedTunnel error: ", err)

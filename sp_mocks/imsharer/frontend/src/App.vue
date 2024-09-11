@@ -7,7 +7,8 @@ import emitter from '@/plugins/mitt';
 onMounted(async () => {
   await layer8.initEncryptedTunnel({
     providers: ["http://localhost:6001"],
-    proxy: "http://localhost:5001" // works
+    proxy: "http://localhost:5001",
+    "staticPath": "/media",
   }, "dev")
 });
 
