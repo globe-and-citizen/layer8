@@ -251,7 +251,7 @@ func (r *Repository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (uint, 
 	return keyPair.ID, nil
 }
 
-func (r *Repository) GetZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
+func (r *Repository) GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
 	var keyPair models.ZkSnarksKeyPair
 	err := r.connection.Model(&models.ZkSnarksKeyPair{}).Last(&keyPair).Error
 

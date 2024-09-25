@@ -210,7 +210,7 @@ func (m *mockRepository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (ui
 	return 0, nil
 }
 
-func (m *mockRepository) GetZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
+func (m *mockRepository) GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
 	return models.ZkSnarksKeyPair{}, nil
 }
 

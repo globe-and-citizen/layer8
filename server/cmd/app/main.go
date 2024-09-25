@@ -160,7 +160,7 @@ func main() {
 			log.Fatal(err)
 		}
 	} else {
-		zkSnarksKeyPair, err := resourceRepository.GetZkSnarksKeys()
+		zkSnarksKeyPair, err := resourceRepository.GetLatestZkSnarksKeys()
 		if err != nil {
 			log.Fatalf("Error while reading zk-snarks keys from the database: %e", err)
 		}
@@ -168,10 +168,14 @@ func main() {
 		cs = zk.GenerateConstraintSystem()
 		zkKeyPairId = zkSnarksKeyPair.ID
 
+		// Empty proving key initialised with elliptic curve id
 		provingKey = groth16.NewProvingKey(ecc.BN254)
+		// Deserialize proving key representation bytes from db into the provingKey object
 		utils.ReadBytes[groth16.ProvingKey](provingKey, zkSnarksKeyPair.ProvingKey)
 
+		// Empty verifying key initialised with elliptic curve id
 		verifyingKey = groth16.NewVerifyingKey(ecc.BN254)
+		// Deserialize verifying key representation bytes from db into the verifyingKey object
 		utils.ReadBytes[groth16.VerifyingKey](verifyingKey, zkSnarksKeyPair.VerifyingKey)
 	}
 

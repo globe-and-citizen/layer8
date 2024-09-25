@@ -1070,7 +1070,7 @@ func TestGetZkSnarksKeys_FailedToGetNewestZkSnarksKeys(t *testing.T) {
 		fmt.Errorf(""),
 	)
 
-	_, err = repository.GetZkSnarksKeys()
+	_, err = repository.GetLatestZkSnarksKeys()
 
 	assert.NotNil(t, err)
 }
@@ -1089,7 +1089,7 @@ func TestGetZkSnarksKeys_Success(t *testing.T) {
 		),
 	)
 
-	zkKeyPair, err := repository.GetZkSnarksKeys()
+	zkKeyPair, err := repository.GetLatestZkSnarksKeys()
 
 	assert.Nil(t, err)
 	assert.True(t, utils.Equal(provingKey, zkKeyPair.ProvingKey))

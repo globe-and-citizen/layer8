@@ -405,6 +405,6 @@ func (r *MemoryRepository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (
 	return 0, nil
 }
 
-func (r *MemoryRepository) GetZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
+func (r *MemoryRepository) GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
 	return models.ZkSnarksKeyPair{}, nil
 }
