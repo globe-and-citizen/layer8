@@ -213,7 +213,7 @@ func (r *MemoryRepository) ProfileClient(username string) (models.Client, error)
 }
 
 func (r *MemoryRepository) SaveProofOfEmailVerification(
-	userId uint, verificationCode string, emailProof []byte,
+	userId uint, verificationCode string, emailProof []byte, zkKeyPairId uint,
 ) error {
 	userData, e := r.getUserData(userId)
 	if e != nil {
@@ -399,4 +399,12 @@ func (r *MemoryRepository) IsBackendURIExists(backendURL string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+func (r *MemoryRepository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (uint, error) {
+	return 0, nil
+}
+
+func (r *MemoryRepository) GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
+	return models.ZkSnarksKeyPair{}, nil
 }

@@ -21,13 +21,13 @@ func (g *MockCodeGenerator) GenerateCode(user *models.User, emailAddress string)
 }
 
 type MockProofGenerator struct {
-	GenerateProofFunc func(emailAddress string, salt string, verificationCode string) ([]byte, error)
+	GenerateProofFunc func(emailAddress string, salt string, verificationCode string) ([]byte, uint, error)
 	VerifyProofFunc   func(verificationCode string, salt string, proofBytes []byte) error
 }
 
 func (pg *MockProofGenerator) GenerateProof(
 	emailAddress string, salt string, verificationCode string,
-) ([]byte, error) {
+) ([]byte, uint, error) {
 	return pg.GenerateProofFunc(emailAddress, salt, verificationCode)
 }
 

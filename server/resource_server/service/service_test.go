@@ -8,12 +8,12 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/service"
+	"globe-and-citizen/layer8/server/resource_server/utils"
 	"globe-and-citizen/layer8/server/resource_server/utils/mocks"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	testutils "globe-and-citizen/layer8/server/utils"
 )
 
 const userId uint = 1
@@ -30,6 +30,8 @@ const userSalt = "salt"
 
 const redirectUri = "redirect_uri"
 const backendUri = "backend_uri"
+
+const zkKeyPairId uint = 2
 
 var emailProof = []byte("proof")
 
@@ -56,7 +58,7 @@ type mockRepository struct {
 	saveEmailVerificationData    func(data models.EmailVerificationData) error
 	getEmailVerificationData     func(userId uint) (models.EmailVerificationData, error)
 	deleteEmailVerificationData  func(userId uint) error
-	saveProofOfEmailVerification func(userID uint, verificationCode string, proof []byte) error
+	saveProofOfEmailVerification func(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error
 	setUserEmailVerified         func(userID uint) error
 	registerUser                 func(req dto.RegisterUserDTO, hashedPassword string, salt string) error
 	registerClient               func(client models.Client) error
@@ -114,9 +116,9 @@ func (m *mockRepository) ProfileUser(userID uint) (models.User, []models.UserMet
 }
 
 func (m *mockRepository) SaveProofOfEmailVerification(
-	userID uint, verificationCode string, proof []byte,
+	userID uint, verificationCode string, proof []byte, zkKeyPairId uint,
 ) error {
-	return m.saveProofOfEmailVerification(userID, verificationCode, proof)
+	return m.saveProofOfEmailVerification(userID, verificationCode, proof, zkKeyPairId)
 }
 
 func (m *mockRepository) SaveEmailVerificationData(data models.EmailVerificationData) error {
@@ -202,6 +204,14 @@ func (m *mockRepository) ProfileClient(userID string) (models.Client, error) {
 
 func (m *mockRepository) GetClientDataByBackendURL(backendURL string) (models.Client, error) {
 	return models.Client{}, nil
+}
+
+func (m *mockRepository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (uint, error) {
+	return 0, nil
+}
+
+func (m *mockRepository) GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
+	return models.ZkSnarksKeyPair{}, nil
 }
 
 func TestRegisterUser_RepositoryFailedToStoreUserData(t *testing.T) {
@@ -628,7 +638,7 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 
 func TestSaveProofOfEmailVerification_ProofFailedToBeSaved(t *testing.T) {
 	mockRepo := &mockRepository{
-		saveProofOfEmailVerification: func(userID uint, verificationCode string, proof []byte) error {
+		saveProofOfEmailVerification: func(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error {
 			return fmt.Errorf("could not save proof of verification for user %d", userID)
 		},
 	}
@@ -641,14 +651,14 @@ func TestSaveProofOfEmailVerification_ProofFailedToBeSaved(t *testing.T) {
 	)
 	currService := service.NewService(mockRepo, emailVerifier, &mocks.MockProofGenerator{})
 
-	e := currService.SaveProofOfEmailVerification(userId, verificationCode, emailProof)
+	e := currService.SaveProofOfEmailVerification(userId, verificationCode, emailProof, zkKeyPairId)
 
 	assert.NotNil(t, e)
 }
 
 func TestSaveProofOfEmailVerification_Success(t *testing.T) {
 	mockRepo := &mockRepository{
-		saveProofOfEmailVerification: func(userID uint, verificationCode string, proof []byte) error {
+		saveProofOfEmailVerification: func(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error {
 			return nil
 		},
 	}
@@ -661,7 +671,7 @@ func TestSaveProofOfEmailVerification_Success(t *testing.T) {
 	)
 	currService := service.NewService(mockRepo, emailVerifier, &mocks.MockProofGenerator{})
 
-	e := currService.SaveProofOfEmailVerification(userId, verificationCode, emailProof)
+	e := currService.SaveProofOfEmailVerification(userId, verificationCode, emailProof, zkKeyPairId)
 
 	assert.Nil(t, e)
 }
@@ -707,7 +717,7 @@ func TestGenerateZkProofOfEmailVerification_FailedToGenerateZkProof(t *testing.T
 	mockProofGenerator := &mocks.MockProofGenerator{
 		GenerateProofFunc: func(
 			emailAddress string, salt string, code string,
-		) ([]byte, error) {
+		) ([]byte, uint, error) {
 			if emailAddress != userEmail {
 				t.Fatalf("User's email mismatch: expected %s, got %s", userEmail, emailAddress)
 			}
@@ -718,14 +728,15 @@ func TestGenerateZkProofOfEmailVerification_FailedToGenerateZkProof(t *testing.T
 				t.Fatalf("Verification code mismatch: expected %s, got %s", verificationCode, code)
 			}
 
-			return nil, fmt.Errorf("failed to generate a zk proof")
+			return nil, zkKeyPairId, fmt.Errorf("failed to generate a zk proof")
 		},
 	}
 
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, mockProofGenerator)
-	_, err := currService.GenerateZkProofOfEmailVerification(user, request)
+	_, actualZkKeyPairId, err := currService.GenerateZkProofOfEmailVerification(user, request)
 
 	assert.NotNil(t, err)
+	assert.Equal(t, zkKeyPairId, actualZkKeyPairId)
 }
 
 func TestGenerateZkProofOfEmailVerification_Success(t *testing.T) {
@@ -742,7 +753,7 @@ func TestGenerateZkProofOfEmailVerification_Success(t *testing.T) {
 	mockProofGenerator := &mocks.MockProofGenerator{
 		GenerateProofFunc: func(
 			emailAddress string, salt string, code string,
-		) ([]byte, error) {
+		) ([]byte, uint, error) {
 			if emailAddress != userEmail {
 				t.Fatalf("User's email mismatch: expected %s, got %s", userEmail, emailAddress)
 			}
@@ -753,14 +764,15 @@ func TestGenerateZkProofOfEmailVerification_Success(t *testing.T) {
 				t.Fatalf("Verification code mismatch: expected %s, got %s", verificationCode, code)
 			}
 
-			return zkProof, nil
+			return zkProof, zkKeyPairId, nil
 		},
 	}
 
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, mockProofGenerator)
-	proof, err := currService.GenerateZkProofOfEmailVerification(user, request)
+	proof, actualZkKeyPairId, err := currService.GenerateZkProofOfEmailVerification(user, request)
 
 	assert.Nil(t, err)
 
-	assert.True(t, testutils.Equal(zkProof, proof))
+	assert.True(t, utils.Equal(zkProof, proof))
+	assert.Equal(t, zkKeyPairId, actualZkKeyPairId)
 }

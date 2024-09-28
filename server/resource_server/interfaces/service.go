@@ -18,8 +18,8 @@ type IService interface {
 	CheckEmailVerificationCode(userID uint, code string) error
 	GenerateZkProofOfEmailVerification(
 		user models.User, request dto.CheckEmailVerificationCodeDTO,
-	) ([]byte, error)
-	SaveProofOfEmailVerification(userID uint, verificationCode string, zkProof []byte) error
+	) ([]byte, uint, error)
+	SaveProofOfEmailVerification(userID uint, verificationCode string, zkProof []byte, zkKeyPairId uint) error
 	UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error
 	RegisterClient(req dto.RegisterClientDTO) error
 	GetClientData(clientName string) (models.ClientResponseOutput, error)

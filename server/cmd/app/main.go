@@ -5,6 +5,9 @@ import (
 	"embed"
 	"flag"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/constraint"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
 	"globe-and-citizen/layer8/server/opentelemetry"
@@ -13,6 +16,7 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
+	"globe-and-citizen/layer8/server/resource_server/models"
 	"io/fs"
 	"log"
 	"net/http"
@@ -133,9 +137,53 @@ func main() {
 		time.Now,
 	)
 
+	generateNewKeys, err := strconv.ParseBool(os.Getenv("GENERATE_NEW_ZK_SNARKS_KEYS"))
+	if err != nil {
+		log.Fatalf("Error while parsing GENERATE_NEW_ZK_SNARKS_KEYS flag: %e", err)
+	}
+
+	var cs constraint.ConstraintSystem
+	var zkKeyPairId uint
+	var provingKey groth16.ProvingKey
+	var verifyingKey groth16.VerifyingKey
+
+	if generateNewKeys {
+		cs, provingKey, verifyingKey = zk.RunZkSnarksSetup()
+
+		zkKeyPairId, err = resourceRepository.SaveZkSnarksKeyPair(
+			models.ZkSnarksKeyPair{
+				ProvingKey:   utils.WriteBytes(provingKey),
+				VerifyingKey: utils.WriteBytes(verifyingKey),
+			},
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		zkSnarksKeyPair, err := resourceRepository.GetLatestZkSnarksKeys()
+		if err != nil {
+			log.Fatalf("Error while reading zk-snarks keys from the database: %e", err)
+		}
+
+		cs = zk.GenerateConstraintSystem()
+		zkKeyPairId = zkSnarksKeyPair.ID
+
+		// Empty proving key initialised with elliptic curve id
+		provingKey = groth16.NewProvingKey(ecc.BN254)
+		// Deserialize proving key representation bytes from db into the provingKey object
+		utils.ReadBytes[groth16.ProvingKey](provingKey, zkSnarksKeyPair.ProvingKey)
+
+		// Empty verifying key initialised with elliptic curve id
+		verifyingKey = groth16.NewVerifyingKey(ecc.BN254)
+		// Deserialize verifying key representation bytes from db into the verifyingKey object
+		utils.ReadBytes[groth16.VerifyingKey](verifyingKey, zkSnarksKeyPair.VerifyingKey)
+	}
+
+	proofProcessor := zk.NewProofProcessor(cs, zkKeyPairId, provingKey, verifyingKey)
+
 	// Run server (which never returns)
 	Server(
-		svc.NewService(resourceRepository, emailVerifier, zk.NewProofProcessor()),
+		svc.NewService(resourceRepository, emailVerifier, proofProcessor),
 		oauthService,
 	)
 }

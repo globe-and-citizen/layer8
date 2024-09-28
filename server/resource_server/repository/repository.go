@@ -164,7 +164,7 @@ func (r *Repository) ProfileClient(userID string) (models.Client, error) {
 }
 
 func (r *Repository) SaveProofOfEmailVerification(
-	userId uint, verificationCode string, emailProof []byte,
+	userId uint, verificationCode string, emailProof []byte, zkKeyPairId uint,
 ) error {
 	tx := r.connection.Begin(&sql.TxOptions{Isolation: sql.LevelReadCommitted})
 
@@ -175,6 +175,7 @@ func (r *Repository) SaveProofOfEmailVerification(
 	).Updates(map[string]interface{}{
 		"verification_code": verificationCode,
 		"email_proof":       emailProof,
+		"zk_key_pair_id":    zkKeyPairId,
 	}).Error
 
 	if err != nil {
@@ -238,6 +239,27 @@ func (r *Repository) GetEmailVerificationData(userId uint) (models.EmailVerifica
 
 func (r *Repository) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
 	return r.connection.Model(&models.UserMetadata{}).Where("user_id = ? AND key = ?", userID, "display_name").Update("value", req.DisplayName).Error
+}
+
+func (r *Repository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (uint, error) {
+	tx := r.connection.Create(&keyPair)
+
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+
+	return keyPair.ID, nil
+}
+
+func (r *Repository) GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
+	var keyPair models.ZkSnarksKeyPair
+	err := r.connection.Model(&models.ZkSnarksKeyPair{}).Last(&keyPair).Error
+
+	if err != nil {
+		return models.ZkSnarksKeyPair{}, err
+	}
+
+	return keyPair, nil
 }
 
 func (r *Repository) LoginUserPrecheck(username string) (string, error) {

@@ -9,6 +9,7 @@ type User struct {
 	Salt             string `gorm:"column:salt; not null" json:"salt"`
 	EmailProof       []byte `gorm:"column:email_proof; not null" json:"email_proof"`
 	VerificationCode string `gorm:"column:verification_code; not null" json:"verification_code"`
+	ZkKeyPairId      uint   `gorm:"column:zk_key_pair_id; not null" json:"zk_key_pair_id"`
 }
 
 func (User) TableName() string {
