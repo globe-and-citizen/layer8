@@ -58,7 +58,14 @@
             >
               Login
             </button>
-            <a
+
+              <button
+                      class="w-full bg-[#4F80E1] rounded-lg text-center text-white py-4 mb-12"
+                      @click="testMnemonic"
+              > Test me
+              </button>
+
+              <a
               class="text-sm text-[#414141] font-normal text-center block cursor-pointer"
               href="/user-register-page"
               >Don't have an account? <span class="font-bold">Register</span></a
@@ -95,8 +102,9 @@
         {{ toastMessage }}
       </div>
     </div>
-
     <script>
+        import * as mnemonic from "mnemonic";
+
       const { createApp, computed, ref } = Vue;
       const loginUsername = ref("");
       const loginPassword = ref("");
@@ -105,6 +113,10 @@
       const toastMessage = ref("");
 
       const isLoggedIn = computed(() => token.value !== null);
+
+      const testMnemonic = async () => {
+          console.log(mnemonic.generateMnemonic());
+      };
 
       const loginUser = async () => {
         try {
@@ -176,7 +188,6 @@
           return {
             loginUser,
             isLoggedIn,
-            loginPassword,
             loginUsername,
             loginPassword,
             toastMessage,
