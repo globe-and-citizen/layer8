@@ -13,6 +13,8 @@
     />
     <title>Authentication Page</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+
+    <script src="../assets-v1/templates/assets/js/bundled.js"></script>
   </head>
   <body>
     <div id="app">
@@ -62,7 +64,7 @@
               <button
                       class="w-full bg-[#4F80E1] rounded-lg text-center text-white py-4 mb-12"
                       @click="testMnemonic"
-              > Test me
+              > Get mnemonic
               </button>
 
               <a
@@ -103,8 +105,6 @@
       </div>
     </div>
     <script>
-        import * as mnemonic from "mnemonic";
-
       const { createApp, computed, ref } = Vue;
       const loginUsername = ref("");
       const loginPassword = ref("");
@@ -115,7 +115,7 @@
       const isLoggedIn = computed(() => token.value !== null);
 
       const testMnemonic = async () => {
-          console.log(mnemonic.generateMnemonic());
+          console.log(xyz.generateBip39Mnemonic());
       };
 
       const loginUser = async () => {
@@ -191,7 +191,8 @@
             loginUsername,
             loginPassword,
             toastMessage,
-            showToast
+            showToast,
+            testMnemonic,
           };
         },
       });
