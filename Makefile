@@ -8,6 +8,9 @@ npm_install_imsharer:
 npm_install_all:
 	make npm_install_wgp && make npm_install_imsharer
 
+## Build bundled .js file with bip-39 & bip-32 related functions
+build_mnemonic_bundle:
+	cd server/mnemonic && npm run build
 
 ## Run Service Provider Mocks
 run_wgp_frontend: # Port 5173
