@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild index.ts --bundle --format=iife --outfile=bundled.js --global-name=xyz"
+    "build": "esbuild index.ts --bundle --format=iife --outfile=../assets-v1/templates/assets/js/bundled.js --global-name=xyz"
   },
   "repository": {
     "type": "git",
