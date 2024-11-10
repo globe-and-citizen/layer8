@@ -130,6 +130,7 @@ func SetupPG() {
 				LastName:    os.Getenv("TEST_USER_LAST_NAME"),
 				DisplayName: os.Getenv("TEST_USER_DISPLAY_NAME"),
 				Country:     os.Getenv("TEST_USER_COUNTRY"),
+				PublicKey:   make([]byte, 33),
 			},
 		)
 	}

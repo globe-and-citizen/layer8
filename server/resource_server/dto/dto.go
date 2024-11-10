@@ -7,6 +7,7 @@ type RegisterUserDTO struct {
 	LastName    string `json:"last_name"`
 	DisplayName string `json:"display_name"`
 	Country     string `json:"country"`
+	PublicKey   []byte `json:"public_key" validate:"required"`
 }
 
 type LoginUserDTO struct {
@@ -47,4 +48,10 @@ type VerifyEmailDTO struct {
 type CheckEmailVerificationCodeDTO struct {
 	Email string `json:"email" validate:"required,email"`
 	Code  string `json:"code" validate:"required"`
+}
+
+type ResetPasswordDTO struct {
+	Username    string `json:"username" validate:"required"`
+	Signature   []byte `json:"signature" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required"`
 }
