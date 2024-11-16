@@ -502,6 +502,7 @@ func CheckBackendURI(w http.ResponseWriter, r *http.Request) {
 
 func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		// validateHttpMethod will automatically send an error response
 		return
 	}
 
@@ -509,6 +510,7 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 	request, err := utils.DecodeJsonFromRequest[dto.ResetPasswordDTO](w, r.Body)
 	if err != nil {
+		// utils.DecodeJsonFromRequest sends an Http error message automatically
 		return
 	}
 

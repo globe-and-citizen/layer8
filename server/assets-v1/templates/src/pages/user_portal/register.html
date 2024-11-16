@@ -203,7 +203,9 @@
 
       const registerUser = async () => {
         try {
-          if (registerUsername.value == "" || registerPassword.value == "" || registerFirstName.value == "" || registerLastName.value == "" || registerDisplayName.value == "" || registerCountry.value  == "") {
+          if (registerUsername.value === "" || registerPassword.value === ""
+                  || registerFirstName.value === "" || registerLastName.value === ""
+                  || registerDisplayName.value === "" || registerCountry.value  === "") {
             showToastMessage("Please enter all details!", "error");
             return;
           }
