@@ -27,6 +27,8 @@ type IRepository interface {
 	IsBackendURIExists(backendURL string) (bool, error)
 	SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (uint, error)
 	GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error)
+	GetUserForUsername(username string) (models.User, error)
+	UpdateUserPassword(username string, password string) error
 	// Oauth2 methods
 	LoginUserPrecheck(username string) (string, error)
 	GetUser(username string) (*serverModel.User, error)

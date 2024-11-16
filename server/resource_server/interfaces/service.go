@@ -25,4 +25,7 @@ type IService interface {
 	GetClientData(clientName string) (models.ClientResponseOutput, error)
 	GetClientDataByBackendURL(backendURL string) (models.ClientResponseOutput, error)
 	CheckBackendURI(backendURL string) (bool, error)
+	GetUserForUsername(username string) (models.User, error)
+	ValidateSignature(message string, signature []byte, publicKey []byte) error
+	UpdateUserPassword(username string, newPassword string, salt string) error
 }

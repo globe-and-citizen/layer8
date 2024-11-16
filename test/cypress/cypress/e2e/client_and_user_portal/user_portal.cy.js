@@ -28,14 +28,14 @@ describe('Authentication Page', () => {
     cy.get('input[placeholder="Display Name"]').type(displayname)
     cy.get('input[placeholder="Country"]').type(country)
     cy.get('input[type="password"]').type(password)
-    cy.get('button').click()
-    cy.url().should('include', 'http://localhost:5001/user-login-page')
+    cy.get('#register-user-button').click()
+    cy.url().should('include', 'http://localhost:5001/user-register-page')
   })
 
   it('displays an error message for incomplete registration data', () => {
-    cy.get('button').click()
+    cy.get('#register-user-button').click()
     cy.on('window:alert', (message) => {
-      expect(message).to.equal('Please enter a username and password!')
+      expect(message).to.equal('Please enter all details!')
     })
   })
 })

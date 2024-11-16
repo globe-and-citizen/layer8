@@ -46,6 +46,8 @@ var emailProof = []byte("AbcdfTs")
 var provingKey = []byte("proving key")
 var verifyingKey = []byte("verifying key")
 
+var publicKey = make([]byte, 33)
+
 var mockDB *sql.DB
 var mock sqlmock.Sqlmock
 var err error
@@ -81,11 +83,11 @@ func TestRegisterUser_FailToInsertANewUserRecord(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code","zk_key_pair_id") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "id"`,
+			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code","zk_key_pair_id","public_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING "id"`,
 		),
 	).WithArgs(
 		username, userPassword, userFirstName, userLastName,
-		userSalt, sqlmock.AnyArg(), sqlmock.AnyArg(), 0,
+		userSalt, sqlmock.AnyArg(), sqlmock.AnyArg(), 0, publicKey,
 	).WillReturnError(
 		fmt.Errorf("could not insert a new user record"),
 	)
@@ -98,6 +100,7 @@ func TestRegisterUser_FailToInsertANewUserRecord(t *testing.T) {
 		LastName:    userLastName,
 		Country:     userCountry,
 		DisplayName: userDisplayName,
+		PublicKey:   publicKey,
 	}
 	err = repository.RegisterUser(userDto, userPassword, userSalt)
 
@@ -113,18 +116,18 @@ func TestRegisterUser_FailToInsertANewUserMetadataRecord(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code","zk_key_pair_id") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "id"`,
+			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code","zk_key_pair_id","public_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING "id"`,
 		),
 	).WithArgs(
 		username, userPassword, userFirstName, userLastName, userSalt,
-		sqlmock.AnyArg(), sqlmock.AnyArg(), 0,
+		sqlmock.AnyArg(), sqlmock.AnyArg(), 0, publicKey,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{
-				"id", "username", "password", "first_name", "last_name", "salt", "email_proof", "verification_code", "zk_key_pair_id",
+				"id", "username", "password", "first_name", "last_name", "salt", "email_proof", "verification_code", "zk_key_pair_id", "public_key",
 			},
 		).AddRow(
-			userId, username, userPassword, userFirstName, userLastName, userSalt, emailProof, verificationCode, 0,
+			userId, username, userPassword, userFirstName, userLastName, userSalt, emailProof, verificationCode, 0, publicKey,
 		),
 	)
 
@@ -146,6 +149,7 @@ func TestRegisterUser_FailToInsertANewUserMetadataRecord(t *testing.T) {
 		LastName:    userLastName,
 		Country:     userCountry,
 		DisplayName: userDisplayName,
+		PublicKey:   publicKey,
 	}
 	err = repository.RegisterUser(userDto, userPassword, userSalt)
 
@@ -161,18 +165,18 @@ func TestRegisterUser_Success(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code","zk_key_pair_id") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "id"`,
+			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code","zk_key_pair_id","public_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING "id"`,
 		),
 	).WithArgs(
 		username, userPassword, userFirstName, userLastName, userSalt,
-		sqlmock.AnyArg(), sqlmock.AnyArg(), 0,
+		sqlmock.AnyArg(), sqlmock.AnyArg(), 0, publicKey,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{
-				"id", "username", "password", "first_name", "last_name", "salt", "email_proof", "verification_code", "zk_key_pair_id",
+				"id", "username", "password", "first_name", "last_name", "salt", "email_proof", "verification_code", "zk_key_pair_id", "public_key",
 			},
 		).AddRow(
-			userId, username, userPassword, userFirstName, userLastName, userSalt, emailProof, verificationCode, 0,
+			userId, username, userPassword, userFirstName, userLastName, userSalt, emailProof, verificationCode, 0, publicKey,
 		),
 	)
 
@@ -202,6 +206,7 @@ func TestRegisterUser_Success(t *testing.T) {
 		LastName:    userLastName,
 		Country:     userCountry,
 		DisplayName: userDisplayName,
+		PublicKey:   publicKey,
 	}
 	err = repository.RegisterUser(userDto, userPassword, userSalt)
 
@@ -1094,4 +1099,110 @@ func TestGetZkSnarksKeys_Success(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, utils.Equal(provingKey, zkKeyPair.ProvingKey))
 	assert.True(t, utils.Equal(verifyingKey, zkKeyPair.VerifyingKey))
+}
+
+func TestGetUserForUsername_UserNotFound(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT 1`,
+		),
+	).WithArgs(
+		username,
+	).WillReturnError(
+		fmt.Errorf("user not found"),
+	)
+
+	_, err = repository.GetUserForUsername(username)
+
+	assert.NotNil(t, err)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestGetUserForUsername_Success(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT 1`,
+		),
+	).WithArgs(
+		username,
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{"id", "username", "password", "first_name", "last_name", "salt"},
+		).AddRow(
+			userId, username, userPassword, userFirstName, userLastName, userSalt,
+		),
+	)
+
+	user, err := repository.GetUserForUsername(username)
+
+	assert.Nil(t, err)
+	assert.Equal(t, userId, user.ID)
+	assert.Equal(t, username, user.Username)
+	assert.Equal(t, userPassword, user.Password)
+	assert.Equal(t, userFirstName, user.FirstName)
+	assert.Equal(t, userLastName, user.LastName)
+	assert.Equal(t, userSalt, user.Salt)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestUpdateUserPassword_UpdateFailed(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(`UPDATE "users" SET "password"=$1 WHERE username = $2`),
+	).WithArgs(
+		userPassword, username,
+	).WillReturnError(
+		fmt.Errorf("failed to update user password"),
+	)
+
+	mock.ExpectRollback()
+
+	err = repository.UpdateUserPassword(username, userPassword)
+
+	assert.NotNil(t, err)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestUpdateUserPassword_Success(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(`UPDATE "users" SET "password"=$1 WHERE username = $2`),
+	).WithArgs(
+		userPassword, username,
+	).WillReturnResult(
+		sqlmock.NewResult(0, 1),
+	)
+
+	mock.ExpectCommit()
+
+	err = repository.UpdateUserPassword(username, userPassword)
+
+	assert.Nil(t, err)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
 }

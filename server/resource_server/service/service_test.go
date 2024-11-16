@@ -1,7 +1,9 @@
 package service_test
 
 import (
+	"crypto/rand"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto"
 	serverModels "globe-and-citizen/layer8/server/models"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
@@ -33,9 +35,10 @@ const backendUri = "backend_uri"
 
 const zkKeyPairId uint = 2
 
-var emailProof = []byte("proof")
-
 const verificationCodeValidityDuration = 2 * time.Minute
+
+var emailProof = []byte("proof")
+var hashedPassword = utils.SaltAndHashPassword(password, userSalt)
 
 var zkProof = []byte("zk_proof")
 var timestamp = time.Date(2024, time.May, 24, 14, 0, 0, 0, time.UTC)
@@ -62,6 +65,8 @@ type mockRepository struct {
 	setUserEmailVerified         func(userID uint) error
 	registerUser                 func(req dto.RegisterUserDTO, hashedPassword string, salt string) error
 	registerClient               func(client models.Client) error
+	getUserForUsername           func(username string) (models.User, error)
+	updateUserPassword           func(username string, password string) error
 }
 
 func (m *mockRepository) FindUser(userId uint) (models.User, error) {
@@ -212,6 +217,14 @@ func (m *mockRepository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (ui
 
 func (m *mockRepository) GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
 	return models.ZkSnarksKeyPair{}, nil
+}
+
+func (m *mockRepository) GetUserForUsername(username string) (models.User, error) {
+	return m.getUserForUsername(username)
+}
+
+func (m *mockRepository) UpdateUserPassword(username string, password string) error {
+	return m.updateUserPassword(username, password)
 }
 
 func TestRegisterUser_RepositoryFailedToStoreUserData(t *testing.T) {
@@ -775,4 +788,127 @@ func TestGenerateZkProofOfEmailVerification_Success(t *testing.T) {
 
 	assert.True(t, utils.Equal(zkProof, proof))
 	assert.Equal(t, zkKeyPairId, actualZkKeyPairId)
+}
+
+func TestGetUserForUsername_UserNotFound(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{}, fmt.Errorf("user not found")
+		},
+	}
+
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+	_, err := currService.GetUserForUsername(username)
+
+	assert.NotNil(t, err)
+}
+
+func TestGetUserForUsername_Success(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(currUsername string) (models.User, error) {
+			if currUsername != username {
+				t.Fatalf("Username mismatch: expected %s, got %s", username, currUsername)
+			}
+
+			return models.User{
+				ID:        userId,
+				Username:  username,
+				Password:  password,
+				FirstName: firstName,
+				LastName:  lastName,
+			}, nil
+		},
+	}
+
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+	user, err := currService.GetUserForUsername(username)
+
+	assert.Nil(t, err)
+	assert.Equal(t, userId, user.ID)
+	assert.Equal(t, username, user.Username)
+	assert.Equal(t, password, user.Password)
+	assert.Equal(t, firstName, user.FirstName)
+	assert.Equal(t, lastName, user.LastName)
+}
+
+func TestUpdateUserPassword_FailedToUpdatePasswordInDB(t *testing.T) {
+	mockRepo := &mockRepository{
+		updateUserPassword: func(currUsername string, currPassword string) error {
+			if currUsername != username {
+				t.Fatalf("Username mismatch: expected %s, got %s", username, currUsername)
+			}
+			if currPassword != hashedPassword {
+				t.Fatalf("User password mismatch: expected %s, got %s", hashedPassword, currPassword)
+			}
+
+			return fmt.Errorf("failed to update user password")
+		},
+	}
+
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+	err := currService.UpdateUserPassword(username, password, userSalt)
+
+	assert.NotNil(t, err)
+}
+
+func TestUpdateUserPassword_Success(t *testing.T) {
+	mockRepo := &mockRepository{
+		updateUserPassword: func(currUsername string, currPassword string) error {
+			if currUsername != username {
+				t.Fatalf("Username mismatch: expected %s, got %s", username, currUsername)
+			}
+			if currPassword != hashedPassword {
+				t.Fatalf("User password mismatch: expected %s, got %s", hashedPassword, currPassword)
+			}
+
+			return nil
+		},
+	}
+
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+	err := currService.UpdateUserPassword(username, password, userSalt)
+
+	assert.Nil(t, err)
+}
+
+func TestValidateSignature_SignatureIsInvalid(t *testing.T) {
+	currService := service.NewService(
+		&mockRepository{},
+		&verification.EmailVerifier{},
+		&mocks.MockProofGenerator{},
+	)
+
+	message := "sign-in with layer8"
+	privateKey, _ := crypto.GenerateKey()
+
+	signature := make([]byte, 64)
+	rand.Read(signature)
+
+	err := currService.ValidateSignature(
+		message,
+		signature,
+		crypto.FromECDSAPub(&privateKey.PublicKey),
+	)
+
+	assert.NotNil(t, err)
+}
+
+func TestValidateSignature_Success(t *testing.T) {
+	currService := service.NewService(
+		&mockRepository{},
+		&verification.EmailVerifier{},
+		&mocks.MockProofGenerator{},
+	)
+
+	message := "sign-in with layer8"
+	privateKey, _ := crypto.GenerateKey()
+	signature, _ := crypto.Sign(crypto.Keccak256([]byte(message)), privateKey)
+
+	err := currService.ValidateSignature(
+		message,
+		signature[:64],
+		crypto.FromECDSAPub(&privateKey.PublicKey),
+	)
+
+	assert.Nil(t, err)
 }

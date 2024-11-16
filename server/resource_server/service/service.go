@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+	"github.com/ethereum/go-ethereum/crypto"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
@@ -241,4 +243,24 @@ func (s *service) CheckBackendURI(backendURL string) (bool, error) {
 		return false, err
 	}
 	return response, nil
+}
+
+func (s *service) GetUserForUsername(username string) (models.User, error) {
+	return s.repository.GetUserForUsername(username)
+}
+
+func (s *service) ValidateSignature(message string, signature []byte, publicKey []byte) error {
+	msgHash := crypto.Keccak256([]byte(message))
+	verified := crypto.VerifySignature(publicKey, msgHash, signature)
+
+	if !verified {
+		return fmt.Errorf("failed to verify the ecdsa signature")
+	}
+
+	return nil
+}
+
+func (s *service) UpdateUserPassword(username string, newPassword string, salt string) error {
+	hashedPassword := utils.SaltAndHashPassword(newPassword, salt)
+	return s.repository.UpdateUserPassword(username, hashedPassword)
 }

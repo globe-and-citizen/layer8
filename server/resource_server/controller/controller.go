@@ -46,6 +46,10 @@ func InputVerificationCodePage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/email/input-verification-code.html")
 }
 
+func ResetPasswordPage(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/password_reset/reset-password-page.html")
+}
+
 func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -493,6 +497,46 @@ func CheckBackendURI(w http.ResponseWriter, r *http.Request) {
 			"Internal error: could not encode response into json",
 			err,
 		)
+	}
+}
+
+func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		// validateHttpMethod will automatically send an error response
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.ResetPasswordDTO](w, r.Body)
+	if err != nil {
+		// utils.DecodeJsonFromRequest sends an Http error message automatically
+		return
+	}
+
+	user, err := newService.GetUserForUsername(request.Username)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "user does not exist", err)
+		return
+	}
+
+	err = newService.ValidateSignature("Sign-in with Layer8", request.Signature, user.PublicKey)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "signature is invalid", err)
+		return
+	}
+
+	err = newService.UpdateUserPassword(user.Username, request.NewPassword, user.Salt)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Internal error: failed to update password", err)
+		return
+	}
+
+	response := utils.BuildResponseWithNoBody(
+		w, http.StatusCreated, "Your password was updated successfully!",
+	)
+	if err := json.NewEncoder(w).Encode(&response); err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to encode the response", err)
 	}
 }
 

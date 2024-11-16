@@ -10,6 +10,7 @@ type User struct {
 	EmailProof       []byte `gorm:"column:email_proof; not null" json:"email_proof"`
 	VerificationCode string `gorm:"column:verification_code; not null" json:"verification_code"`
 	ZkKeyPairId      uint   `gorm:"column:zk_key_pair_id; not null" json:"zk_key_pair_id"`
+	PublicKey        []byte `gorm:"column:public_key; not null" json:"public_key"`
 }
 
 func (User) TableName() string {

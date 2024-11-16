@@ -408,3 +408,11 @@ func (r *MemoryRepository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (
 func (r *MemoryRepository) GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
 	return models.ZkSnarksKeyPair{}, nil
 }
+
+func (r *MemoryRepository) GetUserForUsername(username string) (models.User, error) {
+	return models.User{}, nil
+}
+
+func (r *MemoryRepository) UpdateUserPassword(username string, password string) error {
+	return nil
+}

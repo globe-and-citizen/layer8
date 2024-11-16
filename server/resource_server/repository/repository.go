@@ -29,6 +29,7 @@ func (r *Repository) RegisterUser(req dto.RegisterUserDTO, hashedPassword string
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 		Salt:      salt,
+		PublicKey: req.PublicKey,
 	}
 
 	tx := r.connection.Begin()
@@ -260,6 +261,28 @@ func (r *Repository) GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
 	}
 
 	return keyPair, nil
+}
+
+func (r *Repository) GetUserForUsername(username string) (models.User, error) {
+	var user models.User
+
+	err := r.connection.Model(&models.User{}).
+		Where("username = ?", username).
+		First(&user).
+		Error
+
+	if err != nil {
+		return models.User{}, err
+	}
+
+	return user, nil
+}
+
+func (r *Repository) UpdateUserPassword(username string, hashedPassword string) error {
+	return r.connection.Model(&models.User{}).
+		Where("username = ?", username).
+		Update("password", hashedPassword).
+		Error
 }
 
 func (r *Repository) LoginUserPrecheck(username string) (string, error) {

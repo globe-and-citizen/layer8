@@ -260,6 +260,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.LoginClientPage(w, r)
 			case path == "/client-profile":
 				Ctl.ClientProfilePage(w, r)
+			case path == "/reset-password-page":
+				Ctl.ResetPasswordPage(w, r)
 			case path == "/api/v1/register-user":
 				Ctl.RegisterUserHandler(w, r)
 			case path == "/api/v1/register-client":
@@ -286,6 +288,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.GetUsageStats(w, r)
 			case path == "/api/v1/check-backend-uri":
 				Ctl.CheckBackendURI(w, r)
+			case path == "/api/v1/reset-password":
+				Ctl.ResetPasswordHandler(w, r)
 			case path == "/favicon.ico":
 				faviconPath := workingDirectory + "/dist/favicon.ico"
 				http.ServeFile(w, r, faviconPath)
