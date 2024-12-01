@@ -3,7 +3,7 @@
 import { computed, ref } from "vue";
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import layer8_interceptor from 'layer8_interceptor'
+import layer8_interceptor from 'layer8-interceptor-rs'
 
 const router = useRouter()
 const code = ref(new URLSearchParams(window.location.search).get("code"))

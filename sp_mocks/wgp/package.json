@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "layer8-interceptor-rs": "^0.0.6",
+    "layer8-middleware-rs": "^0.1.19"
+  }
+}

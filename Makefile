@@ -1,6 +1,6 @@
 ## NPM Install sp_mocks
 npm_install_wgp:
-	cd sp_mocks/wgp/frontend && npm install && npm i layer8_interceptor && cd ../backend && npm install && npm i layer8_middleware
+	cd sp_mocks/wgp/frontend && npm install && npm i layer8-interceptor-rs && cd ../backend && npm install && npm i layer8-middleware-rs
 
 npm_install_imsharer:
 	cd sp_mocks/imsharer/frontend && npm install && npm i layer8_interceptor && cd ../backend && npm install && npm i layer8_middleware
@@ -11,6 +11,9 @@ npm_install_all:
 ## Build bundled .js file with bip-39 & bip-32 related functions
 build_mnemonic_bundle:
 	cd server/mnemonic && npm run build
+
+run_wgp: npm_install_wgp
+	make run_wgp_frontend & make run_wgp_backend
 
 ## Run Service Provider Mocks
 run_wgp_frontend: # Port 5173

@@ -22,12 +22,15 @@
     "client-oauth2": "^4.3.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "express": "^4.18.2",
+    "express": "^4.21.1",
     "jsonwebtoken": "^9.0.2",
-    "layer8_middleware": "^0.0.22",
+    "layer8-middleware-rs": "^0.1.19",
     "popsicle": "^8.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

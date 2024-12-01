@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import Navbar from "../components/Navbar.vue";
 import { useRouter } from "vue-router";
-import layer8_interceptor from 'layer8_interceptor'
+import layer8_interceptor from 'layer8-interceptor-rs'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
 const router = useRouter();

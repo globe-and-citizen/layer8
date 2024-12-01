@@ -1,5 +1,6 @@
 <script setup>
 import {ref} from "vue"
+import layer8 from 'layer8-interceptor-rs'
 
 const counter = ref(0)
 
