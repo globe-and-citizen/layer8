@@ -28,7 +28,7 @@ const layer8Auth = new ClientOAuth2({
   scopes: ["read:user"],
 });
 
-const layer8_middleware = require("layer8_middleware");
+const layer8_middleware = require("layer8-middleware-rs");
 
 const upload = layer8_middleware.multipart({ dest: "pictures/dynamic" });
 
@@ -44,6 +44,7 @@ app.get("/", (req, res) => {
 
 //const Layer8 = require("./dist/loadWASM.js");
 //app.use(Layer8);
+app.use(express.json({ limit: '100mb' }))
 
 app.use(layer8_middleware.tunnel);
 
@@ -83,7 +84,7 @@ app.get("/poem", (req, res) => {
 });
 
 app.post("/api/register", async (req, res) => {
-  const { password, email, profile_image } = req.body;
+  const { password, email, profile_image } = JSON.parse(req.body);
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -97,7 +98,7 @@ app.post("/api/register", async (req, res) => {
 
 app.post("/api/login", async (req, res) => {
   //console.log("users: ", users);
-  const { email, password } = req.body;
+  const { email, password } = JSON.parse(req.body);
   const user = users.find((u) => u.email === email);
   if (user && (await bcrypt.compare(password, user.password))) {
     const token = jwt.sign({ email }, SECRET_KEY);
@@ -114,7 +115,7 @@ app.get("/api/login/layer8/auth", async (req, res) => {
 });
 
 app.post("/api/login/layer8/auth", async (req, res) => {
-  const { callback_url } = req.body;
+  const { callback_url } = JSON.parse(req.body);
   const user = await layer8Auth.code
     .getToken(callback_url)
     .then(async (user) => {

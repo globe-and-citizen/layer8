@@ -1,6 +1,6 @@
 <script setup>
 import { RouterView } from "vue-router";
-import layer8_interceptor from 'layer8_interceptor'
+import layer8_interceptor from 'layer8-interceptor-rs'
 const BACKEND_URL =  import.meta.env.VITE_BACKEND_URL
 const PROXY_URL =  import.meta.env.VITE_PROXY_URL
 

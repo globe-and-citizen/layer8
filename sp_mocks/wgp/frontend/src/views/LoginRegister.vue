@@ -3,7 +3,7 @@
 import { computed, ref } from "vue";
 import Navbar from "../components/Navbar.vue";
 import { useRouter } from "vue-router";
-import layer8_interceptor from 'layer8_interceptor'
+import layer8_interceptor from 'layer8-interceptor-rs'
 
 // Variables
 const BACKEND_URL =  import.meta.env.VITE_BACKEND_URL

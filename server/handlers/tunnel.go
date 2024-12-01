@@ -119,7 +119,12 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	server_pubKeyECDH, err := utilities.B64ToJWK(string(resBodyTempBytes))
+	server_pubKeyECDH, err := utilities.B64ToJWK(res.Header.Get("server_pubKeyECDH"))
+	if err != nil {
+		fmt.Println("could not find server_pubKeyECDH in response header: ", err) //silent fail
+		server_pubKeyECDH, err = utilities.B64ToJWK(string(resBodyTempBytes))
+	}
+
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -160,6 +165,12 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 	protocol := r.Header.Get("X-Forwarded-Proto")
 	host := r.Header.Get("X-Forwarded-Host")
 	backendURL := fmt.Sprintf("%s://%s", protocol, host+r.URL.Path) // RAVI
+
+	if r.URL.RawQuery != "" {
+		backendURL = fmt.Sprintf("%s?%s", backendURL, r.URL.RawQuery)
+	}
+
+	fmt.Println("Backend URL: ", backendURL)
 
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
