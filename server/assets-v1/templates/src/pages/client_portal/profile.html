@@ -9,7 +9,6 @@
   <title>Authentication Page</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
 </head>
-
 <body class="bg-[#E5E5E5] h-dvh relative">
   <div id="app">
     <div>
@@ -75,22 +74,28 @@
               <p class="font-normal text-sm md:text-base text-[#8E8E93] mb-6 md:mb-12">Your product data to use on your
                 own project</p>
               <div class="grid grid-cols-3">
-                <ul class="col-span-1 flex flex-col space-y-3 md:space-y-6 my-auto">
-                  <li class="font-bold text-lg text-black">Name:</li>
-                  <li class="font-bold text-lg text-black">Redirect URI:</li>
-                  <li class="font-bold text-lg text-black">UUID:</li>
-                  <li class="font-bold text-lg text-black">Secret:</li>
+                <ul class="col-span-1 flex flex-col space-y-6 my-auto">
+                  <li class="font-bold md:text-xl text-sm text-black">Name:</li>
+                  <li class="font-bold md:text-xl text-sm text-black">Redirect URI:</li>
+                  <li class="font-bold md:text-xl text-sm text-black">Backend URI:</li>
+                  <li class="font-bold md:text-xl text-sm text-black">UUID:</li>
+                  <li class="font-bold md:text-xl text-sm text-black">Secret:</li>
                 </ul>
                 <div class="col-span-2 flex flex-col space-y-2">
                   <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
+                    placeholder="Name"
                     :value="user.name" />
                   <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
+                    placeholder="Redirect URI"
                     :value="user.redirect_uri" />
+                  <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
+                    :value="user.backend_uri" />
                   <div class="flex items-center space-x-2">
                     <input readonly
                       class="bg-[#ECF4FD] border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium shadow appearance-none"
+                      placeholder="UUID" 
                       :value="user.id" />
-                    <button v-if="isCopied != user.id" @click="copyToClipboard(user.id)">
+                    <button value="UUID" v-if="isCopied != user.id" @click="copyToClipboard(user.id)">
                       <svg fill="#000000" width="30px" height="30px" viewBox="0 0 16 16"
                         xmlns="http://www.w3.org/2000/svg">
                         <path d="M14 12V2H4V0h12v12h-2zM0 4h12v12H0V4zm2 2v8h8V6H2z" fill-rule="evenodd" />
@@ -109,8 +114,9 @@
                   <div class="flex items-center space-x-2">
                     <input readonly
                       class="bg-[#ECF4FD] border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
+                      placeholder="Secret"
                       :value="user.secret" />
-                    <button v-if="isCopied != user.secret" @click="copyToClipboard(user.secret)">
+                    <button value="Secret" v-if="isCopied != user.secret" @click="copyToClipboard(user.secret)">
                       <svg fill="#000000" width="30px" height="30px" viewBox="0 0 16 16"
                         xmlns="http://www.w3.org/2000/svg">
                         <path d="M14 12V2H4V0h12v12h-2zM0 4h12v12H0V4zm2 2v8h8V6H2z" fill-rule="evenodd" />
@@ -129,7 +135,6 @@
                 </div>
               </div>
             </div>
-
             <div class="bg-white rounded-2xl py-3 md:py-4 px-4 md:px-6 mb-6 md:mb-0 mt-6">
               <h1 class="font-medium text-lg md:text-xl text-black">Your usage statistics</h1>
               <p class="font-normal text-sm md:text-base text-[#8E8E93] mb-5">Your product data to use on your
@@ -166,10 +171,12 @@
         </div>
       </div>
     </div>
+    <div :class="showToast ? 'opacity-100' : 'opacity-0 pointer-events-none'" class="fixed top-3 right-3 bg-green-500 text-white p-2 rounded-md transition-opacity ease-in-out duration-500 z-50">
+      {{ toastMessage }}
+    </div>
   </div>
   </div>
   </div>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     const { ref, onMounted, createApp } = Vue;
@@ -180,8 +187,8 @@
       name: "",
       redirect_uri: "",
     });
-    const isCopied = ref("")
-    const sidebarShow = ref(false)
+    const isCopied = ref("");
+    const sidebarShow = ref(false);
     const stats = ref({
       metric_type: "",
       unit_of_measurement: "",
@@ -195,8 +202,9 @@
         average: 0,
         details: []
       }
-    })
-
+    });
+    const showToast = ref(false);
+    const toastMessage = ref("");
     const getUserDetails = async () => {
       try {
         const resp = await window.fetch(
@@ -210,7 +218,6 @@
           }
         );
         const data = await resp.json();
-        console.log("resp", data);
         user.value = data;
       } catch (error) {
         console.error(error);
@@ -248,6 +255,7 @@
         document.body.appendChild(textarea);
         textarea.select();
         document.execCommand('copy');
+        showToastMessage("Copied to the clipboard!", "success");
       } catch (error) {
         console.error(error)
       }
@@ -264,10 +272,20 @@
       document.body.style.overflow = value ? "hidden" : "auto";
     }
 
+    const showToastMessage = (message, type) => {
+      // Current param type is not used. But will be in the future
+      toastMessage.value = message;
+      showToast.value = true;
+      setTimeout(() => {
+        showToast.value = false;
+      }, 3000);
+    }
     const app = createApp({
       setup() {
-        getUserDetails();
         onMounted(async () => {
+          if (!token.value) {
+            window.location.href = "[[ .ProxyURL ]]/client-login-page";
+          }
           stats.value = await getStats()
           const ctx = document.getElementById("statisticChart")
 
@@ -275,7 +293,6 @@
             v.total = (v.total * 1000000).toFixed(4)
             return v
           })
-
 
           const lineChart = new Chart(ctx, {
             type: 'line',
@@ -298,7 +315,8 @@
               },
             }
           })
-
+          
+          getUserDetails();
         });
 
         return {
@@ -309,12 +327,13 @@
           isCopied,
           sidebarShow,
           showSidebar,
+          toastMessage,
+          showToast
         };
       },
     });
-
+    
     app.mount("#app");
   </script>
 </body>
-
 </html>
