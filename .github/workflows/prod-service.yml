@@ -54,11 +54,11 @@ jobs:
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      - name: Install AWS CLI
-        run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install
+      # - name: Install AWS CLI
+      #   run: |
+      #     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      #     unzip awscliv2.zip
+      #     sudo ./aws/install
 
       - name: Populate Application Environment Variables to S3
         id: populateappenv
@@ -68,7 +68,7 @@ jobs:
           AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: |
           echo -e "${{ vars.PRODUCTION_APP_ENV }}" >> app.env
-          /usr/local/bin/aws s3 cp ./app.env s3://${{ vars.PRODUCTION_S3_APP_ENV_LOCATION }}
+          /usr/local/aws-cli/v2/current/bin/aws s3 cp ./app.env s3://${{ vars.PRODUCTION_S3_APP_ENV_LOCATION }}
       
       - name: Add Terraform Environment Variables
         id: addtfenv
