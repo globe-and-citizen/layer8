@@ -24,12 +24,11 @@ const SecretSize = 32
 
 var WorkingDirectory string
 
-// Response is used for static shape json return
 type Response struct {
-	Status  bool        `json:"status"`
-	Message string      `json:"message"`
-	Error   interface{} `json:"errors"`
-	Data    interface{} `json:"data"`
+	IsSuccess bool        `json:"is_success"`
+	Message   string      `json:"message"`
+	Error     interface{} `json:"errors"`
+	Data      interface{} `json:"data"`
 }
 
 type EmptyObj struct{}
@@ -63,23 +62,33 @@ func CheckPassword(password string, salt string, hash string) bool {
 	return SaltAndHashPassword(password, salt) == hash
 }
 
-func BuildResponse(status bool, message string, data interface{}) Response {
+func BuildResponse(w http.ResponseWriter, statusCode int, message string, data interface{}) Response {
+	w.WriteHeader(statusCode)
 	res := Response{
-		Status:  status,
-		Message: message,
-		Error:   nil,
-		Data:    data,
+		IsSuccess: true,
+		Message:   message,
+		Data:      data,
 	}
+
+	return res
+}
+
+func BuildResponseWithNoBody(w http.ResponseWriter, statusCode int, message string) Response {
+	w.WriteHeader(statusCode)
+	res := Response{
+		IsSuccess: true,
+		Message:   message,
+	}
+
 	return res
 }
 
 func BuildErrorResponse(message string, err string, data interface{}) Response {
 	splittedError := strings.Split(err, "\n")
 	res := Response{
-		Status:  false,
-		Message: message,
-		Error:   splittedError,
-		Data:    data,
+		IsSuccess: false,
+		Message:   message,
+		Error:     splittedError,
 	}
 
 	return res
@@ -129,6 +138,12 @@ func CompleteLogin(req dto.LoginUserDTO, user models.User) (models.LoginUserResp
 }
 
 func CompleteClientLogin(req dto.LoginClientDTO, client models.Client) (models.LoginUserResponseOutput, error) {
+	HashedAndSaltedPass := SaltAndHashPassword(req.Password, client.Salt)
+
+	if client.Password != HashedAndSaltedPass {
+		return models.LoginUserResponseOutput{}, fmt.Errorf("invalid password")
+	}
+
 	JWT_SECRET_STR := os.Getenv("JWT_SECRET_KEY")
 	JWT_SECRET_BYTE := []byte(JWT_SECRET_STR)
 
@@ -150,7 +165,6 @@ func CompleteClientLogin(req dto.LoginClientDTO, client models.Client) (models.L
 	resp := models.LoginUserResponseOutput{
 		Token: tokenString,
 	}
-	fmt.Println(resp)
 
 	return resp, nil
 }

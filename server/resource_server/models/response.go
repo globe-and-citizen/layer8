@@ -10,7 +10,6 @@ type LoginUserResponseOutput struct {
 }
 
 type ProfileResponseOutput struct {
-	Email         string `json:"email"`
 	Username      string `json:"username"`
 	FirstName     string `json:"first_name"`
 	LastName      string `json:"last_name"`
@@ -23,5 +22,5 @@ type ClientResponseOutput struct {
 	Secret      string `json:"secret"`
 	Name        string `json:"name"`
 	RedirectURI string `json:"redirect_uri"`
-	BackendURI string `json:"backend_uri"`
+	BackendURI  string `json:"backend_uri"`
 }

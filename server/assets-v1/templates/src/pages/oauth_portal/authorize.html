@@ -25,15 +25,15 @@
         <div class="line"></div>
 
         <div class="body">
-            <h2 class="center">Authorize <b>{{.ClientName}}</b></h2>
+            <h2 class="center">Authorize <b>[[.ClientName]]</b></h2>
             <br>
             <div class="box">
-                {{range .Scopes}}
+                [[ range .Scopes]]
                 <div class="box-item">
                     <span><input type="checkbox" checked disabled></span>
-                    <span>{{.}}</span>
+                    <span>[[.]]</span>
                 </div>
-                {{end}}
+                [[end]]
             </div>
             <br>
             <form method="POST" id="submit">

@@ -4,7 +4,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const app = express();
-const {poems, users} = require("./mock-database.js") 
+const { poems, users } = require("./mock-database.js");
 const SECRET_KEY = "my_very_secret_key";
 // TODO: For future, use a layer8 npm published package for initialising the client and variables
 const popsicle = require("popsicle");
@@ -20,15 +20,15 @@ const LAYER8_CALLBACK_URL = `${FRONTEND_URL}/oauth2/callback`;
 const LAYER8_RESOURCE_URL = `${LAYER8_URL}/api/user`;
 
 const layer8Auth = new ClientOAuth2({
-  clientId: "notanid",
-  clientSecret: "absolutelynotasecret!",
+  clientId: process.env.LAYER8_CLIENT_ID,
+  clientSecret: process.env.LAYER8_CLIENT_SECRET,
   accessTokenUri: `${LAYER8_URL}/api/oauth`,
   authorizationUri: `${LAYER8_URL}/authorize`,
   redirectUri: LAYER8_CALLBACK_URL,
   scopes: ["read:user"],
 });
 
-const layer8_middleware = require("layer8_middleware")
+const layer8_middleware = require("layer8_middleware");
 
 const upload = layer8_middleware.multipart({ dest: "pictures/dynamic" });
 
@@ -38,15 +38,19 @@ app.get("/healthcheck", (req, res) => {
   res.send("Bro, ur poems coming soon. Relax a little.");
 });
 
+app.get("/", (req, res) => {
+  res.json({ message: "Hello there!" });
+});
+
 //const Layer8 = require("./dist/loadWASM.js");
 //app.use(Layer8);
 
 app.use(layer8_middleware.tunnel);
 
 app.use(cors());
-app.use('/media', layer8_middleware.static('pictures'));
-app.use('/test', (req, res) => {
-  res.status(200).json({ message: 'Test endpoint' });
+app.use("/anything", layer8_middleware.static("pictures"));
+app.use("/test", (req, res) => {
+  res.status(200).json({ message: "Test endpoint" });
 });
 
 app.post("/", (req, res) => {
@@ -63,6 +67,19 @@ app.get("/nextpoem", (req, res) => {
   let marker = counter % 3;
   console.log("Served: ", poems[marker].title);
   res.status(200).json(poems[marker]);
+});
+
+app.get("/poem", (req, res) => {
+  const poem_id = parseInt(req.query.id, 10);
+  if (isNaN(poem_id)) {
+    return res.status(400).json({ error: "Invalid or missing poem ID!" });
+  }
+  const poem = poems.find((p) => p.id === poem_id);
+  if (poem) {
+    res.status(200).json(poem);
+  } else {
+    res.status(404).json({ error: "Poem not found!" });
+  }
 });
 
 app.post("/api/register", async (req, res) => {
@@ -160,19 +177,18 @@ app.post("/api/login/layer8/auth", async (req, res) => {
   res.status(200).json({ token });
 });
 
-app.post("/api/profile/upload", upload.single('file'), (req, res) => {
+app.post("/api/profile/upload", upload.single("file"), (req, res) => {
   const uploadedFile = req.file;
-
+  console.log("uploadedFile: ", uploadedFile);
   if (!uploadedFile) {
-    return res.status(400).json({ error: 'No file uploaded' });
+    return res.status(400).json({ error: "No file uploaded" });
   }
 
-  res.status(200).json({ 
+  res.status(200).json({
     message: "File uploaded successfully!",
-    url: `${req.protocol}://${req.get('host')}/media/dynamic/${req.file?.name}`
+    url: `${req.protocol}://${req.get("host")}/anything/dynamic/${req.file?.name}`,
   });
 });
-
 
 app.listen(port, () => {
   console.log(

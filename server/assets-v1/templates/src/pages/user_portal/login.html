@@ -13,6 +13,8 @@
     />
     <title>Authentication Page</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+
+    <script src="../assets-v1/templates/assets/js/bundled.js"></script>
   </head>
   <body>
     <div id="app">
@@ -52,6 +54,10 @@
                 placeholder="Password"
               />
             </div>
+            <a
+                      class="text-sm text-[#414141] font-normal text-center block cursor-pointer"
+                      href="/reset-password-page"
+            >Forgot your password?</a>
             <button
               class="w-full bg-[#4F80E1] rounded-lg text-center text-white py-4 mb-12"
               @click="loginUser"
@@ -59,10 +65,9 @@
               Login
             </button>
             <a
-              class="text-sm text-[#414141] font-normal text-center block cursor-pointer"
-              href="/user-register-page"
-              >Don't have an account? <span class="font-bold">Register</span></a
-            >
+                    class="text-sm text-[#414141] font-normal text-center block cursor-pointer"
+                    href="/user-register-page"
+            >Don't have an account? <span class="font-bold">Register</span></a>
           </div>
         </div>
         <div class="bg-white hidden md:flex lg:flex items-center">
@@ -91,20 +96,24 @@
           </div>
         </div>
       </div>
+      <div :class="showToast ? 'opacity-100' : 'opacity-0 pointer-events-none'" class="fixed top-3 right-3 bg-red-500 text-white p-2 rounded-md transition-opacity ease-in-out duration-500 z-50">
+        {{ toastMessage }}
+      </div>
     </div>
-
     <script>
       const { createApp, computed, ref } = Vue;
       const loginUsername = ref("");
       const loginPassword = ref("");
       const token = ref(localStorage.getItem("token") || null);
+      const showToast = ref(false);
+      const toastMessage = ref("");
 
       const isLoggedIn = computed(() => token.value !== null);
 
       const loginUser = async () => {
         try {
           if (loginUsername.value == "" || loginPassword.value == "") {
-            alert("Please enter a username and password!");
+            showToastMessage("Please enter a username and password!", "error");
             return;
           }
           const respOne = await window.fetch(
@@ -119,8 +128,13 @@
               }),
             }
           );
-          const responseOne = await respOne.json();
-          console.log(responseOne.salt);
+          const responseBody = await respOne.json();
+
+          if (respOne.status !== 200) {
+              showToastMessage("Failed to get client profile", "error");
+              return;
+          }
+
           const respTwo = await window.fetch(
             "[[ .ProxyURL ]]/api/v1/login-user",
             {
@@ -131,34 +145,45 @@
               body: JSON.stringify({
                 username: loginUsername.value,
                 password: loginPassword.value,
-                salt: responseOne.salt,
+                salt: responseBody.salt,
               }),
             }
           );
           const responseTwo = await respTwo.json();
-          console.log(responseTwo);
           if (responseTwo.token) {
             token.value = responseTwo.token;
             localStorage.setItem("token", responseTwo.token);
-            alert("Login successful!");
+            showToastMessage("Login successful!", "success");
             window.location.href = "[[ .ProxyURL ]]/user";
+          } else if (responseTwo.message) {
+            showToastMessage(responseTwo.message, "error");
           } else {
-            console.error("No token received.");
+            showToastMessage("Something went wrong!", "error");
           }
         } catch (error) {
           console.error(error);
-          alert("Login failed!");
+          showToastMessage("Login failed!", "error");
         }
       };
+
+      const showToastMessage = (message, type) => {
+        // Current param type is not used. But will be in the future
+        toastMessage.value = message;
+        showToast.value = true;
+        setTimeout(() => {
+          showToast.value = false;
+        }, 3000);
+      }
 
       const app = createApp({
         setup() {
           return {
             loginUser,
             isLoggedIn,
-            loginPassword,
             loginUsername,
-            loginPassword
+            loginPassword,
+            toastMessage,
+            showToast,
           };
         },
       });

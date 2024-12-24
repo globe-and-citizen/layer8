@@ -107,7 +107,7 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 
 	// Convert resBodyTemp to []byte
 
-	resBodyTempBytes := resBodyTemp.Bytes()
+	// resBodyTempBytes := resBodyTemp.Bytes()
 
 	// Make a copy of the response body to send back to client
 	res.Body = io.NopCloser(bytes.NewBuffer(resBodyTemp.Bytes()))
@@ -119,7 +119,8 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	server_pubKeyECDH, err := utilities.B64ToJWK(string(resBodyTempBytes))
+	// server_pubKeyECDH, err := utilities.B64ToJWK(string(resBodyTempBytes))
+	server_pubKeyECDH, err := utilities.B64ToJWK(res.Header.Get("server_pubKeyECDH"))
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -213,8 +214,8 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 
 	_, err = utilities.VerifyStandardToken(mpJWT, os.Getenv("MP_123_SECRET_KEY"))
 	if err != nil {
-		fmt.Println("MP JWT verify error: ", err.Error())
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		fmt.Printf("MP JWT verify error: %s. With status code: %d and text: %s", err.Error(), res.StatusCode, res.Status)
+		http.Error(w, res.Status, res.StatusCode)
 		return
 	}
 

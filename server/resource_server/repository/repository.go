@@ -1,11 +1,12 @@
 package repository
 
 import (
+	"database/sql"
+	"fmt"
 	serverModels "globe-and-citizen/layer8/server/models"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/models"
-	"globe-and-citizen/layer8/server/resource_server/utils"
 	"time"
 
 	"gorm.io/gorm"
@@ -21,22 +22,22 @@ func NewRepository(db *gorm.DB) interfaces.IRepository {
 	}
 }
 
-func (r *Repository) RegisterUser(req dto.RegisterUserDTO) error {
-
-	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
-	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
-
+func (r *Repository) RegisterUser(req dto.RegisterUserDTO, hashedPassword string, salt string) error {
 	user := models.User{
-		Email:     req.Email,
 		Username:  req.Username,
-		Password:  HashedAndSaltedPass,
+		Password:  hashedPassword,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
-		Salt:      rmSalt,
+		Salt:      salt,
+		PublicKey: req.PublicKey,
 	}
 
-	if err := r.connection.Create(&user).Error; err != nil {
-		return err
+	tx := r.connection.Begin()
+
+	err := tx.Create(&user).Error
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("could not create user: %e", err)
 	}
 
 	userMetadata := []models.UserMetadata{
@@ -57,35 +58,31 @@ func (r *Repository) RegisterUser(req dto.RegisterUserDTO) error {
 		},
 	}
 
-	if err := r.connection.Create(&userMetadata).Error; err != nil {
-		r.connection.Delete(&user)
-		return err
+	err = tx.Create(&userMetadata).Error
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("could not create user metadata entry: %e", err)
 	}
+
+	tx.Commit()
 
 	return nil
 }
 
-func (r *Repository) RegisterClient(req dto.RegisterClientDTO) error {
+func (r *Repository) FindUser(userId uint) (models.User, error) {
+	var user models.User
+	e := r.connection.Where("id = ?", userId).First(&user).Error
 
-	clientUUID := utils.GenerateUUID()
-	clientSecret := utils.GenerateSecret(utils.SecretSize)
-
-	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
-	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
-
-	client := models.Client{
-		ID:          clientUUID,
-		Secret:      clientSecret,
-		Name:        req.Name,
-		RedirectURI: req.RedirectURI,
-		BackendURI:  req.BackendURI,
-		Username:    req.Username,
-		Password:    HashedAndSaltedPass,
-		Salt:        rmSalt,
+	if e != nil {
+		return models.User{}, e
 	}
 
+	return user, e
+}
+
+func (r *Repository) RegisterClient(client models.Client) error {
 	if err := r.connection.Create(&client).Error; err != nil {
-		return err
+		return fmt.Errorf("failed to create a new client record: %e", err)
 	}
 
 	return nil
@@ -167,12 +164,125 @@ func (r *Repository) ProfileClient(userID string) (models.Client, error) {
 	return client, nil
 }
 
-func (r *Repository) VerifyEmail(userID uint) error {
-	return r.connection.Model(&models.UserMetadata{}).Where("user_id = ? AND key = ?", userID, "email_verified").Update("value", "true").Error
+func (r *Repository) SaveProofOfEmailVerification(
+	userId uint, verificationCode string, emailProof []byte, zkKeyPairId uint,
+) error {
+	tx := r.connection.Begin(&sql.TxOptions{Isolation: sql.LevelReadCommitted})
+
+	err := tx.Model(
+		&models.User{},
+	).Where(
+		"id = ?", userId,
+	).Updates(map[string]interface{}{
+		"verification_code": verificationCode,
+		"email_proof":       emailProof,
+		"zk_key_pair_id":    zkKeyPairId,
+	}).Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Where(
+		"user_id = ?", userId,
+	).Delete(
+		&models.EmailVerificationData{},
+	).Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Model(
+		&models.UserMetadata{},
+	).Where(
+		"user_id = ? AND key = ?",
+		userId,
+		"email_verified",
+	).Update("value", "true").Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (r *Repository) SaveEmailVerificationData(data models.EmailVerificationData) error {
+	tx := r.connection.Begin(&sql.TxOptions{Isolation: sql.LevelReadCommitted})
+
+	err := tx.Where(
+		models.EmailVerificationData{UserId: data.UserId},
+	).Assign(data).FirstOrCreate(&models.EmailVerificationData{}).Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (r *Repository) GetEmailVerificationData(userId uint) (models.EmailVerificationData, error) {
+	var data models.EmailVerificationData
+	e := r.connection.Where("user_id = ?", userId).First(&data).Error
+	if e != nil {
+		return models.EmailVerificationData{}, e
+	}
+
+	return data, nil
 }
 
 func (r *Repository) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
 	return r.connection.Model(&models.UserMetadata{}).Where("user_id = ? AND key = ?", userID, "display_name").Update("value", req.DisplayName).Error
+}
+
+func (r *Repository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (uint, error) {
+	tx := r.connection.Create(&keyPair)
+
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+
+	return keyPair.ID, nil
+}
+
+func (r *Repository) GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
+	var keyPair models.ZkSnarksKeyPair
+	err := r.connection.Model(&models.ZkSnarksKeyPair{}).Last(&keyPair).Error
+
+	if err != nil {
+		return models.ZkSnarksKeyPair{}, err
+	}
+
+	return keyPair, nil
+}
+
+func (r *Repository) GetUserForUsername(username string) (models.User, error) {
+	var user models.User
+
+	err := r.connection.Model(&models.User{}).
+		Where("username = ?", username).
+		First(&user).
+		Error
+
+	if err != nil {
+		return models.User{}, err
+	}
+
+	return user, nil
+}
+
+func (r *Repository) UpdateUserPassword(username string, hashedPassword string) error {
+	return r.connection.Model(&models.User{}).
+		Where("username = ?", username).
+		Update("password", hashedPassword).
+		Error
 }
 
 func (r *Repository) LoginUserPrecheck(username string) (string, error) {
@@ -205,4 +315,12 @@ func (r *Repository) SetTTL(key string, value []byte, time time.Duration) error 
 
 func (r *Repository) GetTTL(key string) ([]byte, error) {
 	return []byte{}, nil
+}
+
+func (r *Repository) IsBackendURIExists(backendURL string) (bool, error) {
+	var count int64
+	if err := r.connection.Model(&models.Client{}).Where("backend_uri = ?", backendURL).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

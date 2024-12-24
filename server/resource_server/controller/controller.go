@@ -38,6 +38,18 @@ func LoginClientPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/login.html")
 }
 
+func InputYourEmailPage(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/email/input-your-email.html")
+}
+
+func InputVerificationCodePage(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/email/input-verification-code.html")
+}
+
+func ResetPasswordPage(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/password_reset/reset-password-page.html")
+}
+
 func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -45,38 +57,50 @@ func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
 		return
 	}
 
-	utils.ParseHTML(w, filePath, map[string]interface{}{
+	utils.ParseHTML(w, http.StatusOK, filePath, map[string]interface{}{
 		"ProxyURL": os.Getenv("PROXY_URL"),
 	})
 }
 
 func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
-	newService := r.Context().Value("service").(interfaces.IService)
-	var req dto.LoginClientDTO
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
 		return
 	}
 
-	tokenResp, err := newService.LoginClient(req)
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.LoginClientDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	tokenResp, err := newService.LoginClient(request)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
 		return
 	}
 
 	if err := json.NewEncoder(w).Encode(tokenResp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
 func ClientProfileHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodGet) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 	tokenString := r.Header.Get("Authorization")
 	tokenString = tokenString[7:]
 	clientClaims, err := utils.ValidateClientToken(tokenString)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile, invalid token", err)
+		utils.HandleError(w, http.StatusUnauthorized, "Authentication error: invalid token", err)
 		return
 	}
 
@@ -87,101 +111,141 @@ func ClientProfileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(profileResp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile, error encoding response", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
 func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
-	var req dto.RegisterUserDTO
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return
-	}
 
-	err := newService.RegisterUser(req)
+	request, err := utils.DecodeJsonFromRequest[dto.RegisterUserDTO](w, r.Body)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
 		return
 	}
 
-	res := utils.BuildResponse(true, "OK!", "User registered successfully")
-	if err := json.NewEncoder(w).Encode(res); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
+	err = newService.RegisterUser(request)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
 		return
+	}
+
+	res := utils.BuildResponseWithNoBody(w, http.StatusCreated, "User registered successfully")
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
 func RegisterClientHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
-	var req dto.RegisterClientDTO
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to register client", err)
-		return
-	}
 
-	err := newService.RegisterClient(req)
+	request, err := utils.DecodeJsonFromRequest[dto.RegisterClientDTO](w, r.Body)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
 		return
 	}
 
-	res := utils.BuildResponse(true, "OK!", "Client registered successfully")
-	if err := json.NewEncoder(w).Encode(res); err != nil {
+	err = newService.RegisterClient(request)
+	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to register client", err)
 		return
+	}
+
+	res := utils.BuildResponseWithNoBody(w, http.StatusCreated, "Client registered successfully")
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
 // LoginPrecheckHandler handles login precheck requests and get the salt of the user from the database using the username from the request URL
 func LoginPrecheckHandler(w http.ResponseWriter, r *http.Request) {
-	newService := r.Context().Value("service").(interfaces.IService)
-	var req dto.LoginPrecheckDTO
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
 		return
 	}
 
-	loginPrecheckResp, err := newService.LoginPreCheckUser(req)
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.LoginPrecheckDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	loginPrecheckResp, err := newService.LoginPreCheckUser(request)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
 		return
 	}
 
 	if err := json.NewEncoder(w).Encode(loginPrecheckResp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
 func LoginUserHandler(w http.ResponseWriter, r *http.Request) {
-	newService := r.Context().Value("service").(interfaces.IService)
-	var req dto.LoginUserDTO
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
 		return
 	}
 
-	tokenResp, err := newService.LoginUser(req)
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.LoginUserDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	tokenResp, err := newService.LoginUser(request)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
 		return
 	}
 
 	if err := json.NewEncoder(w).Encode(tokenResp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
 func ProfileHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodGet) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 	tokenString := r.Header.Get("Authorization")
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
 	userID, err := utils.ValidateToken(tokenString)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile", err)
+		utils.HandleError(w, http.StatusUnauthorized, "Authentication error: invalid token", err)
 		return
 	}
 
@@ -192,12 +256,20 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(profileResp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
 func GetClientData(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodGet) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 	clientName := r.Header.Get("Name")
 
@@ -208,64 +280,139 @@ func GetClientData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(clientModel); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
 func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 	tokenString := r.Header.Get("Authorization")
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
 	userID, err := utils.ValidateToken(tokenString)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to verify email", err)
+		utils.HandleError(w, http.StatusUnauthorized, "Authentication error: invalid token", err)
 		return
 	}
 
-	err = newService.VerifyEmail(userID)
+	request, err := utils.DecodeJsonFromRequest[dto.VerifyEmailDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	err = newService.VerifyEmail(userID, request.Email)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to verify email", err)
 		return
 	}
 
-	resp := utils.BuildResponse(true, "OK!", "Email verified successfully")
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to verify email", err)
+	response := utils.BuildResponseWithNoBody(w, http.StatusOK, "Verification email sent")
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Internal error happened", err)
+	}
+}
+
+func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
 		return
+	}
+
+	service := r.Context().Value("service").(interfaces.IService)
+	tokenString := r.Header.Get("Authorization")
+	tokenString = tokenString[7:] // Remove the "Bearer " prefix
+	userID, err := utils.ValidateToken(tokenString)
+	if err != nil {
+		utils.HandleError(w, http.StatusUnauthorized, "Authentication error: invalid token", err)
+		return
+	}
+
+	request, err := utils.DecodeJsonFromRequest[dto.CheckEmailVerificationCodeDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	err = service.CheckEmailVerificationCode(userID, request.Code)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to verify code", err)
+		return
+	}
+
+	user, err := service.FindUser(userID)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "User with provided id does not exist", err)
+		return
+	}
+
+	zkProof, zkKeyPairId, err := service.GenerateZkProofOfEmailVerification(user, request)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to generate zk proof of email verification", err)
+		return
+	}
+
+	err = service.SaveProofOfEmailVerification(userID, request.Code, zkProof, zkKeyPairId)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to save proof of the email verification procedure", err)
+		return
+	}
+
+	response := utils.BuildResponseWithNoBody(w, http.StatusOK, "Your email was successfully verified!")
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Internal error happened", err)
 	}
 }
 
 func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
 	newService := r.Context().Value("service").(interfaces.IService)
 	tokenString := r.Header.Get("Authorization")
 	tokenString = tokenString[7:] // Remove the "Bearer " prefix
 	userID, err := utils.ValidateToken(tokenString)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)
+		utils.HandleError(w, http.StatusUnauthorized, "Authentication error: invalid token", err)
 		return
 	}
 
-	var req dto.UpdateDisplayNameDTO
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)
+	request, err := utils.DecodeJsonFromRequest[dto.UpdateDisplayNameDTO](w, r.Body)
+	if err != nil {
 		return
 	}
 
-	err = newService.UpdateDisplayName(userID, req)
+	err = newService.UpdateDisplayName(userID, request)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)
 		return
 	}
 
-	resp := utils.BuildResponse(true, "OK!", "Display name updated successfully")
+	resp := utils.BuildResponseWithNoBody(w, http.StatusOK, "Display name updated successfully")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)
-		return
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
 	}
 }
 
 func GetUsageStats(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodGet) {
+		return
+	}
+
 	authToken := r.Header.Get("Authorization")
 	if authToken == "" {
 		utils.HandleError(w, http.StatusUnauthorized, "failed to show client usage statistics", errors.New("missing jwt token"))
@@ -314,9 +461,96 @@ func GetUsageStats(w http.ResponseWriter, r *http.Request) {
 		finalResponse.MonthToDate.ForecastedEndOfMonthUsage = (monthToDateTotal / 1000000000) + float64(totalDaysBeforeNextMonth)*thirtyDaysStatistic.Average
 	}
 
-	resp := utils.BuildResponse(true, "OK!", finalResponse)
+	resp := utils.BuildResponse(w, http.StatusOK, "Client usage statistics", finalResponse)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get stats", err)
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
+	}
+}
+
+func CheckBackendURI(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
 		return
 	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.CheckBackendURIDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	response, err := newService.CheckBackendURI(request.BackendURI)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to check backend url", err)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
+	}
+}
+
+func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		// validateHttpMethod will automatically send an error response
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.ResetPasswordDTO](w, r.Body)
+	if err != nil {
+		// utils.DecodeJsonFromRequest sends an Http error message automatically
+		return
+	}
+
+	user, err := newService.GetUserForUsername(request.Username)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "user does not exist", err)
+		return
+	}
+
+	err = newService.ValidateSignature("Sign-in with Layer8", request.Signature, user.PublicKey)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "signature is invalid", err)
+		return
+	}
+
+	err = newService.UpdateUserPassword(user.Username, request.NewPassword, user.Salt)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Internal error: failed to update password", err)
+		return
+	}
+
+	response := utils.BuildResponseWithNoBody(
+		w, http.StatusCreated, "Your password was updated successfully!",
+	)
+	if err := json.NewEncoder(w).Encode(&response); err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to encode the response", err)
+	}
+}
+
+func validateHttpMethod(w http.ResponseWriter, actualMethod string, expectedMethod string) bool {
+	if actualMethod != expectedMethod {
+		errorMessage := fmt.Sprintf("Invalid http method. Expected %s", expectedMethod)
+		utils.HandleError(
+			w,
+			http.StatusMethodNotAllowed,
+			errorMessage,
+			fmt.Errorf(errorMessage),
+		)
+		return false
+	}
+
+	return true
 }

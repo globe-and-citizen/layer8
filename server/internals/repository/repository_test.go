@@ -186,14 +186,37 @@ func TestSetClient(t *testing.T) {
 		Secret:      "test_secret",
 		Name:        "test_name",
 		RedirectURI: "test_redirect_uri",
+		BackendURI:  "test_backend_uri",
 		Username:    "test_username",
 		Password:    "test_password",
 		Salt:        "test_salt",
 	}
 
-	mock.ExpectQuery("SELECT (.+) FROM \"clients\" WHERE id = (.+)").WithArgs(client.ID).WillReturnError(gorm.ErrRecordNotFound)
+	mock.ExpectQuery(
+		"SELECT (.+) FROM \"clients\" WHERE id = (.+)",
+	).WithArgs(
+		client.ID,
+	).WillReturnError(
+		gorm.ErrRecordNotFound,
+	)
+
 	mock.ExpectBegin()
-	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO \"clients\"")).WithArgs(client.ID, client.Secret, client.Name, client.RedirectURI, client.Username, client.Password, client.Salt).WillReturnResult(sqlmock.NewResult(1, 1))
+
+	mock.ExpectExec(
+		regexp.QuoteMeta("INSERT INTO \"clients\""),
+	).WithArgs(
+		client.ID,
+		client.Secret,
+		client.Name,
+		client.RedirectURI,
+		client.BackendURI,
+		client.Username,
+		client.Password,
+		client.Salt,
+	).WillReturnResult(
+		sqlmock.NewResult(1, 1),
+	)
+
 	mock.ExpectCommit()
 
 	// Call the function and check the result

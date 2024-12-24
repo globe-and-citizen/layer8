@@ -9,18 +9,26 @@ import (
 
 type IRepository interface {
 	// Resource Server methods
-	RegisterUser(req dto.RegisterUserDTO) error
+	RegisterUser(req dto.RegisterUserDTO, hashedPassword string, salt string) error
+	FindUser(userId uint) (models.User, error)
 	LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string, error)
 	LoginPreCheckClient(req dto.LoginPrecheckDTO) (string, string, error)
 	LoginUser(req dto.LoginUserDTO) (models.User, error)
 	LoginClient(req dto.LoginClientDTO) (models.Client, error)
 	ProfileUser(userID uint) (models.User, []models.UserMetadata, error)
 	ProfileClient(username string) (models.Client, error)
-	VerifyEmail(userID uint) error
+	SaveProofOfEmailVerification(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error
+	SaveEmailVerificationData(data models.EmailVerificationData) error
+	GetEmailVerificationData(userId uint) (models.EmailVerificationData, error)
 	UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error
-	RegisterClient(req dto.RegisterClientDTO) error
+	RegisterClient(client models.Client) error
 	GetClientData(clientName string) (models.Client, error)
 	GetClientDataByBackendURL(backendURL string) (models.Client, error)
+	IsBackendURIExists(backendURL string) (bool, error)
+	SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (uint, error)
+	GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error)
+	GetUserForUsername(username string) (models.User, error)
+	UpdateUserPassword(username string, password string) error
 	// Oauth2 methods
 	LoginUserPrecheck(username string) (string, error)
 	GetUser(username string) (*serverModel.User, error)

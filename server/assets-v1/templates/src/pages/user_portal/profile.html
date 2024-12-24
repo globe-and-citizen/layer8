@@ -145,27 +145,23 @@
               <div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 md:gap-x-8 lg:gap-x-12 gap-y-3 md:gap-y-6 mb-6">
                 <div>
                   <label class="font-normal text-black text-sm text-start mb-2 block">Username</label>
-                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" readonly :value="user.username" />
+                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" placeholder="Username" readonly :value="user.username" />
                 </div>
                 <div>
                   <label class="font-normal text-black text-sm text-start mb-2 block">First Name</label>
-                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" readonly :value="user.first_name" />
+                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" placeholder="First Name" readonly :value="user.first_name" />
                 </div>
                 <div>
                   <label class="font-normal text-black text-sm text-start mb-2 block">Last Name</label>
-                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" readonly :value="user.last_name" />
+                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" placeholder="Last Name" readonly :value="user.last_name" />
                 </div>
                 <div>
                   <label class="font-normal text-black text-sm text-start mb-2 block">Country</label>
-                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" readonly :value="user.country" />
-                </div>
-                <div>
-                  <label class="font-normal text-black text-sm text-start mb-2 block">Email</label>
-                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" readonly :value="user.email" />
+                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" placeholder="Country" readonly :value="user.country" />
                 </div>
                 <div>
                   <label class="font-normal text-black text-sm text-start mb-2 block">Display Name</label>
-                  <input class="border border-[#BDC3CA] rounded-lg px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" type="text" v-model="newDisplayName" />
+                  <input class="border border-[#BDC3CA] rounded-lg px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" type="text" v-model="newDisplayName" placeholder="Display Name" />
                 </div>
                 <div class="md:col-span-2 self-center text-base md:text-xl">Email is <span v-if="!user.email_verified">not</span> verified.</div>
                 <button
@@ -197,7 +193,6 @@
 
       const token = ref(localStorage.getItem("token") || null);
       const user = ref({
-        email: "",
         username: "",
         first_name: "",
         last_name: "",
@@ -235,27 +230,7 @@
       };
 
       const verifyEmail = async () => {
-        try {
-          const resp = await window.fetch(
-            "[[ .ProxyURL ]]/api/v1/verify-email",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "Application/Json",
-                Authorization: `Bearer ${token.value}`,
-              },
-            }
-          );
-          const data = await resp.json();
-          if (data.message === "OK!") {
-            alert("Email verified!");
-            user.value.email_verified = true;
-          } else {
-            alert("Email verification failed!");
-          }
-        } catch (error) {
-          console.error(error);
-        }
+          window.location.href = "[[ .ProxyURL ]]/input-your-email-page";
       };
 
       const changeDisplayName = async () => {
@@ -274,7 +249,7 @@
             }
           );
           const data = await resp.json();
-          if (data.message === "OK!") {
+          if (resp.status === 200) {
             alert("Display name changed!");
             user.value.display_name = newDisplayName.value;
           } else {
