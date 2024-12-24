@@ -239,7 +239,7 @@ func (u *Service) AddTestClient() (*models.Client, error) {
 		Username:    "layer8",
 		Password:    rs_utils.SaltAndHashPassword("12341234", rmSalt),
 		Salt:        rmSalt,
-		BackendURI:  "localhost:8000",
+		// BackendURI:  "localhost:8000",
 	}
 
 	err := u.Repo.SetClient(client)
