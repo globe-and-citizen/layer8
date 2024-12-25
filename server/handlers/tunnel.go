@@ -63,21 +63,22 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 	srv := r.Context().Value("service").(interfaces.IService)
 	client, err := srv.GetClientDataByBackendURL(backendWithoutProtocol)
 	if err != nil {
+		fmt.Println("Error getting client data:", err)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
 	mpJWT, err := utilities.GenerateStandardToken(os.Getenv("MP_123_SECRET_KEY"))
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("Error generating mpJWT:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	reqData := utilities.ReadResponseBody(r.Body)
-	b64PubJWK := string(reqData)
-	fmt.Println("b64PubJWK: ", b64PubJWK)
-	fmt.Println("x-ecdh-init: ", r.Header.Get("x-ecdh-init"))
+	// reqData := utilities.ReadResponseBody(r.Body)
+	// b64PubJWK := string(reqData)
+	// fmt.Println("b64PubJWK: ", b64PubJWK)
+	// fmt.Println("x-ecdh-init: ", r.Header.Get("x-ecdh-init"))
 
 	// create the request
 	req, err := http.NewRequest(r.Method, backend, r.Body)
@@ -112,17 +113,20 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 	// Make a copy of the response body to send back to client
 	res.Body = io.NopCloser(bytes.NewBuffer(resBodyTemp.Bytes()))
 
-	fmt.Println("\nReceived response from 8000:", backend, " of code: ", res.StatusCode)
+	fmt.Println("\nReceived response from backend:", backend, " of code: ", res.StatusCode)
+
 	upJWT, err := utils.GenerateUPTokenJWT(os.Getenv("UP_999_SECRET_KEY"), client.ID)
 	if err != nil {
+		fmt.Println("Error generating upJWT:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	fmt.Printf("Successfully generated upJWT: %s***************\n", upJWT[0:10])
 
 	// server_pubKeyECDH, err := utilities.B64ToJWK(string(resBodyTempBytes))
 	server_pubKeyECDH, err := utilities.B64ToJWK(res.Header.Get("server_pubKeyECDH"))
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("Error acquiring server_pubKeyECDH from Headers:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -137,7 +141,7 @@ func InitTunnel(w http.ResponseWriter, r *http.Request) {
 
 	datatoSend, err := json.Marshal(&data)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("Error marshalling data:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -210,7 +214,7 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 
 	// Get mp-JWT from response header and verify it
 	mpJWT := res.Header.Get("mp-jwt")
-	fmt.Println("mp-jwt coming from SP: ", mpJWT)
+	// fmt.Printf("mp-jwt coming from SP: %s***************\n", mpJWT[0:10])
 
 	_, err = utilities.VerifyStandardToken(mpJWT, os.Getenv("MP_123_SECRET_KEY"))
 	if err != nil {
