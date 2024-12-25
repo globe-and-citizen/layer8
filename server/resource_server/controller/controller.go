@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"globe-and-citizen/layer8/server/resource_server/db"
@@ -553,4 +554,45 @@ func validateHttpMethod(w http.ResponseWriter, actualMethod string, expectedMeth
 	}
 
 	return true
+}
+
+func RegisterUserPrecheck(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService, ok := r.Context().Value("service").(interfaces.IService)
+	if !ok {
+		utils.HandleError(w, http.StatusInternalServerError, "Service not found in context", nil)
+		return
+	}
+
+	iterCountStr := os.Getenv("SCRAM_ITERATION_COUNT")
+	iterCount, err := strconv.Atoi(iterCountStr)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Invalid iteration count configuration", err)
+		return
+	}
+
+	request, err := utils.DecodeJsonFromRequest[dto.RegisterUserPrecheckDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	registerUserPrecheckResp, err := newService.RegisterUserPrecheck(request, iterCount)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+
+	if err := json.NewEncoder(w).Encode(registerUserPrecheckResp); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal Server Error",
+			err,
+		)
+	}
 }
