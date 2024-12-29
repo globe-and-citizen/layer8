@@ -22,3 +22,8 @@ type UsageStatisticPerDate struct {
 	Date  string  `json:"date"`
 	Total float64 `json:"total"`
 }
+
+type ClientUsageStatisticsByRange struct {
+	ClientId   string
+	TotalBytes float64
+}

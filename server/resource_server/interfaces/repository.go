@@ -32,6 +32,11 @@ type IRepository interface {
 	GetUserForUsername(username string) (models.User, error)
 	UpdateUserPassword(username string, password string) error
 	UpdateUserPasswordV2(username string, storedKey string, serverKey string) error
+	CreateClientTrafficStatisticsEntry(clientId string, rate int) error
+	AddClientTrafficUsage(clientId string, consumedBytes int, now time.Time) error
+	GetClientTrafficStatistics(clientId string) (*models.ClientTrafficStatistics, error)
+	PayClientTrafficUsage(clientId string, amountPaid int) error
+	GetAllClientStatistics() ([]models.ClientTrafficStatistics, error)
 	// Oauth2 methods
 	LoginUserPrecheck(username string) (string, error)
 	GetUser(username string) (*serverModel.User, error)

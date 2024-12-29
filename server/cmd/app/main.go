@@ -4,6 +4,16 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"globe-and-citizen/layer8/server/config"
+	"globe-and-citizen/layer8/server/handlers"
+	"globe-and-citizen/layer8/server/opentelemetry"
+	"globe-and-citizen/layer8/server/resource_server/db"
+	"globe-and-citizen/layer8/server/resource_server/emails/sender"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
+	"globe-and-citizen/layer8/server/resource_server/models"
+	"globe-and-citizen/layer8/server/resource_server/paywithcrypto"
 	"io/fs"
 	"log"
 	"net/http"
@@ -15,24 +25,21 @@ import (
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/constraint"
-	"github.com/joho/godotenv"
 
-	"globe-and-citizen/layer8/server/config"
-	"globe-and-citizen/layer8/server/handlers"
-	oauthRepo "globe-and-citizen/layer8/server/internals/repository"
-	oauthSvc "globe-and-citizen/layer8/server/internals/service" // there are two services
-	"globe-and-citizen/layer8/server/opentelemetry"
 	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
-	"globe-and-citizen/layer8/server/resource_server/db"
-	"globe-and-citizen/layer8/server/resource_server/emails/sender"
-	"globe-and-citizen/layer8/server/resource_server/emails/verification"
-	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
-	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
+	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
-	"globe-and-citizen/layer8/server/resource_server/models"
-	rsRepo "globe-and-citizen/layer8/server/resource_server/repository"
-	svc "globe-and-citizen/layer8/server/resource_server/service" // there are two services
 	"globe-and-citizen/layer8/server/resource_server/utils"
+
+	oauthRepo "globe-and-citizen/layer8/server/internals/repository"
+
+	rsRepo "globe-and-citizen/layer8/server/resource_server/repository"
+
+	svc "globe-and-citizen/layer8/server/resource_server/service" // there are two services
+
+	oauthSvc "globe-and-citizen/layer8/server/internals/service" // there are two services
+
+	"github.com/joho/godotenv"
 )
 
 // go:embed dist
@@ -135,6 +142,32 @@ func main() {
 	}
 
 	proofProcessor := zk.NewProofProcessor(cs, zkKeyPairId, provingKey, verifyingKey)
+
+	updateInterval, err := time.ParseDuration(os.Getenv("UPDATE_CLIENT_USAGE_STATISTICS_TIME_INTERVAL"))
+	if err != nil {
+		log.Fatalf("failed to parse client usage statistics update interval: %e", err)
+	}
+
+	statisticsUpdater := paywithcrypto.NewStatisticsUpdater(
+		rsRepo.NewStatRepository(db.GetInfluxDBClient()),
+		resourceRepository,
+	)
+
+	go func() {
+		ticker := time.NewTicker(updateInterval)
+
+		for currTime := range ticker.C {
+			//ctx, cancel := context.WithTimeout(context.Background(), updateInterval)
+
+			err := statisticsUpdater.Update(context.Background(), currTime)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}()
+
+	eventListener := paywithcrypto.NewEventListener(resourceRepository)
+	go eventListener.Start()
 
 	// Run server (which never returns)
 	Server(
@@ -283,6 +316,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.RegisterUserPrecheck(w, r)
 			case path == "/api/v2/register-user":
 				Ctl.RegisterUserHandlerv2(w, r)
+			case path == "/api/v1/client-unpaid-amount":
+				Ctl.ClientUnpaidAmountHandler(w, r)
 			case path == "/favicon.ico":
 				faviconPath := workingDirectory + "/dist/favicon.ico"
 				http.ServeFile(w, r, faviconPath)
