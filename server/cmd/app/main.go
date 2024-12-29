@@ -14,6 +14,7 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
 	"globe-and-citizen/layer8/server/resource_server/models"
+	"globe-and-citizen/layer8/server/resource_server/paywithcrypto"
 	"io/fs"
 	"log"
 	"net/http"
@@ -182,6 +183,30 @@ func main() {
 
 	proofProcessor := zk.NewProofProcessor(cs, zkKeyPairId, provingKey, verifyingKey)
 
+	updateInterval, err := time.ParseDuration(os.Getenv("UPDATE_CLIENT_USAGE_STATISTICS_TIME_INTERVAL"))
+	if err != nil {
+		log.Fatalf("failed to parse client usage statistics update interval: %e", err)
+	}
+
+	statisticsUpdater := paywithcrypto.NewStatisticsUpdater(
+		paywithcrypto.NewClient(),
+		rsRepo.NewStatRepository(db.GetInfluxDBClient()),
+		resourceRepository,
+	)
+
+	go func() {
+		ticker := time.NewTicker(updateInterval)
+
+		for currTime := range ticker.C {
+			//ctx, cancel := context.WithTimeout(context.Background(), updateInterval)
+
+			err := statisticsUpdater.Update(context.Background(), currTime)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}()
+
 	// Run server (which never returns)
 	Server(
 		svc.NewService(resourceRepository, emailVerifier, proofProcessor),
@@ -311,6 +336,10 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.RegisterUserPrecheck(w, r)
 			case path == "/api/v2/register-user":
 				Ctl.RegisterUserHandlerv2(w, r)
+			case path == "api/v1/pay-client-traffic":
+				Ctl.PayClientTrafficHandler(w, r)
+			case path == "api/v1/client-unpaid-amount":
+				Ctl.ClientUnpaidAmountHandler(w, r)
 			case path == "/favicon.ico":
 				faviconPath := workingDirectory + "/dist/favicon.ico"
 				http.ServeFile(w, r, faviconPath)
