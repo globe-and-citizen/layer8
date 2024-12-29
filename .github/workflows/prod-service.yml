@@ -44,6 +44,9 @@ jobs:
     environment: "production"
     needs: [build-layer8]
     runs-on: ubuntu-latest
+    env:
+      ECS_CLUSTER: "layer8-production"
+      ECS_SERVICE: "layer8-server"
     defaults:
       run:
         working-directory: infra/production/layer8
@@ -94,3 +97,83 @@ jobs:
       - name: Terraform Apply
         id: apply
         run: terraform apply
+
+      - name: Wait for service stability
+        run: |
+          echo "Waiting for ECS service to stabilize..."
+
+          sleep 60
+        
+          MAX_ATTEMPTS=30
+          WAIT_SECONDS=20
+          attempt=1
+        
+          while [ $attempt -le $MAX_ATTEMPTS ]; do
+            DEPLOYMENT_STATUS=$(aws ecs describe-services \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --services ${{ env.ECS_SERVICE }} \
+              --query 'services[0].deployments[0].status' \
+              --output text)
+            
+            RUNNING_COUNT=$(aws ecs describe-services \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --services ${{ env.ECS_SERVICE }} \
+              --query 'services[0].runningCount' \
+              --output text)
+            
+            DESIRED_COUNT=$(aws ecs describe-services \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --services ${{ env.ECS_SERVICE }} \
+              --query 'services[0].desiredCount' \
+              --output text)
+          
+            echo "Attempt $attempt of $MAX_ATTEMPTS"
+            echo "Deployment Status: $DEPLOYMENT_STATUS"
+            echo "Running Count: $RUNNING_COUNT of $DESIRED_COUNT"
+          
+            if [ "$DEPLOYMENT_STATUS" = "PRIMARY" ] && [ "$RUNNING_COUNT" -eq "$DESIRED_COUNT" ]; then
+            # Additional check for task health
+              UNHEALTHY_COUNT=$(aws ecs describe-services \
+                --cluster ${{ env.ECS_CLUSTER }} \
+                --services ${{ env.ECS_SERVICE }} \
+                --query 'services[0].deployments[0].failedTasks' \
+                --output text)
+              
+              if [ "$UNHEALTHY_COUNT" = "0" ]; then
+                echo "Deployment completed successfully!"
+                exit 0
+              fi
+            fi
+          
+            if [ "$DEPLOYMENT_STATUS" = "FAILED" ]; then
+              echo "Deployment failed!"
+              exit 1
+            fi
+          
+            echo "Waiting $WAIT_SECONDS seconds before next check..."
+            sleep $WAIT_SECONDS
+          
+            attempt=$((attempt + 1))
+          done
+        
+          echo "Deployment did not stabilize within the timeout period"
+          exit 1
+          
+      - name: Verify container health
+        run: |
+          TASK_ARN=$(aws ecs list-tasks \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --service-name ${{ env.ECS_SERVICE }} \
+          --query 'taskArns[0]' \
+          --output text)
+
+          CONTAINER_STATUS=$(aws ecs describe-tasks \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --tasks $TASK_ARN \
+          --query "tasks[0].containers[?name=='${{ env.CONTAINER_NAME }}'].lastStatus" \
+          --output text)
+
+          if [ "$CONTAINER_STATUS" != "RUNNING" ]; then
+            echo "Container is not running. Status: $CONTAINER_STATUS"
+            exit 1
+          fi
