@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - fix/devops-deployment-false-positive
 
 jobs:
   build-layer8:
