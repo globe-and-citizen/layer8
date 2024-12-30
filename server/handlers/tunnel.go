@@ -213,15 +213,15 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\nReceived response from:", backendURL, " of code: ", res.StatusCode)
 
 	// Get mp-JWT from response header and verify it
-	mpJWT := res.Header.Get("mp-jwt")
+	// mpJWT := res.Header.Get("mp-jwt")
 	// fmt.Printf("mp-jwt coming from SP: %s***************\n", mpJWT[0:10])
 
-	_, err = utilities.VerifyStandardToken(mpJWT, os.Getenv("MP_123_SECRET_KEY"))
-	if err != nil {
-		fmt.Printf("MP JWT verify error: %s. With status code: %d and text: %s", err.Error(), res.StatusCode, res.Status)
-		http.Error(w, res.Status, res.StatusCode)
-		return
-	}
+	// _, err = utilities.VerifyStandardToken(mpJWT, os.Getenv("MP_123_SECRET_KEY"))
+	// if err != nil {
+	// 	fmt.Printf("MP JWT verify error: %s. With status code: %d and text: %s", err.Error(), res.StatusCode, res.Status)
+	// 	http.Error(w, res.Status, res.StatusCode)
+	// 	return
+	// }
 
 	// copy response back
 	for k, v := range res.Header {
