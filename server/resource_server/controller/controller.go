@@ -554,3 +554,75 @@ func validateHttpMethod(w http.ResponseWriter, actualMethod string, expectedMeth
 
 	return true
 }
+
+func RegisterUserPrecheck(w http.ResponseWriter, r *http.Request) {
+	request := dto.RegisterUserDTO{
+		Username:    "test",
+		Password:    "test",
+		FirstName:   "test",
+		LastName:    "test",
+		DisplayName: "test",
+		Country:     "test",
+		PublicKey:   []byte("test"),
+	}
+
+	data := models.RegisterUserPrecheckResponseOutput{
+		Salt:           "ThisIsATestSalt123",
+		IterationCount: "1024",
+	}
+
+	IterationCountInt := 1024
+
+	// saltedPassword := utils.SaltAndHashPasswordv2(request.Password, data.Salt, IterationCountInt)
+
+	// CLIENT_KEY_ENV := "TEST_CLIENT_KEY"
+	// SERVER_KEY_ENV := "TEST_SERVER_KEY"
+
+	// clientKey := utils.GenerateHmacSHA256Hash(CLIENT_KEY_ENV, saltedPassword)
+	// serverKey := utils.GenerateHmacSHA256Hash(SERVER_KEY_ENV, saltedPassword)
+	// storedKey := utils.GenerateSHA256Hash(clientKey)
+
+	// response := models.RegisterUserKeyResponseOutput{
+	// 	ServerKey: serverKey,
+	// 	StoredKey: storedKey,
+	}
+
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
+	}
+
+}
+
+func RegisterUserHandlerv2(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.RegisterUserDTOv2](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	err = newService.RegisterUserv2(request)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
+		return
+	}
+
+	res := utils.BuildResponseWithNoBody(w, http.StatusCreated, "User registered successfully")
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
+	}
+}

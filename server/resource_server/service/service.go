@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
@@ -10,6 +9,8 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 	"time"
+
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type service struct {
@@ -36,6 +37,10 @@ func (s *service) RegisterUser(req dto.RegisterUserDTO) error {
 	hashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
 
 	return s.repository.RegisterUser(req, hashedAndSaltedPass, rmSalt)
+}
+
+func (s *service) RegisterUserv2(req dto.RegisterUserDTOv2) error {
+	return s.repository.RegisterUserv2(req)
 }
 
 func (s *service) RegisterClient(req dto.RegisterClientDTO) error {
