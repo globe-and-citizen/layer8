@@ -1,6 +1,10 @@
 package controller
 
 import (
+	"crypto/hmac"
+	"crypto/sha1"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +18,8 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/repository"
 	"globe-and-citizen/layer8/server/resource_server/utils"
+
+	"github.com/xdg-go/pbkdf2"
 )
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -24,6 +30,9 @@ func LoginUserPage(w http.ResponseWriter, r *http.Request) {
 }
 func RegisterUserPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/register.html")
+}
+func RegisterUserPageV2(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/register_v2.html")
 }
 func ClientProfilePage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/profile.html")
@@ -553,4 +562,73 @@ func validateHttpMethod(w http.ResponseWriter, actualMethod string, expectedMeth
 	}
 
 	return true
+}
+
+func RegisterUserPrecheck(w http.ResponseWriter, r *http.Request) {
+	data := models.RegisterUserPrecheckResponseOutput{
+		Salt:           "ThisIsATestSalt123",
+		IterationCount: 1024,
+	}
+
+	fmt.Println("salt: ", data.Salt)
+	fmt.Println("iteration count: ", data.IterationCount)
+
+	dk := pbkdf2.Key([]byte("TestPassword"), []byte(data.Salt), data.IterationCount, 32, sha1.New)
+	saltedPassword := hex.EncodeToString(dk[:])
+
+	CLIENT_KEY_ENV := "TEST_CLIENT_KEY"
+	SERVER_KEY_ENV := "TEST_SERVER_KEY"
+
+	c := hmac.New(sha256.New, []byte(CLIENT_KEY_ENV))
+	c.Write([]byte(saltedPassword))
+	clientKey := hex.EncodeToString(c.Sum(nil))
+
+	se := hmac.New(sha256.New, []byte(SERVER_KEY_ENV))
+	se.Write([]byte(saltedPassword))
+	serverKey := hex.EncodeToString(se.Sum(nil))
+	fmt.Println("server key: ", serverKey)
+
+	st := sha256.New()
+	st.Write([]byte(clientKey))
+	storedKey := hex.EncodeToString(st.Sum(nil))
+	fmt.Println("stored key: ", storedKey)
+
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
+	}
+}
+
+func RegisterUserHandlerv2(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.RegisterUserDTOv2](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	err = newService.RegisterUserv2(request)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
+		return
+	}
+
+	res := utils.BuildResponseWithNoBody(w, http.StatusCreated, "User registered successfully")
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
+	}
 }

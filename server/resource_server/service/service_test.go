@@ -3,7 +3,6 @@ package service_test
 import (
 	"crypto/rand"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto"
 	serverModels "globe-and-citizen/layer8/server/models"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
@@ -14,6 +13,8 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/utils/mocks"
 	"testing"
 	"time"
+
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -75,6 +76,10 @@ func (m *mockRepository) FindUser(userId uint) (models.User, error) {
 
 func (m *mockRepository) RegisterUser(req dto.RegisterUserDTO, hashedPassword string, salt string) error {
 	return m.registerUser(req, hashedPassword, salt)
+}
+
+func (m *mockRepository) RegisterUserv2(dto.RegisterUserDTOv2) error {
+	return nil
 }
 
 func (m *mockRepository) LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string, error) {
