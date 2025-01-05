@@ -1,10 +1,6 @@
 package controller
 
 import (
-	"crypto/hmac"
-	"crypto/sha1"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,8 +14,6 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/repository"
 	"globe-and-citizen/layer8/server/resource_server/utils"
-
-	"github.com/xdg-go/pbkdf2"
 )
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -565,36 +559,50 @@ func validateHttpMethod(w http.ResponseWriter, actualMethod string, expectedMeth
 }
 
 func RegisterUserPrecheck(w http.ResponseWriter, r *http.Request) {
-	data := models.RegisterUserPrecheckResponseOutput{
-		Salt:           "ThisIsATestSalt123",
-		IterationCount: 1024,
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.RegisterUserPrecheckDTO](w, r.Body)
+	if err != nil {
+		return
 	}
 
-	fmt.Println("salt: ", data.Salt)
-	fmt.Println("iteration count: ", data.IterationCount)
+	registerUserPrecheckResp, err := newService.RegisterUserPrecheck(request, 4096)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile", err)
+		return
+	}
 
-	dk := pbkdf2.Key([]byte("TestPassword"), []byte(data.Salt), data.IterationCount, 32, sha1.New)
-	saltedPassword := hex.EncodeToString(dk[:])
+	// data := models.RegisterUserPrecheckResponseOutput{
+	// 	Salt:           "ThisIsATestSalt123",
+	// 	IterationCount: 1024,
+	// }
 
-	CLIENT_KEY_ENV := "TEST_CLIENT_KEY"
-	SERVER_KEY_ENV := "TEST_SERVER_KEY"
+	// fmt.Println("salt: ", data.Salt)
+	// fmt.Println("iteration count: ", data.IterationCount)
 
-	c := hmac.New(sha256.New, []byte(CLIENT_KEY_ENV))
-	c.Write([]byte(saltedPassword))
-	clientKey := hex.EncodeToString(c.Sum(nil))
+	// dk := pbkdf2.Key([]byte("TestPassword"), []byte(data.Salt), data.IterationCount, 32, sha1.New)
+	// saltedPassword := hex.EncodeToString(dk[:])
 
-	se := hmac.New(sha256.New, []byte(SERVER_KEY_ENV))
-	se.Write([]byte(saltedPassword))
-	serverKey := hex.EncodeToString(se.Sum(nil))
-	fmt.Println("server key: ", serverKey)
+	// CLIENT_KEY_ENV := "TEST_CLIENT_KEY"
+	// SERVER_KEY_ENV := "TEST_SERVER_KEY"
 
-	st := sha256.New()
-	st.Write([]byte(clientKey))
-	storedKey := hex.EncodeToString(st.Sum(nil))
-	fmt.Println("stored key: ", storedKey)
+	// c := hmac.New(sha256.New, []byte(CLIENT_KEY_ENV))
+	// c.Write([]byte(saltedPassword))
+	// clientKey := hex.EncodeToString(c.Sum(nil))
+
+	// se := hmac.New(sha256.New, []byte(SERVER_KEY_ENV))
+	// se.Write([]byte(saltedPassword))
+	// serverKey := hex.EncodeToString(se.Sum(nil))
+	// fmt.Println("server key: ", serverKey)
+
+	// st := sha256.New()
+	// st.Write([]byte(clientKey))
+	// storedKey := hex.EncodeToString(st.Sum(nil))
+	// fmt.Println("stored key: ", storedKey)
 
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
+	if err := json.NewEncoder(w).Encode(registerUserPrecheckResp); err != nil {
 		utils.HandleError(
 			w,
 			http.StatusInternalServerError,

@@ -269,3 +269,18 @@ func (s *service) UpdateUserPassword(username string, newPassword string, salt s
 	hashedPassword := utils.SaltAndHashPassword(newPassword, salt)
 	return s.repository.UpdateUserPassword(username, hashedPassword)
 }
+
+func (s *service) RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCount int) (models.RegisterUserPrecheckResponseOutput, error) {
+	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
+
+	salt, iterCount, err := s.repository.RegisterPrecheckUser(req, rmSalt, iterCount)
+	if err != nil {
+		return models.RegisterUserPrecheckResponseOutput{}, err
+	}
+	registerPrecheckResp := models.RegisterUserPrecheckResponseOutput{
+		Salt:           salt,
+		IterationCount: iterCount,
+	}
+
+	return registerPrecheckResp, nil
+}
