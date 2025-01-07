@@ -183,6 +183,16 @@ func (m *MockService) UpdateUserPassword(username string, newPassword string, sa
 	return m.updateUserPassword(username, newPassword, salt)
 }
 
+// Mock RegisterUserPrecheck method for unit tests
+func (m *MockService) RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCount int) (models.RegisterUserPrecheckResponseOutput, error) {
+	return models.RegisterUserPrecheckResponseOutput{}, nil
+}
+
+// Mock RegisterUser method for unit tests
+func (m *MockService) RegisterUserv2(req dto.RegisterUserDTOv2) error {
+	return nil
+}
+
 func TestRegisterUserHandler_InvalidHttpRequestMethod(t *testing.T) {
 	requestBody := []byte(`{
 		"email": "test@gcitizen.com",
@@ -231,6 +241,7 @@ func TestRegisterUserHandler_RequestJsonIsMalformed(t *testing.T) {
 
 	mockService := &MockService{}
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+	// setMockServiceInContext(req)
 
 	rr := httptest.NewRecorder()
 

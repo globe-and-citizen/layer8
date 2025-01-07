@@ -573,34 +573,6 @@ func RegisterUserPrecheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// data := models.RegisterUserPrecheckResponseOutput{
-	// 	Salt:           "ThisIsATestSalt123",
-	// 	IterationCount: 1024,
-	// }
-
-	// fmt.Println("salt: ", data.Salt)
-	// fmt.Println("iteration count: ", data.IterationCount)
-
-	// dk := pbkdf2.Key([]byte("TestPassword"), []byte(data.Salt), data.IterationCount, 32, sha1.New)
-	// saltedPassword := hex.EncodeToString(dk[:])
-
-	// CLIENT_KEY_ENV := "TEST_CLIENT_KEY"
-	// SERVER_KEY_ENV := "TEST_SERVER_KEY"
-
-	// c := hmac.New(sha256.New, []byte(CLIENT_KEY_ENV))
-	// c.Write([]byte(saltedPassword))
-	// clientKey := hex.EncodeToString(c.Sum(nil))
-
-	// se := hmac.New(sha256.New, []byte(SERVER_KEY_ENV))
-	// se.Write([]byte(saltedPassword))
-	// serverKey := hex.EncodeToString(se.Sum(nil))
-	// fmt.Println("server key: ", serverKey)
-
-	// st := sha256.New()
-	// st.Write([]byte(clientKey))
-	// storedKey := hex.EncodeToString(st.Sum(nil))
-	// fmt.Println("stored key: ", storedKey)
-
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(registerUserPrecheckResp); err != nil {
 		utils.HandleError(
