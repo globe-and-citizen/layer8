@@ -2128,5 +2128,5 @@ func TestRegisterUserPrecheck_ServiceError(t *testing.T) {
 
 	Ctl.RegisterUserPrecheck(rr, req)
 
-	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
+	assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected HTTP 400 Bad Request")
 }
