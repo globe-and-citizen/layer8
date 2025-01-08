@@ -69,6 +69,73 @@ func (r *Repository) RegisterUser(req dto.RegisterUserDTO, hashedPassword string
 	return nil
 }
 
+func (r *Repository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) (string, int, error) {
+	user := models.User{
+		Username:  req.Username,
+		Salt:      salt,
+		PublicKey: []byte("0000"),
+	}
+
+	if err := r.connection.Create(&user).Error; err != nil {
+		return "", 0, fmt.Errorf("failed to create a new user: %v", err)
+	}
+
+	return salt, iterCount, nil
+}
+
+func (r *Repository) RegisterUserv2(req dto.RegisterUserDTOv2) error {
+	var user models.User
+
+	tx := r.connection.Begin()
+	if err := tx.Where("username = ?", req.Username).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			tx.Rollback()
+			return fmt.Errorf("user not found")
+		}
+		tx.Rollback()
+		return err
+	}
+
+	user.FirstName = req.FirstName
+	user.LastName = req.LastName
+	user.ServerKey = req.ServerKey
+	user.StoredKey = req.StoredKey
+	user.PublicKey = req.PublicKey
+
+	if err := tx.Save(&user).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	userMetadata := []models.UserMetadata{
+		{
+			UserID: user.ID,
+			Key:    "email_verified",
+			Value:  "false",
+		},
+		{
+			UserID: user.ID,
+			Key:    "country",
+			Value:  req.Country,
+		},
+		{
+			UserID: user.ID,
+			Key:    "display_name",
+			Value:  req.DisplayName,
+		},
+	}
+
+	err := tx.Create(&userMetadata).Error
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("could not create user metadata entry: %e", err)
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
 func (r *Repository) FindUser(userId uint) (models.User, error) {
 	var user models.User
 	e := r.connection.Where("id = ?", userId).First(&user).Error
