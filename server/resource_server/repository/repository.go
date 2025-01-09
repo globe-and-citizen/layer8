@@ -87,24 +87,16 @@ func (r *Repository) RegisterUserv2(req dto.RegisterUserDTOv2) error {
 	var user models.User
 
 	tx := r.connection.Begin()
-	if err := tx.Where("username = ?", req.Username).First(&user).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			tx.Rollback()
-			return fmt.Errorf("user not found")
-		}
+	if err := tx.Where("username = ?", req.Username).First(&user).Updates(
+		map[string]interface{}{
+			"first_name": req.FirstName,
+			"last_name":  req.LastName,
+			"server_key": req.ServerKey,
+			"stored_key": req.StoredKey,
+			"public_key": req.PublicKey,
+		}).Error; err != nil {
 		tx.Rollback()
-		return err
-	}
-
-	user.FirstName = req.FirstName
-	user.LastName = req.LastName
-	user.ServerKey = req.ServerKey
-	user.StoredKey = req.StoredKey
-	user.PublicKey = req.PublicKey
-
-	if err := tx.Save(&user).Error; err != nil {
-		tx.Rollback()
-		return err
+		return fmt.Errorf("could not update user: %e", err)
 	}
 
 	userMetadata := []models.UserMetadata{
