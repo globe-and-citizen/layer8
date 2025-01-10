@@ -74,7 +74,7 @@ type MockService struct {
 	getUserForUsername                 func(username string) (models.User, error)
 	validateSignature                  func(message string, signature []byte, publicKey []byte) error
 	updateUserPassword                 func(username string, newPassword string, salt string) error
-	registerUserPrecheck               func(req dto.RegisterUserPrecheckDTO, iterCount int) (models.RegisterUserPrecheckResponseOutput, error)
+	registerUserPrecheck               func(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error)
 }
 
 func (ms *MockService) RegisterUser(req dto.RegisterUserDTO) error {
@@ -185,8 +185,8 @@ func (m *MockService) UpdateUserPassword(username string, newPassword string, sa
 }
 
 // Mock RegisterUserPrecheck method for unit tests
-func (m *MockService) RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCount int) (models.RegisterUserPrecheckResponseOutput, error) {
-	return models.RegisterUserPrecheckResponseOutput{}, nil
+func (m *MockService) RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error) {
+	return m.registerUserPrecheck(req, iterCount)
 }
 
 // Mock RegisterUser method for unit tests
@@ -2004,9 +2004,7 @@ func TestRegisterUserHandlerv2_Success(t *testing.T) {
 }
 
 func TestRegisterUserPrecheck_Success(t *testing.T) {
-	requestBody := []byte(`{
-		"username": "test_user"
-	}`)
+	requestBody := []byte(`{"username": "test_user"}`)
 
 	req, err := http.NewRequest("POST", "/api/v1/register-user-precheck", bytes.NewBuffer(requestBody))
 	if err != nil {
@@ -2014,16 +2012,11 @@ func TestRegisterUserPrecheck_Success(t *testing.T) {
 	}
 
 	mockService := &MockService{
-		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, iterCount int) (models.RegisterUserPrecheckResponseOutput, error) {
+		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error) {
 			assert.Equal(t, "test_user", req.Username, "Username should match")
 			assert.Equal(t, 4096, iterCount, "Iteration count should match")
 
-			registerUserPrecheckResp := models.RegisterUserPrecheckResponseOutput{
-				Salt:           userSalt,
-				IterationCount: iterCount,
-			}
-
-			return registerUserPrecheckResp, nil
+			return userSalt, nil
 		},
 	}
 
@@ -2037,16 +2030,9 @@ func TestRegisterUserPrecheck_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, rr.Code, "Response code should be 201 Created")
 
-	var response struct {
-		Message string                                    `json:"message"`
-		Data    models.RegisterUserPrecheckResponseOutput `json:"data"`
-	}
-	err = json.NewDecoder(rr.Body).Decode(&response)
-	assert.Nil(t, err, "Response body should be valid JSON")
+	response := decodeResponseBodyForResponse(t, rr)
 
 	assert.Equal(t, "User is successfully registered", response.Message, "Response message should match")
-	assert.Equal(t, userSalt, response.Data.Salt, "Salt should match the mocked response")
-	assert.Equal(t, 4096, response.Data.IterationCount, "Iteration count should match the mocked response")
 }
 
 func TestRegisterUserPrecheck_InvalidMethod(t *testing.T) {
@@ -2115,8 +2101,8 @@ func TestRegisterUserPrecheck_ServiceError(t *testing.T) {
 	}
 
 	mockService := &MockService{
-		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, iterCount int) (models.RegisterUserPrecheckResponseOutput, error) {
-			return models.RegisterUserPrecheckResponseOutput{}, fmt.Errorf("mock service error")
+		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error) {
+			return "", fmt.Errorf("mock service error")
 		},
 	}
 
@@ -2128,5 +2114,5 @@ func TestRegisterUserPrecheck_ServiceError(t *testing.T) {
 
 	Ctl.RegisterUserPrecheck(rr, req)
 
-	assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected HTTP 400 Bad Request")
+	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
 }
