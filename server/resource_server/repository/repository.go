@@ -324,3 +324,9 @@ func (r *Repository) IsBackendURIExists(backendURL string) (bool, error) {
 	}
 	return count > 0, nil
 }
+
+func (r *Repository) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
+	return r.connection.Model(&models.User{}).
+		Where("username=?", username).
+		Updates(map[string]interface{}{"stored_key": storedKey, "server_key": serverKey}).Error
+}

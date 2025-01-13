@@ -554,3 +554,40 @@ func validateHttpMethod(w http.ResponseWriter, actualMethod string, expectedMeth
 
 	return true
 }
+
+func ResetPasswordHandlerV2(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.ResetPasswordDTOV2](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	user, err := newService.GetUserForUsername(request.Username)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "User does not exist!", err)
+		return
+	}
+
+	err = newService.ValidateSignature("Sign-in with Layer8", request.Signature, user.PublicKey)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Signature is invalid!", err)
+	}
+
+	err = newService.UpdateUserPasswordV2(user.Username, request.StoredKey, request.ServerKey)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Internal error: failed to update user", err)
+		return
+	}
+
+	response := utils.BuildResponseWithNoBody(
+		w, http.StatusCreated, "Your password was updated successfully!",
+	)
+	if err := json.NewEncoder(w).Encode(&response); err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to encode the response", err)
+	}
+}

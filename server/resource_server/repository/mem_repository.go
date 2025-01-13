@@ -416,3 +416,7 @@ func (r *MemoryRepository) GetUserForUsername(username string) (models.User, err
 func (r *MemoryRepository) UpdateUserPassword(username string, password string) error {
 	return nil
 }
+
+func (r *MemoryRepository) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
+	return nil
+}

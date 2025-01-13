@@ -264,3 +264,7 @@ func (s *service) UpdateUserPassword(username string, newPassword string, salt s
 	hashedPassword := utils.SaltAndHashPassword(newPassword, salt)
 	return s.repository.UpdateUserPassword(username, hashedPassword)
 }
+
+func (s *service) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
+	return s.repository.UpdateUserPasswordV2(username, storedKey, serverKey)
+}
