@@ -1210,7 +1210,7 @@ func TestUpdateUserPassword_Success(t *testing.T) {
 	}
 }
 
-func TestRegisterUserv2_FailToUpdateUserRecord(t *testing.T) {
+func TestRegisterUserv2_FailToGetUserRecord(t *testing.T) {
 	SetUp(t)
 	defer mockDB.Close()
 
@@ -1222,6 +1222,56 @@ func TestRegisterUserv2_FailToUpdateUserRecord(t *testing.T) {
 		),
 	).WithArgs(
 		username,
+	).WillReturnError(
+		fmt.Errorf("could not get user record"),
+	)
+
+	mock.ExpectRollback()
+
+	userDto := dto.RegisterUserDTOv2{
+		Username:    username,
+		FirstName:   userFirstName,
+		LastName:    userLastName,
+		Country:     userCountry,
+		DisplayName: userDisplayName,
+		PublicKey:   publicKey,
+		StoredKey:   storedKey,
+		ServerKey:   serverKey,
+	}
+	err = repository.RegisterUserv2(userDto)
+
+	assert.NotNil(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
+}
+
+func TestRegisterUserv2_FailToUpdateUserRecord(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT 1 `,
+		),
+	).WithArgs(
+		username,
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{
+				"id", "username", "first_name", "last_name", "salt", "email_proof", "verification_code", "zk_key_pair_id", "public_key", "server_key", "stored_key",
+			},
+		).AddRow(
+			userId, username, userFirstName, userLastName, userSalt, emailProof, verificationCode, 0, publicKey, serverKey, storedKey,
+		),
+	)
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(
+			`UPDATE "users" SET "first_name"=$1,"last_name"=$2,"public_key"=$3,"server_key"=$4,"stored_key"=$5 FROM "users" WHERE username = $6 AND "id" = $7`,
+		),
+	).WithArgs(
+		userFirstName, userLastName, publicKey, serverKey, storedKey, username, userId,
 	).WillReturnError(
 		fmt.Errorf("could not update user record"),
 	)
