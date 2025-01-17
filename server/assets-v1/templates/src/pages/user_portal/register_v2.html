@@ -280,20 +280,16 @@
 
           const saltedPassword = dk.toString(CryptoJS.enc.Hex);
 
-          // Hardcoded Client and Server Keys
-          const clientKeySecret = "TEST_CLIENT_KEY";
-          const serverKeySecret = "TEST_SERVER_KEY";
-
           // HMAC for clientKey
           const clientKey = CryptoJS.HmacSHA256(
             CryptoJS.enc.Utf8.parse(saltedPassword),
-            CryptoJS.enc.Utf8.parse(clientKeySecret)
+            CryptoJS.enc.Utf8.parse("CLIENT_KEY")
           ).toString(CryptoJS.enc.Hex);
 
           // HMAC for serverKey
           const serverKey = CryptoJS.HmacSHA256(
             CryptoJS.enc.Utf8.parse(saltedPassword),
-            CryptoJS.enc.Utf8.parse(serverKeySecret)
+            CryptoJS.enc.Utf8.parse("SERVER_KEY")
           ).toString(CryptoJS.enc.Hex);
 
           // SHA256 for storedKey
