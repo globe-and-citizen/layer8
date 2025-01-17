@@ -272,7 +272,8 @@
             registerPassword.value,
             CryptoJS.enc.Utf8.parse(registerPrecheckResponseBody.salt),
             {
-              keySize: 40 / 8,
+              // TODO: To explore more about this
+              keySize: 160 / 32,
               iterations: registerPrecheckResponseBody.iterationCount,
               hasher: CryptoJS.algo.SHA1,
             }
@@ -283,13 +284,13 @@
           // HMAC for clientKey
           const clientKey = CryptoJS.HmacSHA256(
             CryptoJS.enc.Utf8.parse(saltedPassword),
-            CryptoJS.enc.Utf8.parse("CLIENT_KEY")
+            CryptoJS.enc.Utf8.parse("Client Key")
           ).toString(CryptoJS.enc.Hex);
 
           // HMAC for serverKey
           const serverKey = CryptoJS.HmacSHA256(
             CryptoJS.enc.Utf8.parse(saltedPassword),
-            CryptoJS.enc.Utf8.parse("SERVER_KEY")
+            CryptoJS.enc.Utf8.parse("Server Key")
           ).toString(CryptoJS.enc.Hex);
 
           // SHA256 for storedKey
