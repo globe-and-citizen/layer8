@@ -204,7 +204,6 @@
       </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
-    <script src="https://requirejs.org/docs/release/2.3.7/minified/require.js"></script>
     <script>
       const { createApp, computed, ref } = Vue;
       const registerUsername = ref("");
@@ -269,18 +268,11 @@
             return;
           }
 
-        //   For Debugging purposes, to be removed in future
-        //   console.log("Salt: ", registerPrecheckResponseBody.salt);
-        //   console.log(
-        //     "IterCount: ",
-        //     registerPrecheckResponseBody.iterationCount
-        //   );
-
           const dk = CryptoJS.PBKDF2(
             registerPassword.value,
             CryptoJS.enc.Utf8.parse(registerPrecheckResponseBody.salt),
             {
-              keySize: 32 / 4,
+              keySize: 40 / 8,
               iterations: registerPrecheckResponseBody.iterationCount,
               hasher: CryptoJS.algo.SHA1,
             }
@@ -289,31 +281,25 @@
           const saltedPassword = dk.toString(CryptoJS.enc.Hex);
 
           // Hardcoded Client and Server Keys
-          const CLIENT_KEY_ENV = "TEST_CLIENT_KEY";
-          const SERVER_KEY_ENV = "TEST_SERVER_KEY";
+          const clientKeySecret = "TEST_CLIENT_KEY";
+          const serverKeySecret = "TEST_SERVER_KEY";
 
           // HMAC for clientKey
-          const clientKeyHmac = CryptoJS.HmacSHA256(
+          const clientKey = CryptoJS.HmacSHA256(
             CryptoJS.enc.Utf8.parse(saltedPassword),
-            CryptoJS.enc.Utf8.parse(CLIENT_KEY_ENV)
-          );
-          const clientKey = clientKeyHmac.toString(CryptoJS.enc.Hex);
+            CryptoJS.enc.Utf8.parse(clientKeySecret)
+          ).toString(CryptoJS.enc.Hex);
 
           // HMAC for serverKey
-          const serverKeyHmac = CryptoJS.HmacSHA256(
+          const serverKey = CryptoJS.HmacSHA256(
             CryptoJS.enc.Utf8.parse(saltedPassword),
-            CryptoJS.enc.Utf8.parse(SERVER_KEY_ENV)
-          );
-          const serverKey = serverKeyHmac.toString(CryptoJS.enc.Hex);
+            CryptoJS.enc.Utf8.parse(serverKeySecret)
+          ).toString(CryptoJS.enc.Hex);
 
           // SHA256 for storedKey
-          const storedKeyHash = CryptoJS.SHA256(
+          const storedKey = CryptoJS.SHA256(
             CryptoJS.enc.Utf8.parse(clientKey)
-          );
-          const storedKey = storedKeyHash.toString(CryptoJS.enc.Hex);
-
-        //   console.log("serverKey: ", serverKey);
-        //   console.log("storedKey: ", storedKey);
+          ).toString(CryptoJS.enc.Hex);
 
           const resp = await window.fetch("[[ .ProxyURL ]]/api/v2/register-user", {
             method: "POST",
