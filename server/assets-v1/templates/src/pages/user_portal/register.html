@@ -234,7 +234,7 @@
           } else if (registerResponseBody.message) {
             showToastMessage(registerResponseBody.message, "error");
           } else {
-            showToastMessage("Something went wrong!", "error");
+            showToastMessage("Something went wrong! <changed for no reason>", "error");
           }
         } catch (error) {
           console.error(error);
