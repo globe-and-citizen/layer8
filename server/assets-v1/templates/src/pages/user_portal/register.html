@@ -210,18 +210,19 @@
             return;
           }
 
-          const respOne = await window.fetch("[[ .ProxyURL ]]/api/v1/register-user-precheck", {
-              method: "POST",
-              headers: {
-                  "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                  username: registerUsername.value,
-              }),
-          });
+        //   const respOne = await window.fetch("[[ .ProxyURL ]]/api/v1/register-user-precheck", {
+        //       method: "POST",
+        //       headers: {
+        //           "Content-Type": "application/json",
+        //       },
+        //       body: JSON.stringify({
+        //           username: registerUsername.value,
+        //       }),
+        //   });
 
-          const registerPrecheckResponseBody = await respOne.json();
-          console.log("Response from Register Precheck", registerPrecheckResponseBody)
+        //   const registerPrecheckResponseBody = await respOne.json();
+        //   console.log("Response from Register Precheck", registerPrecheckResponseBody)
+        
           // return;
           // From here implementation should be continued
 

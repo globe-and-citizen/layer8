@@ -2,8 +2,8 @@ package service_test
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto"
 	serverModels "globe-and-citizen/layer8/server/models"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
@@ -14,6 +14,8 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/utils/mocks"
 	"testing"
 	"time"
+
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/stretchr/testify/assert"
 )
