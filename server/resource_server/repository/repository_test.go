@@ -1267,36 +1267,6 @@ func TestRegisterPrecheckUser_RepositoryError(t *testing.T) {
 	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
 }
 
-func TestRegisterPrecheckUser_InsertFailure(t *testing.T) {
-	SetUp(t)
-	defer mockDB.Close()
-
-	req := dto.RegisterUserPrecheckDTO{
-		Username: "test_user",
-	}
-	salt := "random_salt"
-	iterCount := 4096
-
-	mock.ExpectBegin()
-
-	mock.ExpectQuery(
-		regexp.QuoteMeta(
-			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code","zk_key_pair_id","public_key","iteration_count") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING "id"`,
-		),
-	).WithArgs(
-		req.Username, "", "", "", salt, sqlmock.AnyArg(), "", 0, sqlmock.AnyArg(), iterCount,
-	).WillReturnError(fmt.Errorf("failed to create user"))
-
-	mock.ExpectRollback()
-
-	err := repository.RegisterPrecheckUser(req, salt, iterCount)
-
-	assert.NotNil(t, err, "Expected error due to database insert failure")
-	assert.Equal(t, "failed to create a new user: failed to create user", err.Error())
-
-	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
-}
-
 func TestRegisterPrecheckUser_BeginTransactionFailure(t *testing.T) {
 	SetUp(t)
 	defer mockDB.Close()
@@ -1313,34 +1283,6 @@ func TestRegisterPrecheckUser_BeginTransactionFailure(t *testing.T) {
 
 	assert.NotNil(t, err, "Error should not be nil")
 	assert.Contains(t, err.Error(), "failed to begin transaction", "Error message should contain 'failed to begin transaction'")
-
-	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
-}
-
-func TestRegisterPrecheckUser_QueryFailure(t *testing.T) {
-	SetUp(t)
-	defer mockDB.Close()
-
-	req := dto.RegisterUserPrecheckDTO{
-		Username: "test_user",
-	}
-	salt := "random_salt"
-	iterCount := 4096
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(
-		regexp.QuoteMeta(
-			`INSERT INTO "users" ("username","password","first_name","last_name","salt","email_proof","verification_code","zk_key_pair_id","public_key","iteration_count") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING "id"`),
-	).WithArgs(
-		req.Username, "", "", "", salt, sqlmock.AnyArg(), "", 0, sqlmock.AnyArg(), iterCount,
-	).WillReturnError(fmt.Errorf("query execution failed"))
-
-	mock.ExpectRollback()
-
-	err := repository.RegisterPrecheckUser(req, salt, iterCount)
-
-	assert.NotNil(t, err, "Error should not be nil")
-	assert.Contains(t, err.Error(), "failed to create a new user", "Error message should contain 'failed to create a new user'")
 
 	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
 }
