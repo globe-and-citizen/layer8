@@ -570,8 +570,7 @@ func RegisterUserPrecheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	iterCountStr := os.Getenv("SCRAM_ITERATION_COUNT")
-	iterCount, err := strconv.Atoi(iterCountStr)
+	iterCount, err := strconv.Atoi(os.Getenv("SCRAM_ITERATION_COUNT"))
 	if err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Invalid iteration count configuration", err)
 		return
