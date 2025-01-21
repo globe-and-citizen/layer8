@@ -12,15 +12,16 @@ import (
 	"os"
 	"time"
 
-	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
-	"globe-and-citizen/layer8/server/resource_server/utils"
-
 	"github.com/coder/websocket"
-	utilities "github.com/globe-and-citizen/layer8-utils"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"golang.org/x/time/rate"
+
+	utilities "github.com/globe-and-citizen/layer8-utils"
+
+	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
+	"globe-and-citizen/layer8/server/resource_server/utils"
 )
 
 var (
