@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -9,14 +10,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 
+	"github.com/coder/websocket"
 	utilities "github.com/globe-and-citizen/layer8-utils"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"golang.org/x/time/rate"
 )
 
 var (
@@ -162,6 +166,124 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Protocol: ", r.Header.Get("X-Forwarded-Proto"))
 	fmt.Println("Host: ", r.Header.Get("X-Forwarded-Host"))
 
+	// This operation is blocking, let's confirm if the tunnel is established
+	wsIdentifier := r.Header.Get("Sec-WebSocket-Key")
+	if wsIdentifier != "" {
+		wsTunnel(w, r)
+		return
+	}
+
+	httpTunnel(w, r)
+}
+
+func wsTunnel(w http.ResponseWriter, r *http.Request) {
+	c, err := websocket.Accept(w, r, nil)
+	if err != nil {
+		fmt.Printf("error accepting websocket: %v", err)
+		return
+	}
+	defer c.CloseNow()
+
+	// let's dial the backend server
+	protocol := r.Header.Get("X-Forwarded-Proto")
+	host := r.Header.Get("X-Forwarded-Host")
+	backendURL := fmt.Sprintf("%s://%s", protocol, host+r.URL.Path) // RAVI
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	// adding & validating headers
+	{
+		r.Header["x-tunnel"] = []string{"true"}
+
+		// Get up-JWT from request header and verify it
+		upJWT := r.Header.Get("up-jwt") // RAVI! LOOK HERE
+		fmt.Println("up-jwt coming from client: ", upJWT)
+
+		if _, err := utils.ValidateUPTokenJWT(upJWT, os.Getenv("UP_999_SECRET_KEY")); err != nil {
+			fmt.Println("UP JWT verify error: ", err.Error())
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+	}
+
+	backendSoc, _, err := websocket.Dial(ctx, backendURL, &websocket.DialOptions{HTTPHeader: r.Header})
+	if err != nil {
+		fmt.Printf("error dialing backend: %v\n", err)
+		return
+	}
+	defer c.Close(websocket.StatusInternalError, "ws tunnel closed unexpectedly")
+
+	l := rate.NewLimiter(rate.Every(time.Millisecond*100), 10)
+	for {
+		// we provide it 10 seconds to complete or we close the connection
+		ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
+		defer cancel()
+
+		err := l.Wait(ctx)
+		if err != nil {
+			fmt.Printf("rate limit error: %v\n", err)
+			return
+		}
+
+		typ, r, err := c.Read(ctx)
+		if err != nil {
+			return
+		}
+
+		// for now let's just log the bytes for now; rm fixme
+		if len(r) > 0 {
+			fmt.Printf("received %d bytes from client\n", len(r))
+			fmt.Printf("received message from client: %s\n", string(r))
+		}
+
+		// interact with the backend server
+		var msg *websocket.MessageType
+		{
+			w, err := backendSoc.Writer(ctx, typ)
+			if err == nil {
+				if isNormal(err) {
+					return
+				}
+				err = w.Close()
+			}
+
+			if err != nil {
+				fmt.Printf("failed to send to backend url: %s \n", err)
+				return
+			}
+
+			message, _, err := backendSoc.Reader(ctx)
+			if err != nil {
+				fmt.Printf("error reading from backend: %s \n", err)
+				return
+			}
+
+			// if here, we have a message to send to the client
+			*msg = message
+		}
+
+		if msg != nil {
+			w, err := c.Writer(ctx, *msg)
+			if err == nil {
+				err = w.Close()
+			}
+			if err != nil {
+				if isNormal(err) {
+					return
+				}
+				fmt.Printf("failed to send to client: %v\n", err)
+				return
+			}
+		}
+	}
+}
+
+func isNormal(err error) bool {
+	return websocket.CloseStatus(err) == websocket.StatusNormalClosure
+}
+
+func httpTunnel(w http.ResponseWriter, r *http.Request) {
 	protocol := r.Header.Get("X-Forwarded-Proto")
 	host := r.Header.Get("X-Forwarded-Host")
 	backendURL := fmt.Sprintf("%s://%s", protocol, host+r.URL.Path) // RAVI
@@ -211,17 +333,6 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println("\nReceived response from:", backendURL, " of code: ", res.StatusCode)
-
-	// Get mp-JWT from response header and verify it
-	// mpJWT := res.Header.Get("mp-jwt")
-	// fmt.Printf("mp-jwt coming from SP: %s***************\n", mpJWT[0:10])
-
-	// _, err = utilities.VerifyStandardToken(mpJWT, os.Getenv("MP_123_SECRET_KEY"))
-	// if err != nil {
-	// 	fmt.Printf("MP JWT verify error: %s. With status code: %d and text: %s", err.Error(), res.StatusCode, res.Status)
-	// 	http.Error(w, res.Status, res.StatusCode)
-	// 	return
-	// }
 
 	// copy response back
 	for k, v := range res.Header {

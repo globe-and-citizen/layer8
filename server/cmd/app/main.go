@@ -5,9 +5,6 @@ import (
 	"embed"
 	"flag"
 	"fmt"
-	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend/groth16"
-	"github.com/consensys/gnark/constraint"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
 	"globe-and-citizen/layer8/server/opentelemetry"
@@ -24,6 +21,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/constraint"
 
 	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
 	"globe-and-citizen/layer8/server/resource_server/dto"
