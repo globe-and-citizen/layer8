@@ -988,24 +988,3 @@ func TestRegisterUserPrecheck_InvalidIterationCount(t *testing.T) {
 	assert.Nil(t, err, "Expected no error during RegisterUserPrecheck")
 	assert.NotEmpty(t, salt, "Salt should not be empty in the response")
 }
-
-func TestRegisterUserPrecheck_RandomSaltGeneration(t *testing.T) {
-	mockRepo := &mockRepository{
-		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, rmSalt string, iterCount int) error {
-			assert.NotEmpty(t, rmSalt, "Randomly generated salt should not be empty")
-			return nil
-		},
-	}
-
-	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
-
-	req := dto.RegisterUserPrecheckDTO{
-		Username: "test_user",
-	}
-	iterCount := 4096
-
-	salt, err := currService.RegisterUserPrecheck(req, iterCount)
-
-	assert.Nil(t, err, "Expected no error during RegisterUserPrecheck")
-	assert.NotEmpty(t, salt, "Salt should not be empty in the response")
-}
