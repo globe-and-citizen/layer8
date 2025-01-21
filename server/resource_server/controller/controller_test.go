@@ -1945,6 +1945,33 @@ func TestRegisterUserPrecheck_InvalidJSON(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
 }
 
+func TestRegisterUserPrecheck_MissingRequiredFields(t *testing.T) {
+	reqBody := []byte(`{
+		"other_field": "some value"
+	}`)
+
+	mockService := &MockService{
+		registerUserPrecheck: func(request dto.RegisterUserPrecheckDTO, iterCount int) (string, error) {
+			return "", nil
+		},
+	}
+
+	req := httptest.NewRequest("POST", "/api/register-user-precheck", bytes.NewBuffer(reqBody))
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterUserPrecheck(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForResponse(t, rr)
+
+	assert.Equal(t, false, response.IsSuccess)
+	assert.Equal(t, "Invalid iteration count configuration", response.Message)
+}
+
 func TestRegisterUserPrecheck_ServiceError(t *testing.T) {
 	requestBody := []byte(`{
 		"username": "test_user"
