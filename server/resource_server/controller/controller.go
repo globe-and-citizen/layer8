@@ -569,7 +569,7 @@ func ResetPasswordHandlerV2(w http.ResponseWriter, r *http.Request) {
 
 	user, err := newService.GetUserForUsername(request.Username)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "User does not exist!", err)
+		utils.HandleError(w, http.StatusNotFound, "User does not exist!", err)
 		return
 	}
 

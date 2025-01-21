@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/models"
@@ -74,6 +75,7 @@ type MockService struct {
 	getUserForUsername                 func(username string) (models.User, error)
 	validateSignature                  func(message string, signature []byte, publicKey []byte) error
 	updateUserPassword                 func(username string, newPassword string, salt string) error
+	updateUserPasswordV2               func(username string, storedKey string, serverKey string) error
 }
 
 func (ms *MockService) RegisterUser(req dto.RegisterUserDTO) error {
@@ -181,6 +183,10 @@ func (m *MockService) ValidateSignature(message string, signature []byte, public
 
 func (m *MockService) UpdateUserPassword(username string, newPassword string, salt string) error {
 	return m.updateUserPassword(username, newPassword, salt)
+}
+
+func (m *MockService) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
+	return m.updateUserPasswordV2(username, storedKey, serverKey)
 }
 
 func TestRegisterUserHandler_InvalidHttpRequestMethod(t *testing.T) {
@@ -1851,4 +1857,217 @@ func setMockServiceInContext(req *http.Request) *http.Request {
 	mockSvc := &MockService{}
 	ctx := context.WithValue(req.Context(), "service", mockSvc)
 	return req.WithContext(ctx)
+}
+
+func TestResetPasswordHandlerV2_Success(t *testing.T) {
+	reqBody := []byte(`{
+		"username": "test_user",
+		"signature": "aaabbbbc",
+		"stored_key": "test_stored_key",
+		"server_key": "test_server_key"
+	}`)
+
+	mockService := &MockService{
+		getUserForUsername: func(currUsername string) (models.User, error) {
+			if currUsername != "test_user" {
+				t.Fatalf("Username mismatch: expected %s, got %s", "test_user", currUsername)
+			}
+			return models.User{
+				ID:        userId,
+				Username:  username,
+				PublicKey: []byte("mock_public_key"),
+			}, nil
+		},
+		validateSignature: func(message string, signature []byte, publicKey []byte) error {
+			if message != "Sign-in with Layer8" {
+				t.Fatalf("Message mismatch: expected %s, got %s", "Sign-in with Layer8", message)
+			}
+			return nil
+		},
+		updateUserPasswordV2: func(currUsername, storedKey, serverKey string) error {
+			if currUsername != "test_user" {
+				t.Fatalf("Username mismatch: expected %s, got %s", username, currUsername)
+			}
+			if storedKey != "test_stored_key" {
+				t.Fatalf("StoredKey mismatch: expected %s, got %s", "test_stored_key", storedKey)
+			}
+			if serverKey != "test_server_key" {
+				t.Fatalf("ServerKey mismatch: expected %s, got %s", "test_server_key", serverKey)
+			}
+			return nil
+		},
+	}
+
+	req := httptest.NewRequest("POST", "/api/v2/reset-password", bytes.NewBuffer(reqBody))
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+
+	Ctl.ResetPasswordHandlerV2(rr, req)
+
+	assert.Equal(t, http.StatusCreated, rr.Code)
+
+	response := decodeResponseBodyForResponse(t, rr)
+
+	assert.Equal(t, true, response.IsSuccess)
+	assert.Equal(t, "Your password was updated successfully!", response.Message)
+	assert.Nil(t, response.Error)
+}
+
+func TestResetPasswordHandlerV2_InvalidJSON(t *testing.T) {
+	reqBody := []byte(`invalid-json`)
+
+	req := httptest.NewRequest("POST", "/api/v2/reset-password", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	Ctl.ResetPasswordHandlerV2(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForResponse(t, rr)
+	assert.Equal(t, false, response.IsSuccess)
+	assert.Contains(t, response.Error, "Invalid request body")
+}
+
+func TestResetPasswordHandlerV2_MissingFields(t *testing.T) {
+	reqBody := []byte(`{
+		"username": "test_user",
+		"signature": "aaabbbbc"
+	}`)
+
+	req := httptest.NewRequest("POST", "/api/v2/reset-password", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	Ctl.ResetPasswordHandlerV2(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForResponse(t, rr)
+	assert.Equal(t, false, response.IsSuccess)
+	assert.Contains(t, response.Error, "Validation error")
+}
+
+func TestResetPasswordHandlerV2_UserNotFound(t *testing.T) {
+	reqBody := []byte(`{
+		"username": "non_existent_user",
+		"signature": "aaabbbbc",
+		"stored_key": "test_stored_key",
+		"server_key": "test_server_key"
+	}`)
+
+	mockService := &MockService{
+		getUserForUsername: func(currUsername string) (models.User, error) {
+			return models.User{}, errors.New("User not found")
+		},
+	}
+
+	req := httptest.NewRequest("POST", "/api/v2/reset-password", bytes.NewBuffer(reqBody))
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	Ctl.ResetPasswordHandlerV2(rr, req)
+
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+
+	response := decodeResponseBodyForResponse(t, rr)
+	assert.Equal(t, false, response.IsSuccess)
+	// assert.Contains(t, response.Error, "User not found")
+	if errors, ok := response.Error.([]interface{}); ok && len(errors) > 0 {
+		assert.Equal(t, "User not found", errors[0])
+	} else {
+		t.Fatalf("Expected error message 'User not found' but got: %v", response.Error)
+	}
+}
+
+func TestResetPasswordHandlerV2_InvalidSignature(t *testing.T) {
+	reqBody := []byte(`{
+		"username": "test_user",
+		"signature": "invalid_signature",
+		"stored_key": "test_stored_key",
+		"server_key": "test_server_key"
+	}`)
+
+	mockService := &MockService{
+		getUserForUsername: func(currUsername string) (models.User, error) {
+			return models.User{
+				ID:        userId,
+				Username:  username,
+				PublicKey: []byte("mock_public_key"),
+			}, nil
+		},
+		validateSignature: func(message string, signature []byte, publicKey []byte) error {
+			if string(signature) != "test_signature" {
+				return fmt.Errorf("invalid signature")
+			}
+			return nil
+		},
+		updateUserPasswordV2: func(currUsername, storedKey, serverKey string) error {
+			return nil
+		},
+	}
+
+	req := httptest.NewRequest("POST", "/api/v2/reset-password", bytes.NewBuffer(reqBody))
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+
+	Ctl.ResetPasswordHandlerV2(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForResponse(t, rr)
+
+	assert.Equal(t, false, response.IsSuccess)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+}
+
+func TestResetPasswordHandlerV2_UpdatePasswordFailure(t *testing.T) {
+	reqBody := []byte(`{
+		"username": "test_user",
+		"signature": "aaabbbbc",
+		"stored_key": "test_stored_key",
+		"server_key": "test_server_key"
+	}`)
+
+	mockService := &MockService{
+		getUserForUsername: func(currUsername string) (models.User, error) {
+			return models.User{
+				ID:        userId,
+				Username:  username,
+				PublicKey: []byte("mock_public_key"),
+			}, nil
+		},
+		validateSignature: func(message string, signature []byte, publicKey []byte) error {
+			return nil
+		},
+		updateUserPasswordV2: func(currUsername, storedKey, serverKey string) error {
+			return errors.New("failed to update password")
+		},
+	}
+
+	req := httptest.NewRequest("POST", "/api/v2/reset-password", bytes.NewBuffer(reqBody))
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+
+	Ctl.ResetPasswordHandlerV2(rr, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+
+	response := decodeResponseBodyForResponse(t, rr)
+
+	assert.Equal(t, false, response.IsSuccess)
+	assert.Equal(t, "Internal error: failed to update user", response.Message)
+
+	if errors, ok := response.Error.([]interface{}); ok && len(errors) > 0 {
+		assert.Equal(t, "failed to update password", errors[0])
+	} else {
+		t.Fatalf("Expected error message 'failed to update password' but got: %v", response.Error)
+	}
 }
