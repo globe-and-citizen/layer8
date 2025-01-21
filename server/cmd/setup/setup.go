@@ -6,13 +6,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"globe-and-citizen/layer8/server/config"
-	"globe-and-citizen/layer8/server/resource_server/dto"
-	"globe-and-citizen/layer8/server/resource_server/emails/verification"
-	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
-	"globe-and-citizen/layer8/server/resource_server/repository"
-	"globe-and-citizen/layer8/server/resource_server/service"
-	"globe-and-citizen/layer8/server/resource_server/utils"
 	"io"
 	"os"
 	"os/exec"
@@ -24,6 +17,14 @@ import (
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
+
+	"globe-and-citizen/layer8/server/config"
+	"globe-and-citizen/layer8/server/resource_server/dto"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
+	"globe-and-citizen/layer8/server/resource_server/repository"
+	"globe-and-citizen/layer8/server/resource_server/service"
+	"globe-and-citizen/layer8/server/resource_server/utils"
 )
 
 func main() {
