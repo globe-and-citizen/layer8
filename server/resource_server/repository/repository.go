@@ -330,6 +330,7 @@ func (r *Repository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt 
 		Username:       req.Username,
 		Salt:           salt,
 		IterationCount: iterCount,
+		PublicKey:      []byte{},
 	}
 
 	if err := r.connection.Create(&user).Error; err != nil {
