@@ -1959,17 +1959,18 @@ func TestRegisterUserPrecheck_MissingRequiredFields(t *testing.T) {
 	req := httptest.NewRequest("POST", "/api/register-user-precheck", bytes.NewBuffer(reqBody))
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 	req.Header.Set("Content-Type", "application/json")
-
+	
+	t.Setenv("SCRAM_ITERATION_COUNT", "4096")
 	rr := httptest.NewRecorder()
 
 	Ctl.RegisterUserPrecheck(rr, req)
 
-	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
 	response := decodeResponseBodyForResponse(t, rr)
 
 	assert.Equal(t, false, response.IsSuccess)
-	assert.Equal(t, "Invalid iteration count configuration", response.Message)
+	assert.Equal(t, "Input json is invalid", response.Message)
 }
 
 func TestRegisterUserPrecheck_ServiceError(t *testing.T) {
