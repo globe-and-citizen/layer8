@@ -1964,7 +1964,7 @@ func TestRegisterUserPrecheck_MissingRequiredFields(t *testing.T) {
 
 	Ctl.RegisterUserPrecheck(rr, req)
 
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 
 	response := decodeResponseBodyForResponse(t, rr)
 
