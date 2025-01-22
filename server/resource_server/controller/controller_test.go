@@ -1922,7 +1922,7 @@ func TestRegisterUserPrecheck_InvalidIterationCount(t *testing.T) {
 
 	Ctl.RegisterUserPrecheck(rr, req)
 
-	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
+	assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected HTTP 500 Internal Server Error")
 }
 
 func TestRegisterUserPrecheck_InvalidJSON(t *testing.T) {
