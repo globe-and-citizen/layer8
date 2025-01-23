@@ -1059,3 +1059,7 @@ func TestRegisterUserv2_Success(t *testing.T) {
 
 	assert.Nil(t, err)
 }
+
+func (m *mockRepository) LoginPreCheckUserv2(username string) (string, int, error) {
+	return "", 0, nil
+}

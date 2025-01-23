@@ -447,3 +447,7 @@ func (r *MemoryRepository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO,
 
 	return nil
 }
+
+func (r *MemoryRepository) LoginPreCheckUserv2(username string) (string, int, error) {
+	return username, 0, nil
+}

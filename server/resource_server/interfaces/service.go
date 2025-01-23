@@ -30,4 +30,6 @@ type IService interface {
 	ValidateSignature(message string, signature []byte, publicKey []byte) error
 	UpdateUserPassword(username string, newPassword string, salt string) error
 	RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error)
+	LoginPreCheckUserv2(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error)
+	LoginUserv2(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error)
 }

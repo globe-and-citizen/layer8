@@ -54,6 +54,10 @@ func ResetPasswordPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/password_reset/reset-password-page.html")
 }
 
+func LoginUserPagev2(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/login_v2.html")
+}
+
 func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -623,6 +627,63 @@ func RegisterUserHandlerv2(w http.ResponseWriter, r *http.Request) {
 
 	res := utils.BuildResponseWithNoBody(w, http.StatusCreated, "User registered successfully")
 	if err := json.NewEncoder(w).Encode(res); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
+	}
+}
+
+func LoginPrecheckHandlerv2(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.LoginPrecheckDTOv2](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	loginPrecheckResp, err := newService.LoginPreCheckUserv2(request)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(loginPrecheckResp); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
+	}
+}
+
+
+func LoginUserHandlerv2(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.LoginUserDTOv2](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	serverSignatureResp, err := newService.LoginUserv2(request)
+	if err != nil {
+		utils.HandleError(w, http.StatusUnauthorized, "Failed to perform login", err)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(serverSignatureResp); err != nil {
 		utils.HandleError(
 			w,
 			http.StatusInternalServerError,

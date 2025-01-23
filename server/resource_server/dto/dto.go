@@ -70,3 +70,15 @@ type ResetPasswordDTO struct {
 type RegisterUserPrecheckDTO struct {
 	Username string `json:"username" validate:"required"`
 }
+
+type LoginUserDTOv2 struct {
+	Username    string `json:"username" validate:"required"`
+	Nonce       string `json:"nonce" validate:"required"`
+	CNonce      string `json:"c_nonce" validate:"required"`
+	ClientProof string `json:"client_proof" validate:"required"`
+}
+
+type LoginPrecheckDTOv2 struct {
+	Username string `json:"username" validate:"required"`
+	CNonce   string `json:"c_nonce" validate:"required"`
+}

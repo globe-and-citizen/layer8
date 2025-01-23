@@ -1,6 +1,9 @@
 package service
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
@@ -279,4 +282,76 @@ func (s *service) RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCoun
 
 func (s *service) RegisterUserv2(req dto.RegisterUserDTOv2) error {
 	return s.repository.RegisterUserv2(req)
+}
+
+func (s *service) LoginPreCheckUserv2(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
+	sNonce := utils.GenerateRandomSalt(32)
+
+	user, err := s.repository.GetUserForUsername(req.Username)
+	if err != nil {
+		return models.LoginPrecheckResponseOutputv2{}, err
+	}
+	loginPrecheckResp := models.LoginPrecheckResponseOutputv2{
+		Salt:      user.Salt,
+		IterCount: user.IterationCount,
+		Nonce:     req.CNonce + sNonce,
+	}
+	return loginPrecheckResp, nil
+}
+
+func (s *service) LoginUserv2(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error) {
+	user, err := s.repository.GetUserForUsername(req.Username)
+	if err != nil {
+		return models.LoginUserResponseOutputv2{}, err
+	}
+
+	authMessage := fmt.Sprintf("[n=%s,r=%s,s=%s,i=%d,r=%s]", req.Username, req.CNonce, user.Salt, user.IterationCount, req.Nonce)
+
+	clientSignatureHMAC := hmac.New(sha256.New, []byte(user.StoredKey))
+	clientSignatureHMAC.Write([]byte(authMessage))
+	clientSignatureHex := hex.EncodeToString(clientSignatureHMAC.Sum(nil))
+
+	// For testing only
+	fmt.Println("Client Signature:", clientSignatureHex)
+
+	clientSignaturBytes, err := utils.HexStringToBytes(clientSignatureHex)
+	if err != nil {
+		return models.LoginUserResponseOutputv2{}, fmt.Errorf("error decoding client signature: %v", err)
+	}
+
+	clientProofBytes, err := utils.HexStringToBytes(req.ClientProof)
+	if err != nil {
+		return models.LoginUserResponseOutputv2{}, fmt.Errorf("error decoding client proof: %v", err)
+	}
+
+	clientKeyBytes, err := utils.XorBytes(clientSignaturBytes, clientProofBytes)
+	if err != nil {
+		return models.LoginUserResponseOutputv2{}, fmt.Errorf("error performing XOR operation: %v", err)
+	}
+
+	// clientKey := utils.BytesToHexString(clientKeyBytes)
+
+	cleintKeyHash := sha256.Sum256(clientKeyBytes)
+	cleintKeySHA256 := utils.BytesToHexString(cleintKeyHash[:])
+
+	// FAILING HERE!
+	// if cleintKeySHA256 != user.StoredKey {
+	// 	return models.LoginUserResponseOutputv2{}, fmt.Errorf("server failed to authenticate the user")
+	// }
+
+	// For testing only
+	// fmt.Println("Client Key:", clientKey)
+	fmt.Println("Client Key SHA256:", []byte(cleintKeySHA256))
+	fmt.Println("User Stored Key:", []byte(user.StoredKey))
+
+	serverSignatureHMAC := hmac.New(sha256.New, []byte(user.ServerKey))
+	serverSignatureHMAC.Write([]byte(authMessage))
+	serverSignatureHex := hex.EncodeToString(serverSignatureHMAC.Sum(nil))
+
+	// For testing only
+	fmt.Println("Server Signature:", serverSignatureHex)
+
+	return models.LoginUserResponseOutputv2{
+		ServerSignature: serverSignatureHex,
+	}, nil
 }

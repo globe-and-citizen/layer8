@@ -299,6 +299,12 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.RegisterUserPrecheck(w, r)
 			case path == "/api/v2/register-user":
 				Ctl.RegisterUserHandlerv2(w, r)
+			case path == "/v2/user-login-page":
+				Ctl.LoginUserPagev2(w, r)
+			case path == "/api/v2/login-precheck":
+				Ctl.LoginPrecheckHandlerv2(w, r)
+			case path == "/api/v2/login-user":
+				Ctl.LoginUserHandlerv2(w, r)
 			case path == "/favicon.ico":
 				faviconPath := workingDirectory + "/dist/favicon.ico"
 				http.ServeFile(w, r, faviconPath)

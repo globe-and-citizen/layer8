@@ -389,3 +389,11 @@ func (r *Repository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt 
 
 	return nil
 }
+
+func (r *Repository) LoginPreCheckUserv2(username string) (string, int, error) {
+	var user models.User
+	if err := r.connection.Where("username = ?", username).First(&user).Error; err != nil {
+		return "", 0, fmt.Errorf("could not find user: %e", err)
+	}
+	return user.Salt, user.IterationCount, nil
+}

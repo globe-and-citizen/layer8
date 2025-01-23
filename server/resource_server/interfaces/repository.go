@@ -40,4 +40,5 @@ type IRepository interface {
 	SetTTL(key string, value []byte, ttl time.Duration) error
 	GetTTL(key string) ([]byte, error)
 	RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error
+	LoginPreCheckUserv2(username string) (string, int, error)
 }

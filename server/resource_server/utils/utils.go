@@ -262,3 +262,27 @@ func RemoveProtocolFromURL(url string) string {
 	cleanedURL = strings.Replace(cleanedURL, "https://", "", -1)
 	return cleanedURL
 }
+
+func HexStringToBytes(hexStr string) ([]byte, error) {
+	bytes, err := hex.DecodeString(hexStr)
+	if err != nil {
+		return nil, err
+	}
+	return bytes, nil
+}
+
+func BytesToHexString(bytes []byte) string {
+	return hex.EncodeToString(bytes)
+}
+
+func XorBytes(bytesA, bytesB []byte) ([]byte, error) {
+	if len(bytesA) != len(bytesB) {
+		return nil, fmt.Errorf("slices must have the same length")
+	}
+
+	result := make([]byte, len(bytesA))
+	for i := range bytesA {
+		result[i] = bytesA[i] ^ bytesB[i]
+	}
+	return result, nil
+}

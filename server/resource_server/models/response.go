@@ -29,3 +29,13 @@ type RegisterUserPrecheckResponseOutput struct {
 	Salt           string `json:"salt"`
 	IterationCount int    `json:"iterationCount"`
 }
+
+type LoginPrecheckResponseOutputv2 struct {
+	Salt      string `json:"salt"`
+	IterCount int    `json:"iter_count"`
+	Nonce     string `json:"nonce"`
+}
+
+type LoginUserResponseOutputv2 struct {
+	ServerSignature string `json:"server_signature"`
+}
