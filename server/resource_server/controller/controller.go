@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"globe-and-citizen/layer8/server/resource_server/db"
@@ -559,26 +560,44 @@ func validateHttpMethod(w http.ResponseWriter, actualMethod string, expectedMeth
 }
 
 func RegisterUserPrecheck(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
 
-	newService := r.Context().Value("service").(interfaces.IService)
+	newService, ok := r.Context().Value("service").(interfaces.IService)
+	if !ok {
+		utils.HandleError(w, http.StatusInternalServerError, "Service not found in context", nil)
+		return
+	}
+
+	iterCount, err := strconv.Atoi(os.Getenv("SCRAM_ITERATION_COUNT"))
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Invalid iteration count configuration", err)
+		return
+	}
 
 	request, err := utils.DecodeJsonFromRequest[dto.RegisterUserPrecheckDTO](w, r.Body)
 	if err != nil {
 		return
 	}
 
-	registerUserPrecheckResp, err := newService.RegisterUserPrecheck(request, 4096)
+	salt, err := newService.RegisterUserPrecheck(request, iterCount)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get user profile", err)
+		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(registerUserPrecheckResp); err != nil {
+	registerUserPrecheckResp := models.RegisterUserPrecheckResponseOutput{
+		Salt:           salt,
+		IterationCount: iterCount,
+	}
+
+	resp := utils.BuildResponse(w, http.StatusCreated, "User is successfully registered", registerUserPrecheckResp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		utils.HandleError(
 			w,
 			http.StatusInternalServerError,
-			"Internal error: could not encode response into json",
+			"Internal Server Error",
 			err,
 		)
 	}

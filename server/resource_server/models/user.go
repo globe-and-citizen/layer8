@@ -13,6 +13,7 @@ type User struct {
 	PublicKey        []byte `gorm:"column:public_key; not null" json:"public_key"`
 	ServerKey        string `gorm:"column:server_key;" json:"server_key"`
 	StoredKey        string `gorm:"column:stored_key;" json:"stored_key"`
+	IterationCount   int    `gorm:"column:iteration_count;" json:"iteration_count"`
 }
 
 func (User) TableName() string {

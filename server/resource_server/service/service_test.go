@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	serverModels "globe-and-citizen/layer8/server/models"
 	"globe-and-citizen/layer8/server/resource_server/dto"
@@ -68,6 +69,7 @@ type mockRepository struct {
 	saveProofOfEmailVerification func(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error
 	setUserEmailVerified         func(userID uint) error
 	registerUser                 func(req dto.RegisterUserDTO, hashedPassword string, salt string) error
+	registerUserPrecheck         func(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error
 	registerUserv2               func(req dto.RegisterUserDTOv2) error
 	registerClient               func(client models.Client) error
 	getUserForUsername           func(username string) (models.User, error)
@@ -80,6 +82,13 @@ func (m *mockRepository) FindUser(userId uint) (models.User, error) {
 
 func (m *mockRepository) RegisterUser(req dto.RegisterUserDTO, hashedPassword string, salt string) error {
 	return m.registerUser(req, hashedPassword, salt)
+}
+
+func (m *mockRepository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error {
+	if m.registerUserPrecheck != nil {
+		return m.registerUserPrecheck(req, salt, iterCount)
+	}
+	return nil
 }
 
 func (m *mockRepository) RegisterUserv2(req dto.RegisterUserDTOv2) error {
@@ -234,10 +243,6 @@ func (m *mockRepository) GetUserForUsername(username string) (models.User, error
 
 func (m *mockRepository) UpdateUserPassword(username string, password string) error {
 	return m.updateUserPassword(username, password)
-}
-
-func (m *mockRepository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) (string, int, error) {
-	return "test_user", 4096, nil
 }
 
 func TestRegisterUser_RepositoryFailedToStoreUserData(t *testing.T) {
@@ -924,6 +929,72 @@ func TestValidateSignature_Success(t *testing.T) {
 	)
 
 	assert.Nil(t, err)
+}
+
+func TestRegisterUserPrecheck_Success(t *testing.T) {
+	mockRepo := &mockRepository{
+		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, rmSalt string, iterCount int) error {
+			assert.Equal(t, "test_user", req.Username, "Username should match")
+			assert.NotEmpty(t, rmSalt, "Salt should not be empty")
+			assert.Equal(t, 4096, iterCount, "Iteration count should match")
+			return nil
+		},
+	}
+
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.RegisterUserPrecheckDTO{
+		Username: "test_user",
+	}
+	iterCount := 4096
+
+	salt, err := currService.RegisterUserPrecheck(req, iterCount)
+
+	assert.Nil(t, err, "Expected no error during RegisterUserPrecheck")
+	assert.NotEmpty(t, salt, "Salt should not be empty in the response")
+}
+
+func TestRegisterUserPrecheck_RepositoryError(t *testing.T) {
+	mockRepo := &mockRepository{
+		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, rmSalt string, iterCount int) error {
+			return errors.New("repository error")
+		},
+	}
+
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.RegisterUserPrecheckDTO{
+		Username: "test_user",
+	}
+	iterCount := 4096
+
+	salt, err := currService.RegisterUserPrecheck(req, iterCount)
+
+	assert.NotNil(t, err, "Expected an error during RegisterUserPrecheck")
+	assert.Equal(t, "repository error", err.Error(), "Error message should match")
+	assert.Empty(t, salt, "Salt should be empty in the response")
+}
+
+func TestRegisterUserPrecheck_InvalidIterationCount(t *testing.T) {
+	mockRepo := &mockRepository{
+		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, rmSalt string, iterCount int) error {
+			assert.Equal(t, "test_user", req.Username, "Username should match")
+			assert.Equal(t, 0, iterCount, "Iteration count should match")
+			return nil
+		},
+	}
+
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.RegisterUserPrecheckDTO{
+		Username: "test_user",
+	}
+	iterCount := 0
+
+	salt, err := currService.RegisterUserPrecheck(req, iterCount)
+
+	assert.Nil(t, err, "Expected no error during RegisterUserPrecheck")
+	assert.NotEmpty(t, salt, "Salt should not be empty in the response")
 }
 
 func TestRegisterUserv2_RepositoryFailedToStoreUserData(t *testing.T) {

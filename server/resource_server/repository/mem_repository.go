@@ -26,10 +26,6 @@ func NewMemoryRepository() interfaces.IRepository {
 	}
 }
 
-func (r *MemoryRepository) RegisterPrecheckUser(dto.RegisterUserPrecheckDTO, string, int) (string, int, error) {
-	return "", 0, nil
-}
-
 func (r *MemoryRepository) RegisterUser(req dto.RegisterUserDTO, hashedPassword string, salt string) error {
 	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
 	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt) // what if two user's use the same password?
@@ -422,5 +418,32 @@ func (r *MemoryRepository) UpdateUserPassword(username string, password string) 
 }
 
 func (r *MemoryRepository) RegisterUserv2(dto dto.RegisterUserDTOv2) error {
+	return nil
+}
+
+func (r *MemoryRepository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error {
+	if _, exists := r.storage[req.Username]; exists {
+		return fmt.Errorf("user already exists: %s", req.Username)
+	}
+
+	userID := fmt.Sprintf("%d", len(r.storage))
+
+	key := fmt.Sprintf("%s:%d", req.Username, iterCount)
+
+	r.storage[key] = map[string]string{
+		"user_id":        userID,
+		"username":       req.Username,
+		"salt":           salt,
+		"iterationCount": "",
+	}
+
+	r.storage[req.Username] = map[string]string{
+		"salt":     salt,
+		"password": key,
+	}
+	r.storage[userID] = map[string]string{
+		"password": key,
+	}
+
 	return nil
 }
