@@ -69,32 +69,23 @@ func (r *Repository) RegisterUser(req dto.RegisterUserDTO, hashedPassword string
 	return nil
 }
 
-func (r *Repository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) (string, int, error) {
-	user := models.User{
-		Username:  req.Username,
-		Salt:      salt,
-		PublicKey: []byte("0000"),
-	}
-
-	if err := r.connection.Create(&user).Error; err != nil {
-		return "", 0, fmt.Errorf("failed to create a new user: %v", err)
-	}
-
-	return salt, iterCount, nil
-}
-
 func (r *Repository) RegisterUserv2(req dto.RegisterUserDTOv2) error {
 	var user models.User
 
 	tx := r.connection.Begin()
-	if err := tx.Where("username = ?", req.Username).First(&user).Updates(
-		map[string]interface{}{
-			"first_name": req.FirstName,
-			"last_name":  req.LastName,
-			"server_key": req.ServerKey,
-			"stored_key": req.StoredKey,
-			"public_key": req.PublicKey,
-		}).Error; err != nil {
+	if err := tx.Where("username = ?", req.Username).First(&user).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("could not find user: %e", err)
+	}
+
+	err := tx.Model(&user).Updates(map[string]interface{}{
+		"first_name": req.FirstName,
+		"last_name": req.LastName,
+		"public_key": req.PublicKey,
+		"stored_key": req.StoredKey,
+		"server_key": req.ServerKey,
+	}).Error
+	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("could not update user: %e", err)
 	}
@@ -117,7 +108,7 @@ func (r *Repository) RegisterUserv2(req dto.RegisterUserDTOv2) error {
 		},
 	}
 
-	err := tx.Create(&userMetadata).Error
+	err = tx.Create(&userMetadata).Error
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("could not create user metadata entry: %e", err)
@@ -384,7 +375,7 @@ func (r *Repository) IsBackendURIExists(backendURL string) (bool, error) {
 	return count > 0, nil
 }
 
-func (r *Repository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) (error) {
+func (r *Repository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error {
 	user := models.User{
 		Username:       req.Username,
 		Salt:           salt,
