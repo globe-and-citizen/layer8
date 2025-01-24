@@ -269,11 +269,11 @@
 
           const dk = CryptoJS.PBKDF2(
             registerPassword.value,
-            CryptoJS.enc.Utf8.parse(registerPrecheckResponseBody.salt),
+            CryptoJS.enc.Utf8.parse(registerPrecheckResponseBody.data.salt),
             {
               // TODO: To explore more about this
               keySize: 160 / 32,
-              iterations: registerPrecheckResponseBody.iterationCount,
+              iterations: registerPrecheckResponseBody.data.iterationCount,
               hasher: CryptoJS.algo.SHA1,
             }
           );
