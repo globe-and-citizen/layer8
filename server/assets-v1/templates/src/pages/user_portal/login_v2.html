@@ -123,7 +123,7 @@
 
       const loginUser = async () => {
         try {
-          if (loginUsername.value == "" || loginPassword.value == "") {
+          if (loginUsername.value === "" || loginPassword.value === "") {
             showToastMessage("Please enter a username and password!", "error");
             return;
           }
@@ -153,53 +153,72 @@
             return;
           }
 
+          console.log("Password:", loginPassword.value)
+            console.log("salt:", loginPrecheckResponseBody.salt)
+            console.log("iter count:", loginPrecheckResponseBody.iter_count)
+
           const dk = CryptoJS.PBKDF2(
             loginPassword.value,
             CryptoJS.enc.Utf8.parse(loginPrecheckResponseBody.salt),
             {
               keySize: 160 / 32,
-              iterations: loginPrecheckResponseBody.iterationCount,
+              iterations: loginPrecheckResponseBody.iter_count,
               hasher: CryptoJS.algo.SHA1,
             }
           );
 
           const saltedPassword = dk.toString(CryptoJS.enc.Hex);
 
+          console.log("salted password: ", saltedPassword)
+
           const clientKey = CryptoJS.HmacSHA256(
             CryptoJS.enc.Utf8.parse(saltedPassword),
             CryptoJS.enc.Utf8.parse("Client Key")
           ).toString(CryptoJS.enc.Hex);
 
-          const serverKey = CryptoJS.HmacSHA256(
+            console.log("client key as string: ", clientKey)
+
+            const storedKey = CryptoJS.SHA256(
+                    CryptoJS.enc.Utf8.parse(clientKey)
+            ).toString(CryptoJS.enc.Hex);
+
+            console.log("stored key as string: ", storedKey)
+
+            const serverKey = CryptoJS.HmacSHA256(
             CryptoJS.enc.Utf8.parse(saltedPassword),
             CryptoJS.enc.Utf8.parse("Server Key")
           ).toString(CryptoJS.enc.Hex);
 
-          const authMessage = `[n=${loginUsername.value},r=${cNonce.value},s=${loginPrecheckResponseBody.salt},i=${loginPrecheckResponseBody.iterationCount},r=${loginPrecheckResponseBody.nonce}]`;
+          const authMessage = `[n=${loginUsername.value},r=${cNonce.value},s=${loginPrecheckResponseBody.salt},i=${loginPrecheckResponseBody.iter_count},r=${loginPrecheckResponseBody.nonce}]`;
+
+          console.log("Auth Message: ", authMessage)
 
           const clientSignature = CryptoJS.HmacSHA256(
-            CryptoJS.enc.Utf8.parse(authMessage),
-            CryptoJS.enc.Utf8.parse(
-              CryptoJS.SHA256(CryptoJS.enc.Utf8.parse(clientKey)).toString(
-                CryptoJS.enc.Hex
-              )
-            )
-          ).toString(CryptoJS.enc.Hex);
+                    CryptoJS.enc.Utf8.parse(authMessage),
+                    CryptoJS.enc.Utf8.parse(storedKey)
+            ).toString(CryptoJS.enc.Hex);
 
           // For debugging
-          console.log("clientKey: ", clientKey);
-          console.log("clientSignature: ", clientSignature);
+          // console.log("clientKey: ", clientKey);
+          // console.log("clientSignature: ", clientSignature);
 
           const clientKeyBytes = hexStringToBytes(clientKey);
-          const clientSignatureBytes = hexStringToBytes(clientSignature);
-          const clientProofBytes = xorBytes(
+            console.log("Client Key: ", clientKeyBytes)
+
+            const clientSignatureBytes = hexStringToBytes(clientSignature);
+            console.log("Client Signature: ", clientSignatureBytes)
+
+            const clientProofBytes = xorBytes(
             clientKeyBytes,
             clientSignatureBytes
           );
+
+          console.log("Client Proof: ", clientProofBytes)
+
           const clientProof = bytesToHexString(clientProofBytes);
 
           // For debugging
-          console.log("clientProof: ", clientProof);
+          // console.log("clientProof: ", clientProof);
 
           const respTwo = await window.fetch(
             "[[ .ProxyURL ]]/api/v2/login-user",

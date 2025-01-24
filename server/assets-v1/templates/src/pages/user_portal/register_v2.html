@@ -267,20 +267,28 @@
             return;
           }
 
+          console.log("Password:", registerPassword.value)
+          console.log(registerPassword.value === "123456")
+            console.log("Password length:", registerPassword.value.length)
+            console.log(registerPrecheckResponseBody.data.salt)
+            console.log(registerPrecheckResponseBody.data.iterationCount)
+
           const dk = CryptoJS.PBKDF2(
             registerPassword.value,
-            CryptoJS.enc.Utf8.parse(registerPrecheckResponseBody.salt),
+            CryptoJS.enc.Utf8.parse(registerPrecheckResponseBody.data.salt),
             {
               // TODO: To explore more about this
               keySize: 160 / 32,
-              iterations: registerPrecheckResponseBody.iterationCount,
+              iterations: registerPrecheckResponseBody.data.iterationCount,
               hasher: CryptoJS.algo.SHA1,
             }
           );
 
           const saltedPassword = dk.toString(CryptoJS.enc.Hex);
 
-          // HMAC for clientKey
+            console.log("Register: user's salted password: ", saltedPassword)
+
+            // HMAC for clientKey
           const clientKey = CryptoJS.HmacSHA256(
             CryptoJS.enc.Utf8.parse(saltedPassword),
             CryptoJS.enc.Utf8.parse("Client Key")
@@ -296,6 +304,9 @@
           const storedKey = CryptoJS.SHA256(
             CryptoJS.enc.Utf8.parse(clientKey)
           ).toString(CryptoJS.enc.Hex);
+
+            console.log("Register: user's client key: ", clientKey)
+            console.log("Register: user's stored key: ", storedKey)
 
           const resp = await window.fetch("[[ .ProxyURL ]]/api/v2/register-user", {
             method: "POST",
