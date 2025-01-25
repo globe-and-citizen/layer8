@@ -282,7 +282,7 @@
 
           // HMAC for clientKey
           const clientKey = CryptoJS.HmacSHA256(
-            CryptoJS.enc.Utf8.parse(saltedPassword),
+            CryptoJS.enc.Hex.parse(saltedPassword),
             CryptoJS.enc.Utf8.parse("Client Key")
           ).toString(CryptoJS.enc.Hex);
 
@@ -294,7 +294,7 @@
 
           // SHA256 for storedKey
           const storedKey = CryptoJS.SHA256(
-            CryptoJS.enc.Utf8.parse(clientKey)
+            CryptoJS.enc.Hex.parse(clientKey)
           ).toString(CryptoJS.enc.Hex);
 
           const resp = await window.fetch("[[ .ProxyURL ]]/api/v2/register-user", {
