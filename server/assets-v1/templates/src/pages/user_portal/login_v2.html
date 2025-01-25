@@ -172,20 +172,20 @@
           console.log("salted password: ", saltedPassword)
 
           const clientKey = CryptoJS.HmacSHA256(
-            CryptoJS.enc.Utf8.parse(saltedPassword),
+            CryptoJS.enc.Hex.parse(saltedPassword),
             CryptoJS.enc.Utf8.parse("Client Key")
           ).toString(CryptoJS.enc.Hex);
 
             console.log("client key as string: ", clientKey)
 
             const storedKey = CryptoJS.SHA256(
-                    CryptoJS.enc.Utf8.parse(clientKey)
+                    CryptoJS.enc.Hex.parse(clientKey)
             ).toString(CryptoJS.enc.Hex);
 
             console.log("stored key as string: ", storedKey)
 
             const serverKey = CryptoJS.HmacSHA256(
-            CryptoJS.enc.Utf8.parse(saltedPassword),
+            CryptoJS.enc.Hex.parse(saltedPassword),
             CryptoJS.enc.Utf8.parse("Server Key")
           ).toString(CryptoJS.enc.Hex);
 
@@ -195,7 +195,7 @@
 
           const clientSignature = CryptoJS.HmacSHA256(
                     CryptoJS.enc.Utf8.parse(authMessage),
-                    CryptoJS.enc.Utf8.parse(storedKey)
+                    CryptoJS.enc.Hex.parse(storedKey)
             ).toString(CryptoJS.enc.Hex);
 
           // For debugging
