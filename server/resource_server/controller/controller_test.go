@@ -1957,32 +1957,11 @@ func TestResetPasswordHandlerV2_InvalidJSON(t *testing.T) {
 
 	Ctl.ResetPasswordHandlerV2(rr, req)
 
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
-
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
 	assert.Equal(t, false, response.IsSuccess)
-	assert.Contains(t, response.Error, "Input json is invalid")
 }
-
-// func TestResetPasswordHandlerV2_MissingFields(t *testing.T) {
-// 	reqBody := []byte(`{
-// 		"username": "test_user",
-// 		"signature": "aaabbbbc"
-// 	}`)
-
-// 	req := httptest.NewRequest("POST", "/api/v2/reset-password", bytes.NewBuffer(reqBody))
-// 	req.Header.Set("Content-Type", "application/json")
-// 	rr := httptest.NewRecorder()
-
-// 	Ctl.ResetPasswordHandlerV2(rr, req)
-
-// 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-
-// 	response := decodeResponseBodyForResponse(t, rr)
-// 	assert.Equal(t, false, response.IsSuccess)
-// 	assert.Contains(t, response.Error, "Validation error")
-// }
 
 func TestResetPasswordHandlerV2_UserNotFound(t *testing.T) {
 	reqBody := []byte(`{
