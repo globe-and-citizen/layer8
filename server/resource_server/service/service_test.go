@@ -67,6 +67,7 @@ type mockRepository struct {
 	registerClient               func(client models.Client) error
 	getUserForUsername           func(username string) (models.User, error)
 	updateUserPassword           func(username string, password string) error
+	updateUserPasswordV2 		 func(username string, storedKey string, serverKey string) error
 }
 
 func (m *mockRepository) FindUser(userId uint) (models.User, error) {
@@ -225,6 +226,10 @@ func (m *mockRepository) GetUserForUsername(username string) (models.User, error
 
 func (m *mockRepository) UpdateUserPassword(username string, password string) error {
 	return m.updateUserPassword(username, password)
+}
+
+func (m *mockRepository) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
+	return m.updateUserPasswordV2(username, storedKey, serverKey)
 }
 
 func TestRegisterUser_RepositoryFailedToStoreUserData(t *testing.T) {
@@ -911,4 +916,82 @@ func TestValidateSignature_Success(t *testing.T) {
 	)
 
 	assert.Nil(t, err)
+}
+
+func TestUpdateUserPasswordV2_Success(t *testing.T) {
+	mockRepo := &mockRepository{
+		updateUserPasswordV2: func(username, storedKey, serverKey string) error {
+			assert.Equal(t, "test_user", username)
+			assert.Equal(t, "test_stored_key", storedKey)
+			assert.Equal(t, "test_server_key", serverKey)
+			return nil
+		},
+	}
+
+	currService := service.NewService(mockRepo, nil, nil)
+
+	err := currService.UpdateUserPasswordV2("test_user", "test_stored_key", "test_server_key")
+	assert.NoError(t, err, "Expected no error for successful password update")
+}
+
+func TestUpdateUserPasswordV2_RepositoryError(t *testing.T) {
+	mockRepo := &mockRepository{
+		updateUserPasswordV2: func(username, storedKey, serverKey string) error {
+			assert.Equal(t, "test_user", username)
+			assert.Equal(t, "test_stored_key", storedKey)
+			assert.Equal(t, "test_server_key", serverKey)
+			return fmt.Errorf("database error")
+		},
+	}
+
+	currService := service.NewService(mockRepo, nil, nil)
+
+	err := currService.UpdateUserPasswordV2("test_user", "test_stored_key", "test_server_key")
+	assert.Error(t, err, "Expected an error when repository returns an error")
+	assert.Equal(t, "database error", err.Error())
+}
+
+func TestUpdateUserPasswordV2_EmptyUsername(t *testing.T) {
+	mockRepo := &mockRepository{
+		updateUserPasswordV2: func(username, storedKey, serverKey string) error {
+			t.Fatalf("This function should not have been called")
+			return nil
+		},
+	}
+
+	currService := service.NewService(mockRepo, nil, nil)
+
+	err := currService.UpdateUserPasswordV2("", "test_stored_key", "test_server_key")
+	assert.Error(t, err, "Expected an error for empty username")
+	assert.Contains(t, err.Error(), "invalid username")
+}
+
+func TestUpdateUserPasswordV2_EmptyStoredKey(t *testing.T) {
+	mockRepo := &mockRepository{
+		updateUserPasswordV2: func(username, storedKey, serverKey string) error {
+			t.Fatalf("This function should not have been called")
+			return nil
+		},
+	}
+
+	currService := service.NewService(mockRepo, nil, nil)
+
+	err := currService.UpdateUserPasswordV2("test_user", "", "test_server_key")
+	assert.Error(t, err, "Expected an error for empty stored key")
+	assert.Contains(t, err.Error(), "invalid stored key")
+}
+
+func TestUpdateUserPasswordV2_EmptyServerKey(t *testing.T) {
+	mockRepo := &mockRepository{
+		updateUserPasswordV2: func(username, storedKey, serverKey string) error {
+			t.Fatalf("This function should not have been called")
+			return nil
+		},
+	}
+
+	currService := service.NewService(mockRepo, nil, nil)
+
+	err := currService.UpdateUserPasswordV2("test_user", "test_stored_key", "")
+	assert.Error(t, err, "Expected an error for empty server key")
+	assert.Contains(t, err.Error(), "invalid server key")
 }

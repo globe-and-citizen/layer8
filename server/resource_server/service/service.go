@@ -266,5 +266,15 @@ func (s *service) UpdateUserPassword(username string, newPassword string, salt s
 }
 
 func (s *service) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
+	if username == "" {
+		return fmt.Errorf("invalid username")
+	}
+	if storedKey == "" {
+		return fmt.Errorf("invalid stored key")
+	}
+	if serverKey == "" {
+		return fmt.Errorf("invalid server key")
+	}
+	
 	return s.repository.UpdateUserPasswordV2(username, storedKey, serverKey)
 }
