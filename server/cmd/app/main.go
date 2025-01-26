@@ -250,6 +250,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.LoginUserPage(w, r)
 			case path == "/user-register-page":
 				Ctl.RegisterUserPage(w, r)
+			case path == "/v2/user-register-page":
+				Ctl.RegisterUserPageV2(w, r)
 			case path == "/input-your-email-page":
 				Ctl.InputYourEmailPage(w, r)
 			case path == "/input-verification-code-page":
@@ -264,6 +266,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.ResetPasswordPage(w, r)
 			case path == "/api/v1/register-user":
 				Ctl.RegisterUserHandler(w, r)
+			case path == "/api/v1/register-user-precheck":
+				Ctl.RegisterUserPrecheck(w, r)
 			case path == "/api/v1/register-client":
 				Ctl.RegisterClientHandler(w, r)
 			case path == "/api/v1/getClient":

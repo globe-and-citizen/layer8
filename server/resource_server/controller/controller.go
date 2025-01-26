@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"globe-and-citizen/layer8/server/resource_server/db"
@@ -24,6 +25,9 @@ func LoginUserPage(w http.ResponseWriter, r *http.Request) {
 }
 func RegisterUserPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/register.html")
+}
+func RegisterUserPageV2(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/register_v2.html")
 }
 func ClientProfilePage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/profile.html")
@@ -553,4 +557,48 @@ func validateHttpMethod(w http.ResponseWriter, actualMethod string, expectedMeth
 	}
 
 	return true
+}
+
+func RegisterUserPrecheck(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService, ok := r.Context().Value("service").(interfaces.IService)
+	if !ok {
+		utils.HandleError(w, http.StatusInternalServerError, "Service not found in context", nil)
+		return
+	}
+
+	iterCount, err := strconv.Atoi(os.Getenv("SCRAM_ITERATION_COUNT"))
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Invalid iteration count configuration", err)
+		return
+	}
+
+	request, err := utils.DecodeJsonFromRequest[dto.RegisterUserPrecheckDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	salt, err := newService.RegisterUserPrecheck(request, iterCount)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
+		return
+	}
+
+	registerUserPrecheckResp := models.RegisterUserPrecheckResponseOutput{
+		Salt:           salt,
+		IterationCount: iterCount,
+	}
+
+	resp := utils.BuildResponse(w, http.StatusCreated, "User is successfully registered", registerUserPrecheckResp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal Server Error",
+			err,
+		)
+	}
 }
