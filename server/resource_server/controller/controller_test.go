@@ -1986,14 +1986,9 @@ func TestResetPasswordHandlerV2_UserNotFound(t *testing.T) {
 
 	assert.Equal(t, http.StatusNotFound, rr.Code)
 
-	response := decodeResponseBodyForResponse(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 	assert.Equal(t, false, response.IsSuccess)
-	// assert.Contains(t, response.Error, "User not found")
-	if errors, ok := response.Error.([]interface{}); ok && len(errors) > 0 {
-		assert.Equal(t, "User not found", errors[0])
-	} else {
-		t.Fatalf("Expected error message 'User not found' but got: %v", response.Error)
-	}
+	assert.Contains(t, response.Error, "User not found")
 }
 
 func TestResetPasswordHandlerV2_InvalidSignature(t *testing.T) {
@@ -2033,7 +2028,7 @@ func TestResetPasswordHandlerV2_InvalidSignature(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	response := decodeResponseBodyForResponse(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
 	assert.Equal(t, false, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
@@ -2073,7 +2068,7 @@ func TestResetPasswordHandlerV2_UpdatePasswordFailure(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 
-	response := decodeResponseBodyForResponse(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
 	assert.Equal(t, false, response.IsSuccess)
 	assert.Equal(t, "Internal error: failed to update user", response.Message)
