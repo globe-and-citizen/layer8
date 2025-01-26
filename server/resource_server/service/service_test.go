@@ -70,7 +70,7 @@ type mockRepository struct {
 	registerClient               func(client models.Client) error
 	getUserForUsername           func(username string) (models.User, error)
 	updateUserPassword           func(username string, password string) error
-	updateUserPasswordV2 		 func(username string, storedKey string, serverKey string) error
+	updateUserPasswordV2         func(username string, storedKey string, serverKey string) error
 }
 
 func (m *mockRepository) FindUser(userId uint) (models.User, error) {

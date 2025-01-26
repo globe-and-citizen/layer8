@@ -60,13 +60,13 @@ type ResetPasswordPrecheckDTO struct {
 	Username string `json:"username" validate:"required"`
 }
 
+type RegisterUserPrecheckDTO struct {
+	Username string `json:"username" validate:"required"`
+}
+
 type ResetPasswordDTOV2 struct {
 	Username  string `json:"username" validate:"required"`
 	Signature []byte `json:"signature" validate:"required"`
 	StoredKey string `json:"stored_key" validation:"required"`
 	ServerKey string `json:"server_key" validation:"required"`
-}
-
-type RegisterUserPrecheckDTO struct {
-	Username string `json:"username" validate:"required"`
 }

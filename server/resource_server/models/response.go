@@ -17,6 +17,7 @@ type ProfileResponseOutput struct {
 	Country       string `json:"country"`
 	EmailVerified bool   `json:"email_verified"`
 }
+
 type ClientResponseOutput struct {
 	ID          string `json:"id"`
 	Secret      string `json:"secret"`
@@ -24,11 +25,13 @@ type ClientResponseOutput struct {
 	RedirectURI string `json:"redirect_uri"`
 	BackendURI  string `json:"backend_uri"`
 }
-type ResetPasswordPrecheckResponseOutput struct {
+
+type RegisterUserPrecheckResponseOutput struct {
 	Salt           string `json:"salt"`
 	IterationCount int    `json:"iterationCount"`
 }
-type RegisterUserPrecheckResponseOutput struct {
+
+type ResetPasswordPrecheckResponseOutput struct {
 	Salt           string `json:"salt"`
 	IterationCount int    `json:"iterationCount"`
 }
