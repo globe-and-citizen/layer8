@@ -66,3 +66,7 @@ type ResetPasswordDTOV2 struct {
 	StoredKey string `json:"stored_key" validation:"required"`
 	ServerKey string `json:"server_key" validation:"required"`
 }
+
+type RegisterUserPrecheckDTO struct {
+	Username string `json:"username" validate:"required"`
+}

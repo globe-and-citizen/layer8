@@ -25,6 +25,10 @@ type ClientResponseOutput struct {
 	BackendURI  string `json:"backend_uri"`
 }
 type ResetPasswordPrecheckResponseOutput struct {
-	Salt			string	`json:"salt"`
-	IterationCount 	int		`json:"iterationCount"`
+	Salt           string `json:"salt"`
+	IterationCount int    `json:"iterationCount"`
+}
+type RegisterUserPrecheckResponseOutput struct {
+	Salt           string `json:"salt"`
+	IterationCount int    `json:"iterationCount"`
 }

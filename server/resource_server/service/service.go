@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
@@ -10,6 +9,8 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 	"time"
+
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type service struct {
@@ -260,6 +261,17 @@ func (s *service) ValidateSignature(message string, signature []byte, publicKey 
 	return nil
 }
 
+func (s *service) RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error) {
+	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
+
+	err := s.repository.RegisterPrecheckUser(req, rmSalt, iterCount)
+	if err != nil {
+		return "", err
+	}
+
+	return rmSalt, nil
+}
+
 func (s *service) UpdateUserPassword(username string, newPassword string, salt string) error {
 	hashedPassword := utils.SaltAndHashPassword(newPassword, salt)
 	return s.repository.UpdateUserPassword(username, hashedPassword)
@@ -275,6 +287,6 @@ func (s *service) UpdateUserPasswordV2(username string, storedKey string, server
 	if serverKey == "" {
 		return fmt.Errorf("invalid server key")
 	}
-	
+
 	return s.repository.UpdateUserPasswordV2(username, storedKey, serverKey)
 }
