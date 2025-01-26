@@ -555,6 +555,40 @@ func validateHttpMethod(w http.ResponseWriter, actualMethod string, expectedMeth
 	return true
 }
 
+func ResetPasswordPrecheck(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.ResetPasswordPrecheckDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	user, err := newService.GetUserForUsername(request.Username)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "User does not exist!", err)
+		return
+	}
+
+	resetPasswordPrecheckResp := models.ResetPasswordPrecheckResponseOutput{
+		Salt:           user.Salt,
+		IterationCount: user.IterationCount,
+	}
+
+	response := utils.BuildResponse(w, http.StatusAccepted, "User does exist!", resetPasswordPrecheckResp)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal Server Error",
+			err,
+		)
+	}
+}
+
 func ResetPasswordHandlerV2(w http.ResponseWriter, r *http.Request) {
 	if !validateHttpMethod(w, r.Method, http.MethodPost) {
 		return

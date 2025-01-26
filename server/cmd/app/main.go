@@ -290,6 +290,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.CheckBackendURI(w, r)
 			case path == "/api/v1/reset-password":
 				Ctl.ResetPasswordHandler(w, r)
+			case path == "/api/v2/reset-password-precheck":
+				Ctl.ResetPasswordPrecheck(w, r)
 			case path == "/api/v2/reset-password":
 				Ctl.ResetPasswordHandlerV2(w, r)
 			case path == "/favicon.ico":

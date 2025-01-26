@@ -56,6 +56,10 @@ type ResetPasswordDTO struct {
 	NewPassword string `json:"new_password" validate:"required"`
 }
 
+type ResetPasswordPrecheckDTO struct {
+	Username string `json:"username" validate:"required"`
+}
+
 type ResetPasswordDTOV2 struct {
 	Username  string `json:"username" validate:"required"`
 	Signature []byte `json:"signature" validate:"required"`
