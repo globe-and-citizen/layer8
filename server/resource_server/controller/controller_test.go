@@ -2006,7 +2006,7 @@ func TestRegisterUserPrecheck_ServiceError(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
 }
 
-func TestResetPasswordPrecheck(t *testing.T) {
+func TestResetPasswordPrecheck_Success(t *testing.T) {
 	requestBody := []byte(`{"username": "test_user"}`)
 
 	req, err := http.NewRequest("POST", "/api/v2/reset-password-precheck", bytes.NewBuffer(requestBody))
