@@ -153,10 +153,6 @@
             return;
           }
 
-          console.log("Password:", loginPassword.value)
-            console.log("salt:", loginPrecheckResponseBody.salt)
-            console.log("iter count:", loginPrecheckResponseBody.iter_count)
-
           const dk = CryptoJS.PBKDF2(
             loginPassword.value,
             CryptoJS.enc.Utf8.parse(loginPrecheckResponseBody.salt),
@@ -169,56 +165,42 @@
 
           const saltedPassword = dk.toString(CryptoJS.enc.Hex);
 
-          console.log("salted password: ", saltedPassword)
-
           const clientKey = CryptoJS.HmacSHA256(
             CryptoJS.enc.Hex.parse(saltedPassword),
             CryptoJS.enc.Utf8.parse("Client Key")
           ).toString(CryptoJS.enc.Hex);
 
-            console.log("client key as string: ", clientKey)
+          console.log("client key as string: ", clientKey);
 
-            const storedKey = CryptoJS.SHA256(
-                    CryptoJS.enc.Hex.parse(clientKey)
-            ).toString(CryptoJS.enc.Hex);
+          const clientKeyBytes = hexStringToBytes(clientKey);
+          console.log("Client Key Bytes: ", clientKeyBytes);
 
-            console.log("stored key as string: ", storedKey)
+          const storedKey = CryptoJS.SHA256(
+            CryptoJS.enc.Hex.parse(clientKey)
+          ).toString(CryptoJS.enc.Hex);
 
-            const serverKey = CryptoJS.HmacSHA256(
+          const serverKey = CryptoJS.HmacSHA256(
             CryptoJS.enc.Hex.parse(saltedPassword),
             CryptoJS.enc.Utf8.parse("Server Key")
           ).toString(CryptoJS.enc.Hex);
 
           const authMessage = `[n=${loginUsername.value},r=${cNonce.value},s=${loginPrecheckResponseBody.salt},i=${loginPrecheckResponseBody.iter_count},r=${loginPrecheckResponseBody.nonce}]`;
 
-          console.log("Auth Message: ", authMessage)
-
           const clientSignature = CryptoJS.HmacSHA256(
-                    CryptoJS.enc.Utf8.parse(authMessage),
-                    CryptoJS.enc.Hex.parse(storedKey)
-            ).toString(CryptoJS.enc.Hex);
+            CryptoJS.enc.Utf8.parse(authMessage),
+            CryptoJS.enc.Hex.parse(storedKey)
+          ).toString(CryptoJS.enc.Hex);
 
-          // For debugging
-          // console.log("clientKey: ", clientKey);
-          // console.log("clientSignature: ", clientSignature);
+          const clientSignatureBytes = hexStringToBytes(clientSignature);
 
-          const clientKeyBytes = hexStringToBytes(clientKey);
-            console.log("Client Key: ", clientKeyBytes)
+          console.log("Client Signature Bytes: ", clientSignatureBytes);
 
-            const clientSignatureBytes = hexStringToBytes(clientSignature);
-            console.log("Client Signature: ", clientSignatureBytes)
-
-            const clientProofBytes = xorBytes(
+          const clientProofBytes = xorBytes(
             clientKeyBytes,
             clientSignatureBytes
           );
 
-          console.log("Client Proof: ", clientProofBytes)
-
           const clientProof = bytesToHexString(clientProofBytes);
-
-          // For debugging
-          // console.log("clientProof: ", clientProof);
 
           const respTwo = await window.fetch(
             "[[ .ProxyURL ]]/api/v2/login-user",
@@ -241,9 +223,19 @@
           console.log("responseTwo: ", responseTwo);
 
           if (respTwo.server_signature) {
-            // TODO: Validate server signature
-            // ServerSignature == HMAC-SHA256(AuthMessage, ServerKey);
-            // Error message: "client failed to authenticate the server"
+            const serverSignatureCheck = CryptoJS.HmacSHA256(
+              CryptoJS.enc.Utf8.parse(authMessage),
+              CryptoJS.enc.Hex.parse(serverKey)
+            ).toString(CryptoJS.enc.Hex);
+
+            console.log("serverSignatureCheck: ", serverSignatureCheck);
+            console.log("responseTwo.server_signature: ", responseTwo.server_signature);
+            if (serverSignatureCheck === respTwo.server_signature) {
+              token.value = responseTwo.token;
+              localStorage.setItem("token", token.value);
+              showToastMessage("Login successful!", "success");
+              window.location.href = "[[ .ProxyURL ]]/user";
+            }
           } else if (respTwo.message) {
             showToastMessage(respTwo.message, "error");
           } else {

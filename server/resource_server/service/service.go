@@ -305,27 +305,19 @@ func (s *service) LoginUserv2(req dto.LoginUserDTOv2) (models.LoginUserResponseO
 		return models.LoginUserResponseOutputv2{}, err
 	}
 
-	fmt.Println("User Stored Key: ", user.StoredKey)
+	storedKeyBytes, err := hex.DecodeString(user.StoredKey)
+	if err != nil {
+		return models.LoginUserResponseOutputv2{}, fmt.Errorf("error decoding stored key: %v", err)
+	}
 
 	authMessage := fmt.Sprintf("[n=%s,r=%s,s=%s,i=%d,r=%s]", req.Username, req.CNonce, user.Salt, user.IterationCount, req.Nonce)
+	authMessageBytes := []byte(authMessage)
 
-	fmt.Println("Auth Message: ", authMessage)
-
-	clientSignatureHMAC := hmac.New(sha256.New, []byte(user.StoredKey))
-	clientSignatureHMAC.Write([]byte(authMessage))
+	clientSignatureHMAC := hmac.New(sha256.New, storedKeyBytes)
+	clientSignatureHMAC.Write(authMessageBytes)
 	clientSignature := clientSignatureHMAC.Sum(nil)
 
-	fmt.Println("Client Signature: ", clientSignature)
-
-	//clientSignatureHex := hex.EncodeToString()
-
-	// For testing only
-	//fmt.Println("Client Signature:", clientSignatureHex)
-
-	//clientSignaturBytes, err := utils.HexStringToBytes(clientSignatureHex)
-	//if err != nil {
-	//	return models.LoginUserResponseOutputv2{}, fmt.Errorf("error decoding client signature: %v", err)
-	//}
+	fmt.Println("Client Signature Bytes: ", clientSignature)
 
 	clientProofBytes, err := utils.HexStringToBytes(req.ClientProof)
 	if err != nil {
@@ -339,34 +331,26 @@ func (s *service) LoginUserv2(req dto.LoginUserDTOv2) (models.LoginUserResponseO
 		return models.LoginUserResponseOutputv2{}, fmt.Errorf("error performing XOR operation: %v", err)
 	}
 
-	fmt.Println("Client Key: ", clientKeyBytes)
+	fmt.Println("Client Key Bytes: ", clientKeyBytes)
 
-	clientKey := utils.BytesToHexString(clientKeyBytes)
-	fmt.Println("Client Key String: ", clientKey)
-
-	cleintKeyHash := sha256.Sum256([]byte(clientKey))
-
-	fmt.Println("Client Key SHA256 Bytes: ", cleintKeyHash)
+	cleintKeyHash := sha256.Sum256(clientKeyBytes)
 
 	clientKeyHashStr := hex.EncodeToString(cleintKeyHash[:])
 
 	fmt.Println("Client Key SHA256 String: ", clientKeyHashStr)
 	fmt.Println("Stored Key: ", user.StoredKey)
 
-	//cleintKeySHA256 := utils.BytesToHexString(cleintKeyHash[:])
+	if clientKeyHashStr != user.StoredKey {
+		return models.LoginUserResponseOutputv2{}, fmt.Errorf("server failed to authenticate the user")
+	}
 
-	// FAILING HERE!
-	// if cleintKeySHA256 != user.StoredKey {
-	// 	return models.LoginUserResponseOutputv2{}, fmt.Errorf("server failed to authenticate the user")
-	// }
+	serverKeyBytes, err := hex.DecodeString(user.ServerKey)
+	if err != nil {
+		return models.LoginUserResponseOutputv2{}, fmt.Errorf("error decoding server key: %v", err)
+	}
 
-	// For testing only
-	// fmt.Println("Client Key:", clientKey)
-	//fmt.Println("Client Key SHA256:", []byte(cleintKeySHA256))
-	//fmt.Println("User Stored Key:", []byte(user.StoredKey))
-
-	serverSignatureHMAC := hmac.New(sha256.New, []byte(user.ServerKey))
-	serverSignatureHMAC.Write([]byte(authMessage))
+	serverSignatureHMAC := hmac.New(sha256.New, serverKeyBytes)
+	serverSignatureHMAC.Write(authMessageBytes)
 	serverSignatureHex := hex.EncodeToString(serverSignatureHMAC.Sum(nil))
 
 	// For testing only
