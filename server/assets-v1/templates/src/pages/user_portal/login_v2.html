@@ -222,7 +222,7 @@
 
           console.log("responseTwo: ", responseTwo);
 
-          if (respTwo.server_signature) {
+          if (responseTwo.server_signature) {
             const serverSignatureCheck = CryptoJS.HmacSHA256(
               CryptoJS.enc.Utf8.parse(authMessage),
               CryptoJS.enc.Hex.parse(serverKey)
@@ -230,7 +230,9 @@
 
             console.log("serverSignatureCheck: ", serverSignatureCheck);
             console.log("responseTwo.server_signature: ", responseTwo.server_signature);
+
             if (serverSignatureCheck === respTwo.server_signature) {
+              console.log("Login successful!");
               token.value = responseTwo.token;
               localStorage.setItem("token", token.value);
               showToastMessage("Login successful!", "success");
