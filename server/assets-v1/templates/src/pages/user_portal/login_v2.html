@@ -222,8 +222,8 @@
             ).toString(CryptoJS.enc.Hex);
 
             if (serverSignatureCheck === responseTwo.server_signature) {
-              token.value = responseTwo.token;
-              localStorage.setItem("token", token.value);
+              // token.value = responseTwo.token;
+              // localStorage.setItem("token", token.value);
               showToastMessage("Login successful!", "success");
               window.location.href = "[[ .ProxyURL ]]/user";
             }
