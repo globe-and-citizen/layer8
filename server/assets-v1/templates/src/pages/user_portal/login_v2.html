@@ -170,10 +170,7 @@
             CryptoJS.enc.Utf8.parse("Client Key")
           ).toString(CryptoJS.enc.Hex);
 
-          console.log("client key as string: ", clientKey);
-
           const clientKeyBytes = hexStringToBytes(clientKey);
-          console.log("Client Key Bytes: ", clientKeyBytes);
 
           const storedKey = CryptoJS.SHA256(
             CryptoJS.enc.Hex.parse(clientKey)
@@ -192,8 +189,6 @@
           ).toString(CryptoJS.enc.Hex);
 
           const clientSignatureBytes = hexStringToBytes(clientSignature);
-
-          console.log("Client Signature Bytes: ", clientSignatureBytes);
 
           const clientProofBytes = xorBytes(
             clientKeyBytes,
@@ -220,19 +215,13 @@
 
           const responseTwo = await respTwo.json();
 
-          console.log("responseTwo: ", responseTwo);
-
           if (responseTwo.server_signature) {
             const serverSignatureCheck = CryptoJS.HmacSHA256(
               CryptoJS.enc.Utf8.parse(authMessage),
               CryptoJS.enc.Hex.parse(serverKey)
             ).toString(CryptoJS.enc.Hex);
 
-            console.log("serverSignatureCheck: ", serverSignatureCheck);
-            console.log("responseTwo.server_signature: ", responseTwo.server_signature);
-
-            if (serverSignatureCheck === respTwo.server_signature) {
-              console.log("Login successful!");
+            if (serverSignatureCheck === responseTwo.server_signature) {
               token.value = responseTwo.token;
               localStorage.setItem("token", token.value);
               showToastMessage("Login successful!", "success");
