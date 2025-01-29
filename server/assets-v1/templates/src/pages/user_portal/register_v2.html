@@ -269,7 +269,7 @@
 
           const dk = CryptoJS.PBKDF2(
             registerPassword.value,
-            CryptoJS.enc.Utf8.parse(registerPrecheckResponseBody.data.salt),
+            CryptoJS.enc.Hex.parse(registerPrecheckResponseBody.data.salt),
             {
               // TODO: To explore more about this
               keySize: 160 / 32,
@@ -288,7 +288,7 @@
 
           // HMAC for serverKey
           const serverKey = CryptoJS.HmacSHA256(
-            CryptoJS.enc.Utf8.parse(saltedPassword),
+            CryptoJS.enc.Hex.parse(saltedPassword),
             CryptoJS.enc.Utf8.parse("Server Key")
           ).toString(CryptoJS.enc.Hex);
 
