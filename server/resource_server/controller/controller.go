@@ -602,3 +602,32 @@ func RegisterUserPrecheck(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 }
+
+func RegisterUserHandlerv2(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.RegisterUserDTOv2](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	err = newService.RegisterUserv2(request)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
+		return
+	}
+
+	res := utils.BuildResponseWithNoBody(w, http.StatusCreated, "User registered successfully")
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
+	}
+}

@@ -75,6 +75,7 @@ type MockService struct {
 	validateSignature                  func(message string, signature []byte, publicKey []byte) error
 	updateUserPassword                 func(username string, newPassword string, salt string) error
 	registerUserPrecheck               func(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error)
+	registerUserv2                     func(req dto.RegisterUserDTOv2) error
 }
 
 func (ms *MockService) RegisterUser(req dto.RegisterUserDTO) error {
@@ -188,6 +189,11 @@ func (m *MockService) RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iter
 	return m.registerUserPrecheck(req, iterCount)
 }
 
+// Mock RegisterUser method for unit tests
+func (m *MockService) RegisterUserv2(req dto.RegisterUserDTOv2) error {
+	return m.registerUserv2(req)
+}
+
 func TestRegisterUserHandler_InvalidHttpRequestMethod(t *testing.T) {
 	requestBody := []byte(`{
 		"email": "test@gcitizen.com",
@@ -236,6 +242,7 @@ func TestRegisterUserHandler_RequestJsonIsMalformed(t *testing.T) {
 
 	mockService := &MockService{}
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+	// setMockServiceInContext(req)
 
 	rr := httptest.NewRecorder()
 
@@ -1959,7 +1966,7 @@ func TestRegisterUserPrecheck_MissingRequiredFields(t *testing.T) {
 	req := httptest.NewRequest("POST", "/api/register-user-precheck", bytes.NewBuffer(reqBody))
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	t.Setenv("SCRAM_ITERATION_COUNT", "4096")
 	rr := httptest.NewRecorder()
 
@@ -1998,4 +2005,193 @@ func TestRegisterUserPrecheck_ServiceError(t *testing.T) {
 	Ctl.RegisterUserPrecheck(rr, req)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
+}
+
+func TestRegisterUserHandlerv2_InvalidHttpRequestMethod(t *testing.T) {
+	requestBody := []byte(`{
+		"username": "test_user",
+		"first_name": "Test",
+		"last_name": "User",
+		"display_name": "user",
+		"country": "Unknown",
+		"public_key": "0xaaaaaa",
+		"server_key": "0xbbbbbb",
+		"stored_key": "0xcccccc"
+	}`)
+
+	req, err := http.NewRequest("GET", "/api/v2/register-user", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	setMockServiceInContext(req)
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterUserHandlerv2(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected POST", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestRegisterUserHandlerv2_RequestJsonIsMalformed(t *testing.T) {
+	requestBody := []byte(`{
+		"username": "test_user",
+		"first_name": "Test",
+		"last_name": "User",
+		"display_name": "user",
+		"country": "Unknown",
+		"public_key": "0xaaaaaa",
+		"server_key": "0xbbbbbb",
+		"stored_key": "0xcccccc"
+	}something_else`)
+
+	req, err := http.NewRequest("POST", "/api/v2/register-user", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+	// setMockServiceInContext(req)
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterUserHandlerv2(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestRegisterUserHandlerv2_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
+	requestBody := []byte(`{
+		"first_name": "Test",
+		"last_name": "User",
+		"display_name": "user",
+		"country": "Unknown",
+		"public_key": "0xaaaaaa",
+		"server_key": "0xbbbbbb",
+		"stored_key": "0xcccccc"
+	}`)
+
+	req, err := http.NewRequest("POST", "/api/v2/register-user", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterUserHandlerv2(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Input json is invalid", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestRegisterUserHandlerv2_ServiceError(t *testing.T) {
+	// Mock request body
+	requestBody := []byte(`{
+		"username": "test_user",
+		"first_name": "Test",
+		"last_name": "User",
+		"display_name": "user",
+		"country": "Unknown",
+		"public_key": "0xaaaaaa",
+		"server_key": "0xbbbbbb",
+		"stored_key": "0xcccccc"
+	}`)
+
+	// Create a mock request
+	req, err := http.NewRequest("POST", "/api/v2/register-user", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a mock service and set it in the request context
+	mockService := &MockService{
+		registerUserv2: func(req dto.RegisterUserDTOv2) error {
+			return fmt.Errorf("failed to register user")
+		},
+	}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	// Create a ResponseRecorder to record the response
+	rr := httptest.NewRecorder()
+
+	// Call the handler function
+	Ctl.RegisterUserHandlerv2(rr, req)
+
+	// Check the status code
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	// Decode the response body
+	response := decodeResponseBodyForResponse(t, rr)
+
+	// Now assert the fields directly
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Failed to register user", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestRegisterUserHandlerv2_Success(t *testing.T) {
+	// Mock request body
+	requestBody := []byte(`{
+		"username": "test_user",
+		"first_name": "Test",
+		"last_name": "User",
+		"display_name": "user",
+		"country": "Unknown",
+		"public_key": "0xaaaaaa",
+		"server_key": "0xbbbbbb",
+		"stored_key": "0xcccccc"
+	}`)
+
+	// Create a mock request
+	req, err := http.NewRequest("POST", "/api/v2/register-user", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a mock service and set it in the request context
+	mockService := &MockService{
+		registerUserv2: func(req dto.RegisterUserDTOv2) error {
+			return nil
+		},
+	}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	// Create a ResponseRecorder to record the response
+	rr := httptest.NewRecorder()
+
+	// Call the handler function
+	Ctl.RegisterUserHandlerv2(rr, req)
+
+	// Check the status code
+	assert.Equal(t, http.StatusCreated, rr.Code)
+
+	// Decode the response body
+	response := decodeResponseBodyForResponse(t, rr)
+
+	// Now assert the fields directly
+	assert.True(t, response.IsSuccess)
+	assert.Equal(t, "User registered successfully", response.Message)
+	assert.Equal(t, nil, response.Data)
 }

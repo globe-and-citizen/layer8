@@ -417,7 +417,11 @@ func (r *MemoryRepository) UpdateUserPassword(username string, password string) 
 	return nil
 }
 
-func (r *MemoryRepository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) (error) {
+func (r *MemoryRepository) RegisterUserv2(dto dto.RegisterUserDTOv2) error {
+	return nil
+}
+
+func (r *MemoryRepository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error {
 	if _, exists := r.storage[req.Username]; exists {
 		return fmt.Errorf("user already exists: %s", req.Username)
 	}
