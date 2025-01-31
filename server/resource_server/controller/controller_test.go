@@ -1893,7 +1893,9 @@ func TestRegisterUserPrecheck_Success(t *testing.T) {
 
 	response := decodeResponseBodyForResponse(t, rr)
 
+	assert.Equal(t, true, response.IsSuccess)
 	assert.Equal(t, "User is successfully registered", response.Message, "Response message should match")
+	assert.Nil(t, response.Error)
 }
 
 func TestRegisterUserPrecheck_InvalidMethod(t *testing.T) {
@@ -2034,7 +2036,9 @@ func TestResetPasswordPrecheck_Success(t *testing.T) {
 
 	response := decodeResponseBodyForResponse(t, rr)
 
+	assert.Equal(t, true, response.IsSuccess)
 	assert.Equal(t, "User does exist!", response.Message, "Response message should match")
+	assert.Nil(t, response.Error)
 }
 
 func TestResetPasswordPrecheck_MissingUsername(t *testing.T) {
