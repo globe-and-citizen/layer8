@@ -2255,9 +2255,9 @@ func TestResetPasswordHandlerV2_UserNotFound(t *testing.T) {
 func TestResetPasswordHandlerV2_InvalidSignature(t *testing.T) {
 	reqBody := []byte(`{
 		"username": "test_user",
-		"signature": "invalid_signature",
-		"stored_key": "test_stored_key",
-		"server_key": "test_server_key"
+		"signature": "aaabbbbc",
+		"stored_key": "user_stored_key",
+		"server_key": "user_server_key"
 	}`)
 
 	mockService := &MockService{
@@ -2289,7 +2289,8 @@ func TestResetPasswordHandlerV2_InvalidSignature(t *testing.T) {
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
 	assert.Equal(t, false, response.IsSuccess)
-	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.Equal(t, "Signature is invalid!", response.Message)
+	assert.NotNil(t, response.Error)
 }
 
 func TestResetPasswordHandlerV2_UpdatePasswordFailure(t *testing.T) {
