@@ -30,6 +30,8 @@ const userEmail = "user@email.com"
 const userPassword = "test_password"
 const newUserPassword = "new_password"
 const userSalt = "salt"
+const serverKey = "user_server_key"
+const storedKey = "user_stored_key"
 
 const zkKeyPairId uint = 2
 
@@ -2041,7 +2043,7 @@ func TestResetPasswordPrecheck_Success(t *testing.T) {
 	assert.Nil(t, response.Error)
 }
 
-func TestResetPasswordPrecheck_MissingUsername(t *testing.T) {
+func TestResetPasswordPrecheck_RequiredRequestJsonFieldIsMissing(t *testing.T) {
 	requestBody := []byte(`{}`)
 
 	req, err := http.NewRequest("POST", "/api/v2/reset-password-precheck", bytes.NewBuffer(requestBody))
@@ -2122,13 +2124,13 @@ func TestResetPasswordHandlerV2_Success(t *testing.T) {
 	reqBody := []byte(`{
 		"username": "test_user",
 		"signature": "aaabbbbc",
-		"stored_key": "test_stored_key",
-		"server_key": "test_server_key"
+		"stored_key": "user_stored_key",
+		"server_key": "user_server_key"
 	}`)
 
 	mockService := &MockService{
 		getUserForUsername: func(currUsername string) (models.User, error) {
-			if currUsername != "test_user" {
+			if currUsername != username {
 				t.Fatalf("Username mismatch: expected %s, got %s", "test_user", currUsername)
 			}
 			return models.User{
@@ -2143,15 +2145,15 @@ func TestResetPasswordHandlerV2_Success(t *testing.T) {
 			}
 			return nil
 		},
-		updateUserPasswordV2: func(currUsername, storedKey, serverKey string) error {
-			if currUsername != "test_user" {
+		updateUserPasswordV2: func(currUsername, currStoredKey, currServerKey string) error {
+			if currUsername != username {
 				t.Fatalf("Username mismatch: expected %s, got %s", username, currUsername)
 			}
-			if storedKey != "test_stored_key" {
-				t.Fatalf("StoredKey mismatch: expected %s, got %s", "test_stored_key", storedKey)
+			if currStoredKey != storedKey {
+				t.Fatalf("currStoredKey mismatch: expected %s, got %s", storedKey, currStoredKey)
 			}
-			if serverKey != "test_server_key" {
-				t.Fatalf("ServerKey mismatch: expected %s, got %s", "test_server_key", serverKey)
+			if currServerKey != serverKey {
+				t.Fatalf("currServerKey mismatch: expected %s, got %s", serverKey, currServerKey)
 			}
 			return nil
 		},
@@ -2179,8 +2181,8 @@ func TestResetPasswordHandlerV2_InvalidJSON(t *testing.T) {
 
 	mockService := &MockService{
 		getUserForUsername: func(currUsername string) (models.User, error) {
-			if currUsername != "test_user" {
-				t.Fatalf("Username mismatch: expected %s, got %s", "test_user", currUsername)
+			if currUsername != username {
+				t.Fatalf("Username mismatch: expected %s, got %s", username, currUsername)
 			}
 			return models.User{
 				ID:        userId,
@@ -2194,15 +2196,15 @@ func TestResetPasswordHandlerV2_InvalidJSON(t *testing.T) {
 			}
 			return nil
 		},
-		updateUserPasswordV2: func(currUsername, storedKey, serverKey string) error {
-			if currUsername != "test_user" {
+		updateUserPasswordV2: func(currUsername, currStoredKey, currServerKey string) error {
+			if currUsername != username {
 				t.Fatalf("Username mismatch: expected %s, got %s", username, currUsername)
 			}
-			if storedKey != "test_stored_key" {
-				t.Fatalf("StoredKey mismatch: expected %s, got %s", "test_stored_key", storedKey)
+			if currStoredKey != storedKey {
+				t.Fatalf("StoredKey mismatch: expected %s, got %s", storedKey, currStoredKey)
 			}
-			if serverKey != "test_server_key" {
-				t.Fatalf("ServerKey mismatch: expected %s, got %s", "test_server_key", serverKey)
+			if currServerKey != serverKey {
+				t.Fatalf("ServerKey mismatch: expected %s, got %s", serverKey, currServerKey)
 			}
 			return nil
 		},
