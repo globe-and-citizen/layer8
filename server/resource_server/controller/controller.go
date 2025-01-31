@@ -658,6 +658,7 @@ func ResetPasswordHandlerV2(w http.ResponseWriter, r *http.Request) {
 	err = newService.ValidateSignature("Sign-in with Layer8", request.Signature, user.PublicKey)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Signature is invalid!", err)
+		return
 	}
 
 	err = newService.UpdateUserPasswordV2(user.Username, request.StoredKey, request.ServerKey)
