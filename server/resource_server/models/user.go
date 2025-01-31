@@ -12,6 +12,8 @@ type User struct {
 	ZkKeyPairId      uint   `gorm:"column:zk_key_pair_id; not null" json:"zk_key_pair_id"`
 	PublicKey        []byte `gorm:"column:public_key; not null" json:"public_key"`
 	IterationCount   int    `gorm:"column:iteration_count;" json:"iteration_count"`
+	ServerKey        string `gorm:"column:server_key;" json:"server_key"`
+	StoredKey        string `gorm:"column:stored_key;" json:"stored_key"`
 }
 
 func (User) TableName() string {

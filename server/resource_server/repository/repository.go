@@ -69,6 +69,56 @@ func (r *Repository) RegisterUser(req dto.RegisterUserDTO, hashedPassword string
 	return nil
 }
 
+func (r *Repository) RegisterUserv2(req dto.RegisterUserDTOv2) error {
+	var user models.User
+
+	tx := r.connection.Begin()
+	if err := tx.Where("username = ?", req.Username).First(&user).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("could not find user: %e", err)
+	}
+
+	err := tx.Model(&user).Updates(map[string]interface{}{
+		"first_name": req.FirstName,
+		"last_name": req.LastName,
+		"public_key": req.PublicKey,
+		"stored_key": req.StoredKey,
+		"server_key": req.ServerKey,
+	}).Error
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("could not update user: %e", err)
+	}
+
+	userMetadata := []models.UserMetadata{
+		{
+			UserID: user.ID,
+			Key:    "email_verified",
+			Value:  "false",
+		},
+		{
+			UserID: user.ID,
+			Key:    "country",
+			Value:  req.Country,
+		},
+		{
+			UserID: user.ID,
+			Key:    "display_name",
+			Value:  req.DisplayName,
+		},
+	}
+
+	err = tx.Create(&userMetadata).Error
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("could not create user metadata entry: %e", err)
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
 func (r *Repository) FindUser(userId uint) (models.User, error) {
 	var user models.User
 	e := r.connection.Where("id = ?", userId).First(&user).Error

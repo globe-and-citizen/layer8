@@ -290,3 +290,7 @@ func (s *service) UpdateUserPasswordV2(username string, storedKey string, server
 
 	return s.repository.UpdateUserPasswordV2(username, storedKey, serverKey)
 }
+
+func (s *service) RegisterUserv2(req dto.RegisterUserDTOv2) error {
+	return s.repository.RegisterUserv2(req)
+}

@@ -31,6 +31,9 @@ const displayName = "display_name"
 const country = "country"
 const verificationCode = "123456"
 const userSalt = "salt"
+const publicKey = "0xaaaaa"
+const serverKey = "0xbbbbb"
+const storedKey = "0xccccc"
 
 const redirectUri = "redirect_uri"
 const backendUri = "backend_uri"
@@ -67,6 +70,7 @@ type mockRepository struct {
 	setUserEmailVerified         func(userID uint) error
 	registerUser                 func(req dto.RegisterUserDTO, hashedPassword string, salt string) error
 	registerUserPrecheck         func(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error
+	registerUserv2               func(req dto.RegisterUserDTOv2) error
 	registerClient               func(client models.Client) error
 	getUserForUsername           func(username string) (models.User, error)
 	updateUserPassword           func(username string, password string) error
@@ -86,6 +90,10 @@ func (m *mockRepository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, s
 		return m.registerUserPrecheck(req, salt, iterCount)
 	}
 	return nil
+}
+
+func (m *mockRepository) RegisterUserv2(req dto.RegisterUserDTOv2) error {
+	return m.registerUserv2(req)
 }
 
 func (m *mockRepository) LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string, error) {
@@ -992,6 +1000,69 @@ func TestRegisterUserPrecheck_InvalidIterationCount(t *testing.T) {
 
 	assert.Nil(t, err, "Expected no error during RegisterUserPrecheck")
 	assert.NotEmpty(t, salt, "Salt should not be empty in the response")
+}
+
+func TestRegisterUserv2_RepositoryFailedToStoreUserData(t *testing.T) {
+	mockRepo := &mockRepository{
+		registerUserv2: func(req dto.RegisterUserDTOv2) error {
+			assert.Equal(t, username, req.Username)
+			assert.Equal(t, firstName, req.FirstName)
+			assert.Equal(t, lastName, req.LastName)
+			assert.Equal(t, displayName, req.DisplayName)
+			assert.Equal(t, country, req.Country)
+			assert.Equal(t, []byte(publicKey), req.PublicKey)
+			assert.Equal(t, storedKey, req.StoredKey)
+			assert.Equal(t, serverKey, req.ServerKey)
+
+			return fmt.Errorf("failed to store a user")
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	err := currService.RegisterUserv2(
+		dto.RegisterUserDTOv2{
+			Username:    username,
+			FirstName:   firstName,
+			LastName:    lastName,
+			DisplayName: displayName,
+			Country:     country,
+			PublicKey:   []byte(publicKey),
+			StoredKey:   storedKey,
+			ServerKey:   serverKey,
+		},
+	)
+
+	assert.NotNil(t, err)
+}
+
+func TestRegisterUserv2_Success(t *testing.T) {
+	mockRepo := &mockRepository{
+		registerUserv2: func(req dto.RegisterUserDTOv2) error {
+			assert.Equal(t, username, req.Username)
+			assert.Equal(t, firstName, req.FirstName)
+			assert.Equal(t, lastName, req.LastName)
+			assert.Equal(t, displayName, req.DisplayName)
+			assert.Equal(t, country, req.Country)
+
+			return nil
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	err := currService.RegisterUserv2(
+		dto.RegisterUserDTOv2{
+			Username:    username,
+			FirstName:   firstName,
+			LastName:    lastName,
+			DisplayName: displayName,
+			Country:     country,
+			PublicKey:   []byte(publicKey),
+			StoredKey:   storedKey,
+			ServerKey:   serverKey,
+		},
+	)
+
+	assert.Nil(t, err)
 }
 
 func TestUpdateUserPasswordV2_Success(t *testing.T) {
