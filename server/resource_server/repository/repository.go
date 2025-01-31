@@ -341,16 +341,6 @@ func (r *Repository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt 
 }
 
 func (r *Repository) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
-	if username == "" {
-		return fmt.Errorf("username cannot be empty")
-	}
-	if storedKey == "" {
-		return fmt.Errorf("storedKey cannot be empty")
-	}
-	if serverKey == "" {
-		return fmt.Errorf("serverKey cannot be empty")
-	}
-
 	return r.connection.Model(&models.User{}).
 		Where("username=?", username).
 		Updates(map[string]interface{}{"stored_key": storedKey, "server_key": serverKey}).Error
