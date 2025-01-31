@@ -2269,10 +2269,7 @@ func TestResetPasswordHandlerV2_InvalidSignature(t *testing.T) {
 			}, nil
 		},
 		validateSignature: func(message string, signature []byte, publicKey []byte) error {
-			if string(signature) != "test_signature" {
-				return fmt.Errorf("invalid signature")
-			}
-			return nil
+			return fmt.Errorf("invalid signature")
 		},
 		updateUserPasswordV2: func(currUsername, storedKey, serverKey string) error {
 			return nil
