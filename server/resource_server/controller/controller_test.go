@@ -2100,31 +2100,22 @@ func TestResetPasswordPrecheck_UserNotFound(t *testing.T) {
 	assert.Equal(t, "User does not exist!", response.Message, "Response message should match")
 }
 
-func TestResetPasswordPrecheck_InternalServerError(t *testing.T) {
-	requestBody := []byte(`{"username": "test_user"}`)
+func TestResetPasswordPrecheck_InvalidJSON(t *testing.T) {
+	requestBody := []byte(`invalid_json`)
 
 	req, err := http.NewRequest("POST", "/api/v2/reset-password-precheck", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	mockService := &MockService{
-		getUserForUsername: func(username string) (models.User, error) {
-			return models.User{}, errors.New("database error")
-		},
-	}
-
+	mockService := &MockService{}
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 
 	rr := httptest.NewRecorder()
 
 	Ctl.ResetPasswordPrecheck(rr, req)
 
-	assert.Equal(t, http.StatusBadRequest, rr.Code, "Response should be 400 Bad Request")
-
-	response := decodeResponseBodyForResponse(t, rr)
-
-	assert.Equal(t, "User does not exist!", response.Message, "Response message should indicate the issue")
+	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
 }
 
 func TestResetPasswordHandlerV2_Success(t *testing.T) {
