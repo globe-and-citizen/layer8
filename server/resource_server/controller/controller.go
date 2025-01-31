@@ -626,7 +626,7 @@ func ResetPasswordPrecheck(w http.ResponseWriter, r *http.Request) {
 		IterationCount: user.IterationCount,
 	}
 
-	response := utils.BuildResponse(w, http.StatusAccepted, "User does exist!", resetPasswordPrecheckResp)
+	response := utils.BuildResponse(w, http.StatusOK, "User does exist!", resetPasswordPrecheckResp)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		utils.HandleError(
 			w,

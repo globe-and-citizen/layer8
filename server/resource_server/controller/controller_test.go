@@ -2030,7 +2030,7 @@ func TestResetPasswordPrecheck_Success(t *testing.T) {
 
 	Ctl.ResetPasswordPrecheck(rr, req)
 
-	assert.Equal(t, http.StatusAccepted, rr.Code, "Response could be 202 Accepted")
+	assert.Equal(t, http.StatusOK, rr.Code, "Expected response status code to be 202 Accepted")
 
 	response := decodeResponseBodyForResponse(t, rr)
 
