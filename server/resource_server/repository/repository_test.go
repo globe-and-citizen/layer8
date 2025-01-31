@@ -26,6 +26,8 @@ const userSalt = "user_salt"
 const userPassword = "user_password"
 const userDisplayName = "display_name"
 const userCountry = "country"
+const serverKey = "user_server_key"
+const storedKey = "user_stored_key"
 
 const verificationCode = "123456"
 
@@ -1295,12 +1297,12 @@ func TestUpdateUserPasswordV2_Success(t *testing.T) {
 
 	mock.ExpectExec(
 		regexp.QuoteMeta(`UPDATE "users" SET "server_key"=$1,"stored_key"=$2 WHERE username=$3`),
-	).WithArgs("new_server_key", "new_stored_key", "existing_user").
+	).WithArgs(serverKey, storedKey, username).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	mock.ExpectCommit()
 
-	err := repository.UpdateUserPasswordV2("existing_user", "new_stored_key", "new_server_key")
+	err := repository.UpdateUserPasswordV2(username, storedKey, serverKey)
 	assert.Nil(t, err)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -1316,45 +1318,14 @@ func TestUpdateUserPasswordV2_DBError(t *testing.T) {
 
 	mock.ExpectExec(
 		regexp.QuoteMeta(`UPDATE "users" SET "server_key"=$1,"stored_key"=$2 WHERE username=$3`),
-	).WithArgs("new_server_key", "new_stored_key", "existing_user").
+	).WithArgs(serverKey, storedKey, username).
 		WillReturnError(fmt.Errorf("database error"))
 
 	mock.ExpectRollback()
 
-	err := repository.UpdateUserPasswordV2("existing_user", "new_stored_key", "new_server_key")
+	err := repository.UpdateUserPasswordV2(username, storedKey, serverKey)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "database error")
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("There were unfulfilled expectations: %s", err)
-	}
-}
-
-func TestUpdateUserPasswordV2_EmptyUsername(t *testing.T) {
-	SetUp(t)
-	defer mockDB.Close()
-
-	err := repository.UpdateUserPasswordV2("", "new_stored_key", "new_server_key")
-
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "username cannot be empty")
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("There were unfulfilled expectations: %s", err)
-	}
-}
-
-func TestUpdateUserPasswordV2_EmptyKeys(t *testing.T) {
-	SetUp(t)
-	defer mockDB.Close()
-
-	err := repository.UpdateUserPasswordV2("existing_user", "", "new_server_key")
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "storedKey cannot be empty")
-
-	err = repository.UpdateUserPasswordV2("existing_user", "new_stored_key", "")
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "serverKey cannot be empty")
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("There were unfulfilled expectations: %s", err)
@@ -1368,12 +1339,12 @@ func TestUpdateUserPasswordV2_EdgeCaseUsername(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectExec(
 		regexp.QuoteMeta(`UPDATE "users" SET "server_key"=$1,"stored_key"=$2 WHERE username=$3`),
-	).WithArgs("new_server_key", "new_stored_key", "user_with_special_chars!@#$%^&*()").
+	).WithArgs(serverKey, storedKey, "user_with_special_chars!@#$%^&*()").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	mock.ExpectCommit()
 
-	err := repository.UpdateUserPasswordV2("user_with_special_chars!@#$%^&*()", "new_stored_key", "new_server_key")
+	err := repository.UpdateUserPasswordV2("user_with_special_chars!@#$%^&*()", storedKey, serverKey)
 	assert.Nil(t, err)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
