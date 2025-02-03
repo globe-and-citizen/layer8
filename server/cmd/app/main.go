@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"embed"
-	"flag"
+	// "flag"
 	"fmt"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/handlers"
@@ -27,7 +27,7 @@ import (
 	"github.com/consensys/gnark/constraint"
 
 	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
-	"globe-and-citizen/layer8/server/resource_server/dto"
+	// "globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 
@@ -57,17 +57,17 @@ func getPwd() {
 
 func main() {
 	// Use flags to set the port
-	port := flag.Int("port", 8080, "Port to run the server on")
-	jwtKey := flag.String("jwtKey", "secret", "Key to sign JWT tokens")
-	MpKey := flag.String("MpKey", "secret", "Key to sign mpJWT tokens")
-	UpKey := flag.String("UpKey", "secret", "Key to sign upJWT tokens")
-	ProxyURL := flag.String("ProxyURL", "http://localhost:5001", "URL to populate go HTML templates")
-	InMemoryDb := flag.Bool(
-		"InMemoryDb",
-		false,
-		"Defines whether or not to use the in-memory database implementation")
+	// port := flag.Int("port", 8080, "Port to run the server on")
+	// jwtKey := flag.String("jwtKey", "secret", "Key to sign JWT tokens")
+	// MpKey := flag.String("MpKey", "secret", "Key to sign mpJWT tokens")
+	// UpKey := flag.String("UpKey", "secret", "Key to sign upJWT tokens")
+	// ProxyURL := flag.String("ProxyURL", "http://localhost:5001", "URL to populate go HTML templates")
+	// InMemoryDb := flag.Bool(
+	// 	"InMemoryDb",
+	// 	false,
+	// 	"Defines whether or not to use the in-memory database implementation")
 
-	flag.Parse()
+	// flag.Parse()
 
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
@@ -82,28 +82,28 @@ func main() {
 	var resourceRepository interfaces.IRepository
 	var oauthService *oauthSvc.Service
 
-	if *InMemoryDb {
-		os.Setenv("SERVER_PORT", strconv.Itoa(*port))
-		os.Setenv("JWT_SECRET_KEY", *jwtKey)
-		os.Setenv("MP_123_SECRET_KEY", *MpKey)
-		os.Setenv("UP_999_SECRET_KEY", *UpKey)
-		os.Setenv("PROXY_URL", *ProxyURL)
+	// if *InMemoryDb {
+	// 	os.Setenv("SERVER_PORT", strconv.Itoa(*port))
+	// 	os.Setenv("JWT_SECRET_KEY", *jwtKey)
+	// 	os.Setenv("MP_123_SECRET_KEY", *MpKey)
+	// 	os.Setenv("UP_999_SECRET_KEY", *UpKey)
+	// 	os.Setenv("PROXY_URL", *ProxyURL)
 
-		resourceRepository = rsRepo.NewMemoryRepository()
-		service := svc.NewService(resourceRepository, &verification.EmailVerifier{}, &zk.ProofProcessor{})
-		service.RegisterUser(dto.RegisterUserDTO{
-			Username:    "tester",
-			FirstName:   "Test",
-			LastName:    "User",
-			Password:    "12341234",
-			Country:     "Antarctica",
-			DisplayName: "test_user_mem",
-		})
+	// 	resourceRepository = rsRepo.NewMemoryRepository()
+	// 	service := svc.NewService(resourceRepository, &verification.EmailVerifier{}, &zk.ProofProcessor{})
+	// 	service.RegisterUser(dto.RegisterUserDTO{
+	// 		Username:    "tester",
+	// 		FirstName:   "Test",
+	// 		LastName:    "User",
+	// 		Password:    "12341234",
+	// 		Country:     "Antarctica",
+	// 		DisplayName: "test_user_mem",
+	// 	})
 
-		oauthService = &oauthSvc.Service{Repo: resourceRepository}
+	// 	oauthService = &oauthSvc.Service{Repo: resourceRepository}
 
-		fmt.Println("Running app with in-memory repository")
-	} else {
+	// 	fmt.Println("Running app with in-memory repository")
+	// } else {
 		// If the user has set a database user or password, init the database
 		if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
 			config.InitDB()
@@ -112,8 +112,8 @@ func main() {
 		resourceRepository = rsRepo.NewRepository(config.DB)
 		oauthService = &oauthSvc.Service{Repo: oauthRepo.NewOauthRepository(config.DB)}
 
-		fmt.Println("Running the app with postgres repository")
-	}
+		// fmt.Println("Running the app with postgres repository")
+	// }
 
 	adminEmailAddress := fmt.Sprintf(
 		"%s@%s",

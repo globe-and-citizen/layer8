@@ -19,11 +19,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	utils "github.com/globe-and-citizen/layer8-utils"
+	"globe-and-citizen/layer8/server/config"
 )
 
 func prepareInitTunnelRequest(clientBackendUrl string) *http.Request {
+	config.InitDB()
 	resourceService := service.NewService(
-		repository.NewMemoryRepository(),
+		repository.NewRepository(config.DB),
 		&verification.EmailVerifier{},
 		&zk.ProofProcessor{},
 	)
