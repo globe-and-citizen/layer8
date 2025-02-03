@@ -5,8 +5,19 @@ type LoginPrecheckResponseOutput struct {
 	Salt     string `json:"salt"`
 }
 
+type LoginPrecheckResponseOutputv2 struct {
+	Salt      string `json:"salt"`
+	IterCount int    `json:"iter_count"`
+	Nonce     string `json:"nonce"`
+}
+
 type LoginUserResponseOutput struct {
 	Token string `json:"token"`
+}
+
+type LoginUserResponseOutputv2 struct {
+	ServerSignature string `json:"server_signature"`
+	Token           string `json:"token"`
 }
 
 type ProfileResponseOutput struct {

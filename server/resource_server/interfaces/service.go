@@ -9,8 +9,10 @@ type IService interface {
 	RegisterUser(req dto.RegisterUserDTO) error
 	RegisterUserv2(req dto.RegisterUserDTOv2) error
 	LoginPreCheckUser(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error)
+	LoginPreCheckUserv2(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error)
 	LoginPreCheckClient(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error)
 	LoginUser(req dto.LoginUserDTO) (models.LoginUserResponseOutput, error)
+	LoginUserv2(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error)
 	LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseOutput, error)
 	ProfileUser(userID uint) (models.ProfileResponseOutput, error)
 	ProfileClient(userID string) (models.ClientResponseOutput, error)

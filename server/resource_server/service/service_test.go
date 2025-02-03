@@ -377,6 +377,51 @@ func TestLoginPreCheckUser(t *testing.T) {
 	assert.Equal(t, loginPrecheckResp.Salt, "ThisIsARandomSalt123!@#")
 }
 
+func TestLoginPreCheckUserV2_RepositoryError(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{}, errors.New("repository error")
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginPrecheckDTOv2{
+		Username: "test_user",
+		CNonce:   "Test_Nonce",
+	}
+
+	loginPrecheckResp, err := currService.LoginPreCheckUserv2(req)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "repository error", err.Error())
+	assert.Empty(t, loginPrecheckResp)
+}
+
+func TestLoginPreCheckUserV2_Success(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{
+				Username:       "test_user",
+				Salt:           "ThisIsARandomSalt123!@#",
+				IterationCount: 4096,
+			}, nil
+		},
+	}
+
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginPrecheckDTOv2{
+		Username: "test_user",
+		CNonce:   "Test_Nonce",
+	}
+
+	loginPrecheckResp, err := currService.LoginPreCheckUserv2(req)
+
+	assert.Nil(t, err)
+	assert.Equal(t, loginPrecheckResp.Salt, "ThisIsARandomSalt123!@#")
+	assert.Equal(t, loginPrecheckResp.IterCount, 4096)
+}
+
 func TestLoginUser(t *testing.T) {
 	// Create a new mock repository
 	mockRepo := new(mockRepository)
@@ -399,6 +444,183 @@ func TestLoginUser(t *testing.T) {
 
 	// Use assert to check if the error is nil
 	assert.Nil(t, err)
+}
+
+func TestLoginUserV2_RepositoryError(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{}, errors.New("repository error")
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginUserDTOv2{
+		Username:    "test_user",
+		CNonce:      "1a7fa8e9dc2a68049358a08349cdde50",
+		Nonce:       "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362",
+		ClientProof: "96260616beaabaa6d168b9ce7e15b127b6bcbcb88fd0b5de1e6162b948881155",
+	}
+
+	loginUserResp, err := currService.LoginUserv2(req)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "repository error", err.Error())
+	assert.Empty(t, loginUserResp)
+}
+
+func TestLoginUserV2_DecodingStoredKeyError(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{
+				StoredKey: "TEST_STORED_KEY_FOR_DECODE_ERROR_!@#", // Invalid stored key
+			}, nil
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginUserDTOv2{
+		Username:    "test_user",
+		CNonce:      "1a7fa8e9dc2a68049358a08349cdde50",
+		Nonce:       "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362",
+		ClientProof: "96260616beaabaa6d168b9ce7e15b127b6bcbcb88fd0b5de1e6162b948881155",
+	}
+
+	loginUserResp, err := currService.LoginUserv2(req)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "error decoding stored key: encoding/hex: invalid byte: U+0054 'T'", err.Error())
+	assert.Empty(t, loginUserResp)
+}
+
+func TestLoginUserV2_DecodingClientProofError(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{
+				StoredKey:      "222f705167604c99f81c7c6acfa974706fa9dd0b445a8bc34fb5accc9b032558",
+				Salt:           "c8f720569d7a50d4c812431cf8a242fd608f3a5b4610659b92f6aa553fbe68e0",
+				IterationCount: 4096,
+			}, nil
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginUserDTOv2{
+		Username:    "test_user",
+		CNonce:      "1a7fa8e9dc2a68049358a08349cdde50",
+		Nonce:       "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362",
+		ClientProof: "TEST_CLIENT_PROOF_FOR_DECODE_ERROR_!@#", // Invalid client proof
+	}
+
+	loginUserResp, err := currService.LoginUserv2(req)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "error decoding client proof: encoding/hex: invalid byte: U+0054 'T'", err.Error())
+	assert.Empty(t, loginUserResp)
+}
+
+func TestLoginUserV2_XorOperationError(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{
+				StoredKey:      "222f705167604c99f81c7c6acfa974706fa9dd0b445a8bc34fb5accc9b032558",
+				Salt:           "c8f720569d7a50d4c812431cf8a242fd608f3a5b4610659b92f6aa553fbe68e0",
+				IterationCount: 4096,
+			}, nil
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginUserDTOv2{
+		Username:    "test_user",
+		CNonce:      "1a7fa8e9dc2a68049358a08349cdde50",
+		Nonce:       "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362",
+		ClientProof: "", // Sending empty client proof to fail the XOR operation, since it requires equal length slices
+	}
+
+	loginUserResp, err := currService.LoginUserv2(req)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "error performing XOR operation: slices must have the same length", err.Error())
+	assert.Empty(t, loginUserResp)
+}
+
+func TestLoginUserV2_AuthFailedKeyMismatchError(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{
+				StoredKey:      "", // Empty stored key
+				Salt:           "c8f720569d7a50d4c812431cf8a242fd608f3a5b4610659b92f6aa553fbe68e0",
+				IterationCount: 4096,
+			}, nil
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginUserDTOv2{
+		Username:    "test_user",
+		CNonce:      "1a7fa8e9dc2a68049358a08349cdde50",
+		Nonce:       "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362",
+		ClientProof: "96260616beaabaa6d168b9ce7e15b127b6bcbcb88fd0b5de1e6162b948881155",
+	}
+
+	loginUserResp, err := currService.LoginUserv2(req)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "server failed to authenticate the user", err.Error())
+	assert.Empty(t, loginUserResp)
+}
+
+func TestLoginUserV2_DecodingServerKeyError(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{
+				StoredKey:      "222f705167604c99f81c7c6acfa974706fa9dd0b445a8bc34fb5accc9b032558",
+				ServerKey:      "TEST_SERVER_KEY_FOR_DECODE_ERROR_!@#", // Invalid server key
+				Salt:           "c8f720569d7a50d4c812431cf8a242fd608f3a5b4610659b92f6aa553fbe68e0",
+				IterationCount: 4096,
+			}, nil
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginUserDTOv2{
+		Username:    "test_user",
+		CNonce:      "1a7fa8e9dc2a68049358a08349cdde50",
+		Nonce:       "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362",
+		ClientProof: "96260616beaabaa6d168b9ce7e15b127b6bcbcb88fd0b5de1e6162b948881155",
+	}
+
+	loginUserResp, err := currService.LoginUserv2(req)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "error decoding server key: encoding/hex: invalid byte: U+0054 'T'", err.Error())
+	assert.Empty(t, loginUserResp)
+}
+
+func TestLoginUserV2_Success(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{
+				StoredKey:      "222f705167604c99f81c7c6acfa974706fa9dd0b445a8bc34fb5accc9b032558",
+				ServerKey:      "f6e938506893b10799038c2b4225f7e8e72f01c7ab25c3da905803ee93ec5536",
+				Salt:           "c8f720569d7a50d4c812431cf8a242fd608f3a5b4610659b92f6aa553fbe68e0",
+				IterationCount: 4096,
+			}, nil
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginUserDTOv2{
+		Username:    "test_user",
+		CNonce:      "1a7fa8e9dc2a68049358a08349cdde50",
+		Nonce:       "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362",
+		ClientProof: "96260616beaabaa6d168b9ce7e15b127b6bcbcb88fd0b5de1e6162b948881155",
+	}
+
+	loginUserResp, err := currService.LoginUserv2(req)
+
+	assert.Nil(t, err)
+	assert.Equal(t, "138c0fecd0326896fe21398137c1aa0b9866242abc02bd3e9a5a0016013ef5f0", loginUserResp.ServerSignature)
 }
 
 func TestProfileUser(t *testing.T) {
