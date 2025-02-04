@@ -16,14 +16,22 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/joho/godotenv"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	utils "github.com/globe-and-citizen/layer8-utils"
 	"globe-and-citizen/layer8/server/config"
+
+	utils "github.com/globe-and-citizen/layer8-utils"
 )
 
 func prepareInitTunnelRequest(clientBackendUrl string) *http.Request {
+	if err := godotenv.Load(); err != nil {
+		logrus.Fatal("failed to read configuration: ", err)
+	}
+
 	config.InitDB()
+
 	resourceService := service.NewService(
 		repository.NewRepository(config.DB),
 		&verification.EmailVerifier{},
