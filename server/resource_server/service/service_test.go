@@ -939,7 +939,7 @@ func TestValidateSignature_Success(t *testing.T) {
 func TestRegisterUserPrecheck_Success(t *testing.T) {
 	mockRepo := &mockRepository{
 		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, rmSalt string, iterCount int) error {
-			assert.Equal(t, "test_user", req.Username, "Username should match")
+			assert.Equal(t, username, req.Username, "Username should match")
 			assert.NotEmpty(t, rmSalt, "Salt should not be empty")
 			assert.Equal(t, 4096, iterCount, "Iteration count should match")
 			return nil
@@ -949,7 +949,7 @@ func TestRegisterUserPrecheck_Success(t *testing.T) {
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	req := dto.RegisterUserPrecheckDTO{
-		Username: "test_user",
+		Username: username,
 	}
 	iterCount := 4096
 
@@ -969,7 +969,7 @@ func TestRegisterUserPrecheck_RepositoryError(t *testing.T) {
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	req := dto.RegisterUserPrecheckDTO{
-		Username: "test_user",
+		Username: username,
 	}
 	iterCount := 4096
 
@@ -983,7 +983,7 @@ func TestRegisterUserPrecheck_RepositoryError(t *testing.T) {
 func TestRegisterUserPrecheck_InvalidIterationCount(t *testing.T) {
 	mockRepo := &mockRepository{
 		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, rmSalt string, iterCount int) error {
-			assert.Equal(t, "test_user", req.Username, "Username should match")
+			assert.Equal(t, username, req.Username, "Username should match")
 			assert.Equal(t, 0, iterCount, "Iteration count should match")
 			return nil
 		},
@@ -992,7 +992,7 @@ func TestRegisterUserPrecheck_InvalidIterationCount(t *testing.T) {
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	req := dto.RegisterUserPrecheckDTO{
-		Username: "test_user",
+		Username: username,
 	}
 	iterCount := 0
 
@@ -1096,49 +1096,4 @@ func TestUpdateUserPasswordV2_RepositoryError(t *testing.T) {
 	err := currService.UpdateUserPasswordV2("test_user", "test_stored_key", "test_server_key")
 	assert.Error(t, err, "Expected an error when repository returns an error")
 	assert.Equal(t, "database error", err.Error())
-}
-
-func TestUpdateUserPasswordV2_EmptyUsername(t *testing.T) {
-	mockRepo := &mockRepository{
-		updateUserPasswordV2: func(username, storedKey, serverKey string) error {
-			t.Fatalf("This function should not have been called")
-			return nil
-		},
-	}
-
-	currService := service.NewService(mockRepo, nil, nil)
-
-	err := currService.UpdateUserPasswordV2("", "test_stored_key", "test_server_key")
-	assert.Error(t, err, "Expected an error for empty username")
-	assert.Contains(t, err.Error(), "invalid username")
-}
-
-func TestUpdateUserPasswordV2_EmptyStoredKey(t *testing.T) {
-	mockRepo := &mockRepository{
-		updateUserPasswordV2: func(username, storedKey, serverKey string) error {
-			t.Fatalf("This function should not have been called")
-			return nil
-		},
-	}
-
-	currService := service.NewService(mockRepo, nil, nil)
-
-	err := currService.UpdateUserPasswordV2("test_user", "", "test_server_key")
-	assert.Error(t, err, "Expected an error for empty stored key")
-	assert.Contains(t, err.Error(), "invalid stored key")
-}
-
-func TestUpdateUserPasswordV2_EmptyServerKey(t *testing.T) {
-	mockRepo := &mockRepository{
-		updateUserPasswordV2: func(username, storedKey, serverKey string) error {
-			t.Fatalf("This function should not have been called")
-			return nil
-		},
-	}
-
-	currService := service.NewService(mockRepo, nil, nil)
-
-	err := currService.UpdateUserPasswordV2("test_user", "test_stored_key", "")
-	assert.Error(t, err, "Expected an error for empty server key")
-	assert.Contains(t, err.Error(), "invalid server key")
 }

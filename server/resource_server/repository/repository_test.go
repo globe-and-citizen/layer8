@@ -21,6 +21,7 @@ const id uint = 1
 
 const userId uint = 1
 const username = "test_username"
+const usernameWithSpecialChars = "user_with_special_chars!@#$%^&*()"
 const userFirstName = "first_name"
 const userLastName = "last_name"
 const userSalt = "user_salt"
@@ -1554,12 +1555,12 @@ func TestUpdateUserPasswordV2_EdgeCaseUsername(t *testing.T) {
 
 	mock.ExpectExec(
 		regexp.QuoteMeta(`UPDATE "users" SET "server_key"=$1,"stored_key"=$2 WHERE username=$3`),
-	).WithArgs(serverKey, storedKey, "user_with_special_chars!@#$%^&*()").
+	).WithArgs(serverKey, storedKey, usernameWithSpecialChars).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	mock.ExpectCommit()
 
-	err := repository.UpdateUserPasswordV2("user_with_special_chars!@#$%^&*()", storedKey, serverKey)
+	err := repository.UpdateUserPasswordV2(usernameWithSpecialChars, storedKey, serverKey)
 	assert.Nil(t, err)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
