@@ -26,7 +26,7 @@ import (
 )
 
 func prepareInitTunnelRequest(clientBackendUrl string) *http.Request {
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load("./../.env"); err != nil {
 		logrus.Fatal("failed to read configuration: ", err)
 	}
 
