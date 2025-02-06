@@ -1067,33 +1067,33 @@ func TestRegisterUserv2_Success(t *testing.T) {
 
 func TestUpdateUserPasswordV2_Success(t *testing.T) {
 	mockRepo := &mockRepository{
-		updateUserPasswordV2: func(username, storedKey, serverKey string) error {
-			assert.Equal(t, "test_user", username)
-			assert.Equal(t, "test_stored_key", storedKey)
-			assert.Equal(t, "test_server_key", serverKey)
+		updateUserPasswordV2: func(currUsername, currStoredKey, currServerKey string) error {
+			assert.Equal(t, username, currUsername)
+			assert.Equal(t, storedKey, currStoredKey)
+			assert.Equal(t, serverKey, currServerKey)
 			return nil
 		},
 	}
 
 	currService := service.NewService(mockRepo, nil, nil)
 
-	err := currService.UpdateUserPasswordV2("test_user", "test_stored_key", "test_server_key")
+	err := currService.UpdateUserPasswordV2(username, storedKey, serverKey)
 	assert.NoError(t, err, "Expected no error for successful password update")
 }
 
 func TestUpdateUserPasswordV2_RepositoryError(t *testing.T) {
 	mockRepo := &mockRepository{
-		updateUserPasswordV2: func(username, storedKey, serverKey string) error {
-			assert.Equal(t, "test_user", username)
-			assert.Equal(t, "test_stored_key", storedKey)
-			assert.Equal(t, "test_server_key", serverKey)
+		updateUserPasswordV2: func(currUsername, currStoredKey, currServerKey string) error {
+			assert.Equal(t, username, currUsername)
+			assert.Equal(t, storedKey, currStoredKey)
+			assert.Equal(t, serverKey, currServerKey)
 			return fmt.Errorf("database error")
 		},
 	}
 
 	currService := service.NewService(mockRepo, nil, nil)
 
-	err := currService.UpdateUserPasswordV2("test_user", "test_stored_key", "test_server_key")
+	err := currService.UpdateUserPasswordV2(username, storedKey, serverKey)
 	assert.Error(t, err, "Expected an error when repository returns an error")
 	assert.Equal(t, "database error", err.Error())
 }

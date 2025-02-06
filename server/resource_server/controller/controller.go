@@ -54,6 +54,10 @@ func ResetPasswordPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/password_reset/reset-password-page.html")
 }
 
+func ResetPasswordPageV2(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/password_reset/reset-password-page_v2.html")
+}
+
 func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
