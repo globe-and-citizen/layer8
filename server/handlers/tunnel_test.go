@@ -6,7 +6,6 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
-	"globe-and-citizen/layer8/server/resource_server/repository"
 	"globe-and-citizen/layer8/server/resource_server/service"
 	resourceUtils "globe-and-citizen/layer8/server/resource_server/utils"
 	"io"
@@ -15,25 +14,15 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/joho/godotenv"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	"globe-and-citizen/layer8/server/config"
-
 	utils "github.com/globe-and-citizen/layer8-utils"
+	"globe-and-citizen/layer8/server/resource_server/utils/mocks"
 )
 
 func prepareInitTunnelRequest(clientBackendUrl string) *http.Request {
-	if err := godotenv.Load("./../.env"); err != nil {
-		logrus.Fatal("failed to read configuration: ", err)
-	}
-
-	config.InitDB()
-
 	resourceService := service.NewService(
-		repository.NewRepository(config.DB),
+		mocks.NewMockRepository(),
 		&verification.EmailVerifier{},
 		&zk.ProofProcessor{},
 	)
