@@ -2230,7 +2230,7 @@ func TestResetPasswordPrecheck_Success(t *testing.T) {
 
 	Ctl.ResetPasswordPrecheck(rr, req)
 
-	assert.Equal(t, http.StatusOK, rr.Code, "Expected response status code to be 202 Accepted")
+	assert.Equal(t, http.StatusOK, rr.Code, "Expected response status code to be 200 OK")
 
 	response := decodeResponseBodyForResponse(t, rr)
 
@@ -2255,7 +2255,11 @@ func TestResetPasswordPrecheck_RequiredRequestJsonFieldIsMissing(t *testing.T) {
 
 	Ctl.ResetPasswordPrecheck(rr, req)
 
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.Equal(t, false, response.IsSuccess)
 	assert.Equal(t, http.StatusBadRequest, rr.Code, "Response should be 400 Bad Request")
+	assert.NotNil(t, response.Error)
 }
 
 func TestResetPasswordPrecheck_InvalidHttpMethod(t *testing.T) {
@@ -2269,6 +2273,12 @@ func TestResetPasswordPrecheck_InvalidHttpMethod(t *testing.T) {
 	Ctl.ResetPasswordPrecheck(rr, req)
 
 	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code, "Response should be 405 Method Not Allowed")
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.Equal(t, false, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected POST", response.Message)
+	assert.NotNil(t, response.Error)
 }
 
 func TestResetPasswordPrecheck_UserNotFound(t *testing.T) {
@@ -2281,7 +2291,7 @@ func TestResetPasswordPrecheck_UserNotFound(t *testing.T) {
 
 	mockService := &MockService{
 		getUserForUsername: func(username string) (models.User, error) {
-			return models.User{}, errors.New("user not found")
+			return models.User{}, errors.New("User not found")
 		},
 	}
 
@@ -2293,9 +2303,11 @@ func TestResetPasswordPrecheck_UserNotFound(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code, "Response should be 400 Bad Request")
 
-	response := decodeResponseBodyForResponse(t, rr)
+	response := decodeResponseBodyForErrorResponse(t, rr)
 
+	assert.Equal(t, false, response.IsSuccess)
 	assert.Equal(t, "User does not exist!", response.Message, "Response message should match")
+	assert.NotNil(t, response.Error)
 }
 
 func TestResetPasswordPrecheck_InvalidJSON(t *testing.T) {
@@ -2314,6 +2326,12 @@ func TestResetPasswordPrecheck_InvalidJSON(t *testing.T) {
 	Ctl.ResetPasswordPrecheck(rr, req)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.Equal(t, false, response.IsSuccess)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
 }
 
 func TestResetPasswordHandlerV2_Success(t *testing.T) {
@@ -2374,36 +2392,7 @@ func TestResetPasswordHandlerV2_Success(t *testing.T) {
 func TestResetPasswordHandlerV2_InvalidJSON(t *testing.T) {
 	reqBody := []byte(`{"invalid-request"}`)
 
-	mockService := &MockService{
-		getUserForUsername: func(currUsername string) (models.User, error) {
-			if currUsername != username {
-				t.Fatalf("Username mismatch: expected %s, got %s", username, currUsername)
-			}
-			return models.User{
-				ID:        userId,
-				Username:  username,
-				PublicKey: []byte("mock_public_key"),
-			}, nil
-		},
-		validateSignature: func(message string, signature []byte, publicKey []byte) error {
-			if message != "Sign-in with Layer8" {
-				t.Fatalf("Message mismatch: expected %s, got %s", "Sign-in with Layer8", message)
-			}
-			return nil
-		},
-		updateUserPasswordV2: func(currUsername, currStoredKey, currServerKey string) error {
-			if currUsername != username {
-				t.Fatalf("Username mismatch: expected %s, got %s", username, currUsername)
-			}
-			if currStoredKey != storedKey {
-				t.Fatalf("StoredKey mismatch: expected %s, got %s", storedKey, currStoredKey)
-			}
-			if currServerKey != serverKey {
-				t.Fatalf("ServerKey mismatch: expected %s, got %s", serverKey, currServerKey)
-			}
-			return nil
-		},
-	}
+	mockService := &MockService{}
 
 	req := httptest.NewRequest("POST", "/api/v2/reset-password", bytes.NewBuffer(reqBody))
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
@@ -2412,11 +2401,14 @@ func TestResetPasswordHandlerV2_InvalidJSON(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	Ctl.ResetPasswordHandlerV2(rr, req)
+	
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
 	assert.Equal(t, false, response.IsSuccess)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
 }
 
 func TestResetPasswordHandlerV2_UserNotFound(t *testing.T) {
@@ -2429,6 +2421,9 @@ func TestResetPasswordHandlerV2_UserNotFound(t *testing.T) {
 
 	mockService := &MockService{
 		getUserForUsername: func(currUsername string) (models.User, error) {
+			if currUsername != "non_existent_user" {
+				t.Fatalf("Username mismatch: expected %s, got %s", "non_existent_user", currUsername)
+			}
 			return models.User{}, errors.New("User not found")
 		},
 	}
@@ -2443,8 +2438,10 @@ func TestResetPasswordHandlerV2_UserNotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, rr.Code)
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
+
 	assert.Equal(t, false, response.IsSuccess)
 	assert.Contains(t, response.Error, "User not found")
+	assert.NotNil(t, response.Error)
 }
 
 func TestResetPasswordHandlerV2_InvalidSignature(t *testing.T) {
@@ -2457,6 +2454,9 @@ func TestResetPasswordHandlerV2_InvalidSignature(t *testing.T) {
 
 	mockService := &MockService{
 		getUserForUsername: func(currUsername string) (models.User, error) {
+			if currUsername != username {
+				t.Fatalf("Username mismatch: expected %s, got %s", username, currUsername)
+			}
 			return models.User{
 				ID:        userId,
 				Username:  username,
@@ -2498,6 +2498,9 @@ func TestResetPasswordHandlerV2_UpdatePasswordFailure(t *testing.T) {
 
 	mockService := &MockService{
 		getUserForUsername: func(currUsername string) (models.User, error) {
+			if currUsername != username {
+				t.Fatalf("Username mismatch: expected %s, got %s", username, currUsername)
+			}
 			return models.User{
 				ID:        userId,
 				Username:  username,
@@ -2527,4 +2530,31 @@ func TestResetPasswordHandlerV2_UpdatePasswordFailure(t *testing.T) {
 	assert.Equal(t, false, response.IsSuccess)
 	assert.Equal(t, "Internal error: failed to update user", response.Message)
 	assert.NotNil(t, response.Error)
+}
+
+func TestResetPasswordHandlerV2_MissingRequiredField(t *testing.T) {
+	reqBody := []byte(`{
+		"other_field": "missing_field",
+	}`)
+
+	mockService := &MockService{
+		getUserForUsername: func (currUsername string) (models.User, error) {
+			return models.User{}, errors.New("User not found")
+		},
+	}
+
+	req := httptest.NewRequest("POST", "/api/v2/reset-password", bytes.NewBuffer(reqBody))
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+
+	Ctl.ResetPasswordHandlerV2(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForResponse(t, rr)
+
+	assert.Equal(t, false, response.IsSuccess)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 }

@@ -1517,6 +1517,7 @@ func TestUpdateUserPasswordV2_Success(t *testing.T) {
 	mock.ExpectCommit()
 
 	err := repository.UpdateUserPasswordV2(username, storedKey, serverKey)
+
 	assert.Nil(t, err)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -1524,7 +1525,7 @@ func TestUpdateUserPasswordV2_Success(t *testing.T) {
 	}
 }
 
-func TestUpdateUserPasswordV2_DBError(t *testing.T) {
+func TestUpdateUserPasswordV2_UpdateQueryFailed(t *testing.T) {
 	SetUp(t)
 	defer mockDB.Close()
 
@@ -1538,6 +1539,7 @@ func TestUpdateUserPasswordV2_DBError(t *testing.T) {
 	mock.ExpectRollback()
 
 	err := repository.UpdateUserPasswordV2(username, storedKey, serverKey)
+
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "database error")
 
@@ -1547,7 +1549,6 @@ func TestUpdateUserPasswordV2_DBError(t *testing.T) {
 }
 
 func TestUpdateUserPasswordV2_EdgeCaseUsername(t *testing.T) {
-
 	SetUp(t)
 	defer mockDB.Close()
 
@@ -1561,6 +1562,7 @@ func TestUpdateUserPasswordV2_EdgeCaseUsername(t *testing.T) {
 	mock.ExpectCommit()
 
 	err := repository.UpdateUserPasswordV2(usernameWithSpecialChars, storedKey, serverKey)
+
 	assert.Nil(t, err)
 
 	if err := mock.ExpectationsWereMet(); err != nil {

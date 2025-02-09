@@ -261,6 +261,11 @@ func (s *service) ValidateSignature(message string, signature []byte, publicKey 
 	return nil
 }
 
+func (s *service) UpdateUserPassword(username string, newPassword string, salt string) error {
+	hashedPassword := utils.SaltAndHashPassword(newPassword, salt)
+	return s.repository.UpdateUserPassword(username, hashedPassword)
+}
+
 func (s *service) RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error) {
 	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
 
@@ -272,15 +277,10 @@ func (s *service) RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCoun
 	return rmSalt, nil
 }
 
-func (s *service) UpdateUserPassword(username string, newPassword string, salt string) error {
-	hashedPassword := utils.SaltAndHashPassword(newPassword, salt)
-	return s.repository.UpdateUserPassword(username, hashedPassword)
+func (s *service) RegisterUserv2(req dto.RegisterUserDTOv2) error {
+	return s.repository.RegisterUserv2(req)
 }
 
 func (s *service) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
 	return s.repository.UpdateUserPasswordV2(username, storedKey, serverKey)
-}
-
-func (s *service) RegisterUserv2(req dto.RegisterUserDTOv2) error {
-	return s.repository.RegisterUserv2(req)
 }
