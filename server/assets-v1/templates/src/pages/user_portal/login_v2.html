@@ -97,9 +97,9 @@
         }
 
         const cNonceLength = 32;
-        const cNonceBytes = new Uint8Array(cNonceLength);
-        window.crypto.getRandomValues(cNonceBytes);
-        cNonce.value = btoa(String.fromCharCode(...cNonceBytes));
+        const cNonceUintArray = new Uint8Array(cNonceLength);
+        window.crypto.getRandomValues(cNonceUintArray);
+        cNonce.value = btoa(String.fromCharCode(...cNonceUintArray));
 
         const loginPrecheckResponse = await window.fetch(
           "[[ .ProxyURL ]]/api/v2/login-precheck",

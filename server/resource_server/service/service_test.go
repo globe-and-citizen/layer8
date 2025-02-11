@@ -22,8 +22,8 @@ import (
 
 const userId uint = 1
 const adminEmail = "admin@email.com"
-const username = "user"
-const password = "password"
+const username = "test_user"
+const password = "1234"
 const userEmail = "user@email.com"
 const firstName = "first_name"
 const lastName = "second_name"
@@ -32,8 +32,14 @@ const country = "country"
 const verificationCode = "123456"
 const userSalt = "salt"
 const publicKey = "0xaaaaa"
-const serverKey = "0xbbbbb"
-const storedKey = "0xccccc"
+const cNonce = "1a7fa8e9dc2a68049358a08349cdde50"
+const nonce = "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362"
+const clientProof = "96260616beaabaa6d168b9ce7e15b127b6bcbcb88fd0b5de1e6162b948881155"
+const storedKey = "222f705167604c99f81c7c6acfa974706fa9dd0b445a8bc34fb5accc9b032558"
+const serverKey = "f6e938506893b10799038c2b4225f7e8e72f01c7ab25c3da905803ee93ec5536"
+const salt = "c8f720569d7a50d4c812431cf8a242fd608f3a5b4610659b92f6aa553fbe68e0"
+const iterationCount = 4096
+const testServerSignature = "138c0fecd0326896fe21398137c1aa0b9866242abc02bd3e9a5a0016013ef5f0"
 
 const redirectUri = "redirect_uri"
 const backendUri = "backend_uri"
@@ -455,10 +461,10 @@ func TestLoginUserV2_RepositoryError(t *testing.T) {
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	req := dto.LoginUserDTOv2{
-		Username:    "test_user",
-		CNonce:      "1a7fa8e9dc2a68049358a08349cdde50",
-		Nonce:       "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362",
-		ClientProof: "96260616beaabaa6d168b9ce7e15b127b6bcbcb88fd0b5de1e6162b948881155",
+		Username:    username,
+		CNonce:      cNonce,
+		Nonce:       nonce,
+		ClientProof: clientProof,
 	}
 
 	loginUserResp, err := currService.LoginUserv2(req)
@@ -479,10 +485,10 @@ func TestLoginUserV2_DecodingStoredKeyError(t *testing.T) {
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	req := dto.LoginUserDTOv2{
-		Username:    "test_user",
-		CNonce:      "1a7fa8e9dc2a68049358a08349cdde50",
-		Nonce:       "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362",
-		ClientProof: "96260616beaabaa6d168b9ce7e15b127b6bcbcb88fd0b5de1e6162b948881155",
+		Username:    username,
+		CNonce:      cNonce,
+		Nonce:       nonce,
+		ClientProof: clientProof,
 	}
 
 	loginUserResp, err := currService.LoginUserv2(req)
@@ -496,18 +502,18 @@ func TestLoginUserV2_DecodingClientProofError(t *testing.T) {
 	mockRepo := &mockRepository{
 		getUserForUsername: func(username string) (models.User, error) {
 			return models.User{
-				StoredKey:      "222f705167604c99f81c7c6acfa974706fa9dd0b445a8bc34fb5accc9b032558",
-				Salt:           "c8f720569d7a50d4c812431cf8a242fd608f3a5b4610659b92f6aa553fbe68e0",
-				IterationCount: 4096,
+				StoredKey:      storedKey,
+				Salt:           salt,
+				IterationCount: iterationCount,
 			}, nil
 		},
 	}
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	req := dto.LoginUserDTOv2{
-		Username:    "test_user",
-		CNonce:      "1a7fa8e9dc2a68049358a08349cdde50",
-		Nonce:       "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362",
+		Username:    username,
+		CNonce:      cNonce,
+		Nonce:       nonce,
 		ClientProof: "TEST_CLIENT_PROOF_FOR_DECODE_ERROR_!@#", // Invalid client proof
 	}
 
@@ -522,18 +528,18 @@ func TestLoginUserV2_XorOperationError(t *testing.T) {
 	mockRepo := &mockRepository{
 		getUserForUsername: func(username string) (models.User, error) {
 			return models.User{
-				StoredKey:      "222f705167604c99f81c7c6acfa974706fa9dd0b445a8bc34fb5accc9b032558",
-				Salt:           "c8f720569d7a50d4c812431cf8a242fd608f3a5b4610659b92f6aa553fbe68e0",
-				IterationCount: 4096,
+				StoredKey:      storedKey,
+				Salt:           salt,
+				IterationCount: iterationCount,
 			}, nil
 		},
 	}
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	req := dto.LoginUserDTOv2{
-		Username:    "test_user",
-		CNonce:      "1a7fa8e9dc2a68049358a08349cdde50",
-		Nonce:       "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362",
+		Username:    username,
+		CNonce:      cNonce,
+		Nonce:       nonce,
 		ClientProof: "", // Sending empty client proof to fail the XOR operation, since it requires equal length slices
 	}
 
@@ -549,18 +555,18 @@ func TestLoginUserV2_AuthFailedKeyMismatchError(t *testing.T) {
 		getUserForUsername: func(username string) (models.User, error) {
 			return models.User{
 				StoredKey:      "", // Empty stored key
-				Salt:           "c8f720569d7a50d4c812431cf8a242fd608f3a5b4610659b92f6aa553fbe68e0",
-				IterationCount: 4096,
+				Salt:           salt,
+				IterationCount: iterationCount,
 			}, nil
 		},
 	}
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	req := dto.LoginUserDTOv2{
-		Username:    "test_user",
-		CNonce:      "1a7fa8e9dc2a68049358a08349cdde50",
-		Nonce:       "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362",
-		ClientProof: "96260616beaabaa6d168b9ce7e15b127b6bcbcb88fd0b5de1e6162b948881155",
+		Username:    username,
+		CNonce:      cNonce,
+		Nonce:       nonce,
+		ClientProof: clientProof,
 	}
 
 	loginUserResp, err := currService.LoginUserv2(req)
@@ -574,20 +580,20 @@ func TestLoginUserV2_DecodingServerKeyError(t *testing.T) {
 	mockRepo := &mockRepository{
 		getUserForUsername: func(username string) (models.User, error) {
 			return models.User{
-				StoredKey:      "222f705167604c99f81c7c6acfa974706fa9dd0b445a8bc34fb5accc9b032558",
+				StoredKey:      storedKey,
 				ServerKey:      "TEST_SERVER_KEY_FOR_DECODE_ERROR_!@#", // Invalid server key
-				Salt:           "c8f720569d7a50d4c812431cf8a242fd608f3a5b4610659b92f6aa553fbe68e0",
-				IterationCount: 4096,
+				Salt:           salt,
+				IterationCount: iterationCount,
 			}, nil
 		},
 	}
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	req := dto.LoginUserDTOv2{
-		Username:    "test_user",
-		CNonce:      "1a7fa8e9dc2a68049358a08349cdde50",
-		Nonce:       "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362",
-		ClientProof: "96260616beaabaa6d168b9ce7e15b127b6bcbcb88fd0b5de1e6162b948881155",
+		Username:    username,
+		CNonce:      cNonce,
+		Nonce:       nonce,
+		ClientProof: clientProof,
 	}
 
 	loginUserResp, err := currService.LoginUserv2(req)
@@ -601,26 +607,26 @@ func TestLoginUserV2_Success(t *testing.T) {
 	mockRepo := &mockRepository{
 		getUserForUsername: func(username string) (models.User, error) {
 			return models.User{
-				StoredKey:      "222f705167604c99f81c7c6acfa974706fa9dd0b445a8bc34fb5accc9b032558",
-				ServerKey:      "f6e938506893b10799038c2b4225f7e8e72f01c7ab25c3da905803ee93ec5536",
-				Salt:           "c8f720569d7a50d4c812431cf8a242fd608f3a5b4610659b92f6aa553fbe68e0",
-				IterationCount: 4096,
+				StoredKey:      storedKey,
+				ServerKey:      serverKey,
+				Salt:           salt,
+				IterationCount: iterationCount,
 			}, nil
 		},
 	}
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	req := dto.LoginUserDTOv2{
-		Username:    "test_user",
-		CNonce:      "1a7fa8e9dc2a68049358a08349cdde50",
-		Nonce:       "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362",
-		ClientProof: "96260616beaabaa6d168b9ce7e15b127b6bcbcb88fd0b5de1e6162b948881155",
+		Username:    username,
+		CNonce:      cNonce,
+		Nonce:       nonce,
+		ClientProof: clientProof,
 	}
 
 	loginUserResp, err := currService.LoginUserv2(req)
 
 	assert.Nil(t, err)
-	assert.Equal(t, "138c0fecd0326896fe21398137c1aa0b9866242abc02bd3e9a5a0016013ef5f0", loginUserResp.ServerSignature)
+	assert.Equal(t, testServerSignature, loginUserResp.ServerSignature)
 }
 
 func TestProfileUser(t *testing.T) {

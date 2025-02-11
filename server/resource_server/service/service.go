@@ -164,7 +164,7 @@ func (s *service) LoginUserv2(req dto.LoginUserDTOv2) (models.LoginUserResponseO
 	clientSignatureHMAC.Write(authMessageBytes)
 	clientSignature := clientSignatureHMAC.Sum(nil)
 
-	clientProofBytes, err := utils.HexStringToBytes(req.ClientProof)
+	clientProofBytes, err := hex.DecodeString(req.ClientProof)
 	if err != nil {
 		return models.LoginUserResponseOutputv2{}, fmt.Errorf("error decoding client proof: %v", err)
 	}
@@ -174,9 +174,9 @@ func (s *service) LoginUserv2(req dto.LoginUserDTOv2) (models.LoginUserResponseO
 		return models.LoginUserResponseOutputv2{}, fmt.Errorf("error performing XOR operation: %v", err)
 	}
 
-	cleintKeyHash := sha256.Sum256(clientKeyBytes)
+	clientKeyHash := sha256.Sum256(clientKeyBytes)
 
-	clientKeyHashStr := hex.EncodeToString(cleintKeyHash[:])
+	clientKeyHashStr := hex.EncodeToString(clientKeyHash[:])
 	if clientKeyHashStr != user.StoredKey {
 		return models.LoginUserResponseOutputv2{}, fmt.Errorf("server failed to authenticate the user")
 	}
