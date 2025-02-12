@@ -2206,7 +2206,7 @@ func TestRegisterUserHandlerv2_Success(t *testing.T) {
 	assert.Equal(t, nil, response.Data)
 }
 
-func TestResetPasswordPrecheck_Success(t *testing.T) {
+func TestResetPasswordPrecheckHandler_Success(t *testing.T) {
 	requestBody := []byte(`{"username": "test_user"}`)
 
 	req, err := http.NewRequest("POST", "/api/v2/reset-password-precheck", bytes.NewBuffer(requestBody))
@@ -2228,7 +2228,7 @@ func TestResetPasswordPrecheck_Success(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	Ctl.ResetPasswordPrecheck(rr, req)
+	Ctl.ResetPasswordPrecheckHandler(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code, "Expected response status code to be 200 OK")
 
@@ -2239,7 +2239,7 @@ func TestResetPasswordPrecheck_Success(t *testing.T) {
 	assert.Nil(t, response.Error)
 }
 
-func TestResetPasswordPrecheck_RequiredRequestJsonFieldIsMissing(t *testing.T) {
+func TestResetPasswordPrecheckHandler_RequiredRequestJsonFieldIsMissing(t *testing.T) {
 	requestBody := []byte(`{}`)
 
 	req, err := http.NewRequest("POST", "/api/v2/reset-password-precheck", bytes.NewBuffer(requestBody))
@@ -2253,7 +2253,7 @@ func TestResetPasswordPrecheck_RequiredRequestJsonFieldIsMissing(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	Ctl.ResetPasswordPrecheck(rr, req)
+	Ctl.ResetPasswordPrecheckHandler(rr, req)
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
 
@@ -2262,7 +2262,7 @@ func TestResetPasswordPrecheck_RequiredRequestJsonFieldIsMissing(t *testing.T) {
 	assert.NotNil(t, response.Error)
 }
 
-func TestResetPasswordPrecheck_InvalidHttpMethod(t *testing.T) {
+func TestResetPasswordPrecheckHandler_InvalidHttpMethod(t *testing.T) {
 	req, err := http.NewRequest("GET", "/api/v2/reset-password-precheck", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -2270,7 +2270,7 @@ func TestResetPasswordPrecheck_InvalidHttpMethod(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	Ctl.ResetPasswordPrecheck(rr, req)
+	Ctl.ResetPasswordPrecheckHandler(rr, req)
 
 	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code, "Response should be 405 Method Not Allowed")
 
@@ -2281,7 +2281,7 @@ func TestResetPasswordPrecheck_InvalidHttpMethod(t *testing.T) {
 	assert.NotNil(t, response.Error)
 }
 
-func TestResetPasswordPrecheck_UserNotFound(t *testing.T) {
+func TestResetPasswordPrecheckHandler_UserNotFound(t *testing.T) {
 	requestBody := []byte(`{"username": "nonexistent_user"}`)
 
 	req, err := http.NewRequest("POST", "/api/v2/reset-password-precheck", bytes.NewBuffer(requestBody))
@@ -2299,7 +2299,7 @@ func TestResetPasswordPrecheck_UserNotFound(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	Ctl.ResetPasswordPrecheck(rr, req)
+	Ctl.ResetPasswordPrecheckHandler(rr, req)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code, "Response should be 400 Bad Request")
 
@@ -2310,7 +2310,7 @@ func TestResetPasswordPrecheck_UserNotFound(t *testing.T) {
 	assert.NotNil(t, response.Error)
 }
 
-func TestResetPasswordPrecheck_InvalidJSON(t *testing.T) {
+func TestResetPasswordPrecheckHandler_InvalidJSON(t *testing.T) {
 	requestBody := []byte(`invalid_json`)
 
 	req, err := http.NewRequest("POST", "/api/v2/reset-password-precheck", bytes.NewBuffer(requestBody))
@@ -2323,7 +2323,7 @@ func TestResetPasswordPrecheck_InvalidJSON(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	Ctl.ResetPasswordPrecheck(rr, req)
+	Ctl.ResetPasswordPrecheckHandler(rr, req)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
 
@@ -2401,7 +2401,7 @@ func TestResetPasswordHandlerV2_InvalidJSON(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	Ctl.ResetPasswordHandlerV2(rr, req)
-	
+
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
 	response := decodeResponseBodyForErrorResponse(t, rr)
@@ -2538,7 +2538,7 @@ func TestResetPasswordHandlerV2_MissingRequiredField(t *testing.T) {
 	}`)
 
 	mockService := &MockService{
-		getUserForUsername: func (currUsername string) (models.User, error) {
+		getUserForUsername: func(currUsername string) (models.User, error) {
 			return models.User{}, errors.New("User not found")
 		},
 	}
@@ -2557,4 +2557,5 @@ func TestResetPasswordHandlerV2_MissingRequiredField(t *testing.T) {
 
 	assert.Equal(t, false, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Message)
 }

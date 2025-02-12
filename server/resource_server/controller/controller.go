@@ -636,7 +636,7 @@ func RegisterUserHandlerv2(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ResetPasswordPrecheck(w http.ResponseWriter, r *http.Request) {
+func ResetPasswordPrecheckHandler(w http.ResponseWriter, r *http.Request) {
 	if !validateHttpMethod(w, r.Method, http.MethodPost) {
 		return
 	}
