@@ -265,6 +265,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.ClientProfilePage(w, r)
 			case path == "/reset-password-page":
 				Ctl.ResetPasswordPage(w, r)
+			case path == "/v2/reset-password-page":
+				Ctl.ResetPasswordPageV2(w, r)
 			case path == "/api/v1/register-user":
 				Ctl.RegisterUserHandler(w, r)
 			case path == "/api/v1/register-user-precheck":
@@ -295,6 +297,10 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.CheckBackendURI(w, r)
 			case path == "/api/v1/reset-password":
 				Ctl.ResetPasswordHandler(w, r)
+			case path == "/api/v2/reset-password-precheck":
+				Ctl.ResetPasswordPrecheckHandler(w, r)
+			case path == "/api/v2/reset-password":
+				Ctl.ResetPasswordHandlerV2(w, r)
 			case path == "/api/v2/register-user-precheck":
 				Ctl.RegisterUserPrecheck(w, r)
 			case path == "/api/v2/register-user":
