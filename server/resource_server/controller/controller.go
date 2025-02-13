@@ -57,6 +57,10 @@ func ResetPasswordPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/password_reset/reset-password-page.html")
 }
 
+func ResetPasswordPageV2(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/password_reset/reset-password-page_v2.html")
+}
+
 func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -688,5 +692,77 @@ func RegisterUserHandlerv2(w http.ResponseWriter, r *http.Request) {
 			"Internal error: could not encode response into json",
 			err,
 		)
+	}
+}
+
+func ResetPasswordPrecheckHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.ResetPasswordPrecheckDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	user, err := newService.GetUserForUsername(request.Username)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "User does not exist!", err)
+		return
+	}
+
+	resetPasswordPrecheckResp := models.ResetPasswordPrecheckResponseOutput{
+		Salt:           user.Salt,
+		IterationCount: user.IterationCount,
+	}
+
+	response := utils.BuildResponse(w, http.StatusOK, "User does exist!", resetPasswordPrecheckResp)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal Server Error",
+			err,
+		)
+	}
+}
+
+func ResetPasswordHandlerV2(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.ResetPasswordDTOV2](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	user, err := newService.GetUserForUsername(request.Username)
+	if err != nil {
+		utils.HandleError(w, http.StatusNotFound, "User does not exist!", err)
+		return
+	}
+
+	err = newService.ValidateSignature("Sign-in with Layer8", request.Signature, user.PublicKey)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Signature is invalid!", err)
+		return
+	}
+
+	err = newService.UpdateUserPasswordV2(user.Username, request.StoredKey, request.ServerKey)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Internal error: failed to update user", err)
+		return
+	}
+
+	response := utils.BuildResponseWithNoBody(
+		w, http.StatusCreated, "Your password was updated successfully!",
+	)
+	if err := json.NewEncoder(w).Encode(&response); err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to encode the response", err)
 	}
 }

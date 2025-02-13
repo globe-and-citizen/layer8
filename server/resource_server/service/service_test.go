@@ -79,6 +79,7 @@ type mockRepository struct {
 	registerClient               func(client models.Client) error
 	getUserForUsername           func(username string) (models.User, error)
 	updateUserPassword           func(username string, password string) error
+	updateUserPasswordV2         func(username string, storedKey string, serverKey string) error
 }
 
 func (m *mockRepository) FindUser(userId uint) (models.User, error) {
@@ -248,6 +249,10 @@ func (m *mockRepository) GetUserForUsername(username string) (models.User, error
 
 func (m *mockRepository) UpdateUserPassword(username string, password string) error {
 	return m.updateUserPassword(username, password)
+}
+
+func (m *mockRepository) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
+	return m.updateUserPasswordV2(username, storedKey, serverKey)
 }
 
 func TestRegisterUser_RepositoryFailedToStoreUserData(t *testing.T) {
@@ -1161,7 +1166,7 @@ func TestValidateSignature_Success(t *testing.T) {
 func TestRegisterUserPrecheck_Success(t *testing.T) {
 	mockRepo := &mockRepository{
 		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, rmSalt string, iterCount int) error {
-			assert.Equal(t, "test_user", req.Username, "Username should match")
+			assert.Equal(t, username, req.Username, "Username should match")
 			assert.NotEmpty(t, rmSalt, "Salt should not be empty")
 			assert.Equal(t, 4096, iterCount, "Iteration count should match")
 			return nil
@@ -1171,7 +1176,7 @@ func TestRegisterUserPrecheck_Success(t *testing.T) {
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	req := dto.RegisterUserPrecheckDTO{
-		Username: "test_user",
+		Username: username,
 	}
 	iterCount := 4096
 
@@ -1191,7 +1196,7 @@ func TestRegisterUserPrecheck_RepositoryError(t *testing.T) {
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	req := dto.RegisterUserPrecheckDTO{
-		Username: "test_user",
+		Username: username,
 	}
 	iterCount := 4096
 
@@ -1205,7 +1210,7 @@ func TestRegisterUserPrecheck_RepositoryError(t *testing.T) {
 func TestRegisterUserPrecheck_InvalidIterationCount(t *testing.T) {
 	mockRepo := &mockRepository{
 		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, rmSalt string, iterCount int) error {
-			assert.Equal(t, "test_user", req.Username, "Username should match")
+			assert.Equal(t, username, req.Username, "Username should match")
 			assert.Equal(t, 0, iterCount, "Iteration count should match")
 			return nil
 		},
@@ -1214,7 +1219,7 @@ func TestRegisterUserPrecheck_InvalidIterationCount(t *testing.T) {
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	req := dto.RegisterUserPrecheckDTO{
-		Username: "test_user",
+		Username: username,
 	}
 	iterCount := 0
 
@@ -1285,4 +1290,37 @@ func TestRegisterUserv2_Success(t *testing.T) {
 	)
 
 	assert.Nil(t, err)
+}
+
+func TestUpdateUserPasswordV2_Success(t *testing.T) {
+	mockRepo := &mockRepository{
+		updateUserPasswordV2: func(currUsername, currStoredKey, currServerKey string) error {
+			assert.Equal(t, username, currUsername)
+			assert.Equal(t, storedKey, currStoredKey)
+			assert.Equal(t, serverKey, currServerKey)
+			return nil
+		},
+	}
+
+	currService := service.NewService(mockRepo, nil, nil)
+
+	err := currService.UpdateUserPasswordV2(username, storedKey, serverKey)
+	assert.NoError(t, err, "Expected no error for successful password update")
+}
+
+func TestUpdateUserPasswordV2_RepositoryError(t *testing.T) {
+	mockRepo := &mockRepository{
+		updateUserPasswordV2: func(currUsername, currStoredKey, currServerKey string) error {
+			assert.Equal(t, username, currUsername)
+			assert.Equal(t, storedKey, currStoredKey)
+			assert.Equal(t, serverKey, currServerKey)
+			return fmt.Errorf("database error")
+		},
+	}
+
+	currService := service.NewService(mockRepo, nil, nil)
+
+	err := currService.UpdateUserPasswordV2(username, storedKey, serverKey)
+	assert.Error(t, err, "Expected an error when repository returns an error")
+	assert.Equal(t, "database error", err.Error())
 }
