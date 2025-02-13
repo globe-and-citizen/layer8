@@ -107,8 +107,8 @@ func (s *service) LoginPreCheckUser(req dto.LoginPrecheckDTO) (models.LoginPrech
 	return loginPrecheckResp, nil
 }
 
-func (s *service) LoginPreCheckUserv2(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
-	sNonce := utils.GenerateRandomSalt(32)
+func (s *service) LoginPrecheckUserv2(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
+	sNonce := utils.GenerateRandomSalt(utils.SaltSize)
 
 	user, err := s.repository.GetUserForUsername(req.Username)
 	if err != nil {

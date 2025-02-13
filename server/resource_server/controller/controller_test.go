@@ -28,8 +28,11 @@ const verificationCode = "123467"
 const userEmail = "user@email.com"
 const userPassword = "test_password"
 const newUserPassword = "new_password"
-const userSalt = "salt"
-
+const userSalt = "ThisIsARandomSalt123!@#"
+const iterCount = 4096
+const nonce = "Test_Nonce"
+const serverSignature = "Test_Server_Signature"
+const testToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw"
 const zkKeyPairId uint = 2
 
 var authenticationToken, _ = utils.GenerateToken(
@@ -93,13 +96,13 @@ func (ms *MockService) LoginPreCheckUser(req dto.LoginPrecheckDTO) (models.Login
 	}, nil
 }
 
-func (ms *MockService) LoginPreCheckUserv2(req dto.LoginPrecheckDTOv2) (response models.LoginPrecheckResponseOutputv2, err error) {
+func (ms *MockService) LoginPrecheckUserv2(req dto.LoginPrecheckDTOv2) (response models.LoginPrecheckResponseOutputv2, err error) {
 	return ms.loginPrecheckUserv2(req)
 }
 
 func (ms *MockService) LoginUser(req dto.LoginUserDTO) (models.LoginUserResponseOutput, error) {
 	return models.LoginUserResponseOutput{
-		Token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw",
+		Token: testToken,
 	}, nil
 }
 
@@ -178,7 +181,7 @@ func (ms *MockService) CheckBackendURI(backendURL string) (bool, error) {
 func (m *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseOutput, error) {
 	// Mock implementation for LoginClient method
 	return models.LoginUserResponseOutput{
-		Token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw",
+		Token:testToken,
 	}, nil
 }
 
@@ -577,15 +580,7 @@ func TestLoginPrecheckHandlerv2_InvalidHttpRequestMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mockService := &MockService{
-		loginPrecheckUserv2: func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
-			return models.LoginPrecheckResponseOutputv2{
-				Salt:      "ThisIsARandomSalt123!@#",
-				IterCount: 4096,
-				Nonce:     "Test_Nonce",
-			}, nil
-		},
-	}
+	mockService := &MockService{}
 
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 
@@ -609,15 +604,7 @@ func TestLoginPrecheckHandlerv2_RequestJsonIsMalformed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mockService := &MockService{
-		loginPrecheckUserv2: func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
-			return models.LoginPrecheckResponseOutputv2{
-				Salt:      "ThisIsARandomSalt123!@#",
-				IterCount: 4096,
-				Nonce:     "Test_Nonce",
-			}, nil
-		},
-	}
+	mockService := &MockService{}
 
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 
@@ -642,15 +629,7 @@ func TestLoginPrecheckHandlerv2_RequiredRequestJsonFieldsAreMissing(t *testing.T
 		t.Fatal(err)
 	}
 
-	mockService := &MockService{
-		loginPrecheckUserv2: func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
-			return models.LoginPrecheckResponseOutputv2{
-				Salt:      "ThisIsARandomSalt123!@#",
-				IterCount: 4096,
-				Nonce:     "Test_Nonce",
-			}, nil
-		},
-	}
+	mockService := &MockService{}
 
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 
@@ -692,6 +671,13 @@ func TestLoginPrecheckHandlerv2_ServiceError(t *testing.T) {
 	// Call the handler function
 	Ctl.LoginPrecheckHandlerv2(rr, req)
 
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	// Now assert the fields directly
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Failed to perform precheck, service error", response.Message)
+	assert.NotNil(t, response.Error)
+
 	// Check the status code
 	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
 }
@@ -710,9 +696,9 @@ func TestLoginPrecheckHandlerv2_Success(t *testing.T) {
 	mockService := &MockService{
 		loginPrecheckUserv2: func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
 			return models.LoginPrecheckResponseOutputv2{
-				Salt:      "ThisIsARandomSalt123!@#",
-				IterCount: 4096,
-				Nonce:     "Test_Nonce",
+				Salt:      userSalt,
+				IterCount: iterCount,
+				Nonce:     nonce,
 			}, nil
 		},
 	}
@@ -735,9 +721,9 @@ func TestLoginPrecheckHandlerv2_Success(t *testing.T) {
 	}
 
 	// Now assert the fields directly
-	assert.Equal(t, "ThisIsARandomSalt123!@#", response.Salt)
-	assert.Equal(t, 4096, response.IterCount)
-	assert.Equal(t, "Test_Nonce", response.Nonce)
+	assert.Equal(t, userSalt, response.Salt)
+	assert.Equal(t, iterCount, response.IterCount)
+	assert.Equal(t, nonce, response.Nonce)
 }
 
 func TestLoginUserHandler_InvalidHttpRequestMethod(t *testing.T) {
@@ -850,7 +836,7 @@ func TestLoginUserHandler_Success(t *testing.T) {
 	}
 
 	// Now assert the fields directly
-	assert.Equal(t, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw", response.Token)
+	assert.Equal(t, testToken, response.Token)
 }
 
 func TestLoginUserHandlerv2_InvalidHttpRequestMethod(t *testing.T) {
@@ -866,14 +852,7 @@ func TestLoginUserHandlerv2_InvalidHttpRequestMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mockService := &MockService{
-		loginUserv2: func(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error) {
-			return models.LoginUserResponseOutputv2{
-				Token:           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw",
-				ServerSignature: "Test_Server_Signature",
-			}, nil
-		},
-	}
+	mockService := &MockService{}
 
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 
@@ -903,14 +882,7 @@ func TestLoginUserHandlerv2_RequestJsonIsMalformed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mockService := &MockService{
-		loginUserv2: func(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error) {
-			return models.LoginUserResponseOutputv2{
-				Token:           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw",
-				ServerSignature: "Test_Server_Signature",
-			}, nil
-		},
-	}
+	mockService := &MockService{}
 
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 
@@ -938,14 +910,7 @@ func TestLoginUserHandlerv2_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mockService := &MockService{
-		loginUserv2: func(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error) {
-			return models.LoginUserResponseOutputv2{
-				Token:           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw",
-				ServerSignature: "Test_Server_Signature",
-			}, nil
-		},
-	}
+	mockService := &MockService{}
 
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 
@@ -992,6 +957,14 @@ func TestLoginUserHandlerv2_ServiceError(t *testing.T) {
 	// Call the handler function
 	Ctl.LoginUserHandlerv2(rr, req)
 
+	// Decode the response body
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	// Now assert the fields directly
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Failed to perform login", response.Message)
+	assert.NotNil(t, response.Error)
+
 	// Check the status code
 	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
 }
@@ -1015,8 +988,8 @@ func TestLoginUserHandlerv2_Success(t *testing.T) {
 	mockService := &MockService{
 		loginUserv2: func(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error) {
 			return models.LoginUserResponseOutputv2{
-				Token:           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw",
-				ServerSignature: "Test_Server_Signature",
+				Token:           testToken,
+				ServerSignature: serverSignature,
 			}, nil
 		},
 	}
@@ -1039,8 +1012,8 @@ func TestLoginUserHandlerv2_Success(t *testing.T) {
 	}
 
 	// Now assert the fields directly
-	assert.Equal(t, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw", response.Token)
-	assert.Equal(t, "Test_Server_Signature", response.ServerSignature)
+	assert.Equal(t,testToken, response.Token)
+	assert.Equal(t, serverSignature, response.ServerSignature)
 }
 
 func TestProfileHandler_InvalidHttpRequestMethod(t *testing.T) {
@@ -1895,7 +1868,7 @@ func TestLoginClientHandler_Success(t *testing.T) {
 	}
 
 	// Validate the response
-	assert.Equal(t, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw", tokenResp.Token)
+	assert.Equal(t, testToken, tokenResp.Token)
 }
 
 func TestCheckBackendURIHandler_InvalidHttpRequestMethod(t *testing.T) {

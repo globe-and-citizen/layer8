@@ -226,7 +226,7 @@ func LoginPrecheckHandlerv2(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	loginPrecheckResp, err := newService.LoginPreCheckUserv2(request)
+	loginPrecheckResp, err := newService.LoginPrecheckUserv2(request)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to perform precheck, service error", err)
 		return
