@@ -236,7 +236,9 @@ func LoginPrecheckHandlerv2(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.NewEncoder(w).Encode(loginPrecheckResp); err != nil {
+	response := utils.BuildResponse(w, http.StatusOK, "Precheck successful", loginPrecheckResp)
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		utils.HandleError(
 			w,
 			http.StatusInternalServerError,
@@ -292,7 +294,9 @@ func LoginUserHandlerv2(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.NewEncoder(w).Encode(serverSignatureResp); err != nil {
+	response := utils.BuildResponse(w, http.StatusOK, "Login successful", serverSignatureResp)
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		utils.HandleError(
 			w,
 			http.StatusInternalServerError,

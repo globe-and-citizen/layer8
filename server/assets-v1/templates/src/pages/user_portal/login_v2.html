@@ -115,7 +115,7 @@
           }
         );
         const loginPrecheckResponseBody = await loginPrecheckResponse.json();
-
+        console.log("loginPrecheckResponseBody: ", loginPrecheckResponseBody);
         if (loginPrecheckResponse.status !== 200) {
           showToastMessage("Failed to login", "error");
           return;
@@ -123,10 +123,10 @@
 
         const saltedPassword = CryptoJS.PBKDF2(
           loginPassword.value,
-          CryptoJS.enc.Hex.parse(loginPrecheckResponseBody.salt),
+          CryptoJS.enc.Hex.parse(loginPrecheckResponseBody.data.salt),
           {
             keySize: 160 / 32,
-            iterations: loginPrecheckResponseBody.iter_count,
+            iterations: loginPrecheckResponseBody.data.iter_count,
             hasher: CryptoJS.algo.SHA1,
           }
         ).toString(CryptoJS.enc.Hex);
@@ -147,7 +147,7 @@
           CryptoJS.enc.Utf8.parse("Server Key")
         ).toString(CryptoJS.enc.Hex);
 
-        const authMessage = `[n=${loginUsername.value},r=${cNonce.value},s=${loginPrecheckResponseBody.salt},i=${loginPrecheckResponseBody.iter_count},r=${loginPrecheckResponseBody.nonce}]`;
+        const authMessage = `[n=${loginUsername.value},r=${cNonce.value},s=${loginPrecheckResponseBody.data.salt},i=${loginPrecheckResponseBody.data.iter_count},r=${loginPrecheckResponseBody.data.nonce}]`;
 
         const clientSignature = CryptoJS.HmacSHA256(
           CryptoJS.enc.Utf8.parse(authMessage),
@@ -172,7 +172,7 @@
             },
             body: JSON.stringify({
               username: loginUsername.value,
-              nonce: loginPrecheckResponseBody.nonce,
+              nonce: loginPrecheckResponseBody.data.nonce,
               c_nonce: cNonce.value,
               client_proof: clientProof,
             }),
@@ -181,14 +181,14 @@
 
         const loginUserResponseJSON = await loginUserResponse.json();
 
-        if (loginUserResponseJSON.server_signature) {
+        if (loginUserResponseJSON.data.server_signature) {
           const serverSignatureCheck = CryptoJS.HmacSHA256(
             CryptoJS.enc.Utf8.parse(authMessage),
             CryptoJS.enc.Hex.parse(serverKey)
           ).toString(CryptoJS.enc.Hex);
 
-          if (serverSignatureCheck === loginUserResponseJSON.server_signature) {
-            token.value = loginUserResponseJSON.token;
+          if (serverSignatureCheck === loginUserResponseJSON.data.server_signature) {
+            token.value = loginUserResponseJSON.data.token;
             localStorage.setItem("token", token.value);
             showToastMessage("Login successful!", "success");
             window.location.href = "[[ .ProxyURL ]]/user";
