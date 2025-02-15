@@ -29,5 +29,6 @@ type IService interface {
 	GetUserForUsername(username string) (models.User, error)
 	ValidateSignature(message string, signature []byte, publicKey []byte) error
 	UpdateUserPassword(username string, newPassword string, salt string) error
+	UpdateUserPasswordV2(username string, storedKey string, serverKey string) error
 	RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error)
 }

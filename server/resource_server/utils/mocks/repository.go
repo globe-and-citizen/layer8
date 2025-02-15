@@ -447,3 +447,7 @@ func (r *MockRepository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, s
 
 	return nil
 }
+
+func (r *MockRepository) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
+	return nil
+}

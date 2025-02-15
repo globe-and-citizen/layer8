@@ -21,6 +21,7 @@ const id uint = 1
 
 const userId uint = 1
 const username = "test_username"
+const usernameWithSpecialChars = "user_with_special_chars!@#$%^&*()"
 const userFirstName = "first_name"
 const userLastName = "last_name"
 const userSalt = "user_salt"
@@ -1500,4 +1501,71 @@ func TestRegisterUserv2_Success(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
+}
+
+func TestUpdateUserPasswordV2_Success(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(`UPDATE "users" SET "server_key"=$1,"stored_key"=$2 WHERE username=$3`),
+	).WithArgs(serverKey, storedKey, username).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	mock.ExpectCommit()
+
+	err := repository.UpdateUserPasswordV2(username, storedKey, serverKey)
+
+	assert.Nil(t, err)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestUpdateUserPasswordV2_UpdateQueryFailed(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(`UPDATE "users" SET "server_key"=$1,"stored_key"=$2 WHERE username=$3`),
+	).WithArgs(serverKey, storedKey, username).
+		WillReturnError(fmt.Errorf("database error"))
+
+	mock.ExpectRollback()
+
+	err := repository.UpdateUserPasswordV2(username, storedKey, serverKey)
+
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "database error")
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestUpdateUserPasswordV2_EdgeCaseUsername(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(`UPDATE "users" SET "server_key"=$1,"stored_key"=$2 WHERE username=$3`),
+	).WithArgs(serverKey, storedKey, usernameWithSpecialChars).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	mock.ExpectCommit()
+
+	err := repository.UpdateUserPasswordV2(usernameWithSpecialChars, storedKey, serverKey)
+
+	assert.Nil(t, err)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
 }
