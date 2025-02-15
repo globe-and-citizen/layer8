@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/coder/websocket"
@@ -168,13 +169,17 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Host: ", r.Header.Get("X-Forwarded-Host"))
 
 	// This operation is blocking, let's confirm if the tunnel is established
-	wsIdentifier := r.Header.Get("Sec-WebSocket-Key")
-	if wsIdentifier != "" {
+	if wsIdentifier := r.Header.Get("upgrade"); strings.EqualFold(wsIdentifier, "websocket") {
 		wsTunnel(w, r)
 		return
 	}
 
 	httpTunnel(w, r)
+}
+
+type WsPayload struct {
+	Payload  string `json:"payload"`
+	MetaData any    `json:"metadata"`
 }
 
 func wsTunnel(w http.ResponseWriter, r *http.Request) {
@@ -185,40 +190,145 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 	}
 	defer c.CloseNow()
 
-	// let's dial the backend server
-	protocol := r.Header.Get("X-Forwarded-Proto")
-	host := r.Header.Get("X-Forwarded-Host")
-	backendURL := fmt.Sprintf("%s://%s", protocol, host+r.URL.Path) // RAVI
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	// adding & validating headers
-	{
-		r.Header["x-tunnel"] = []string{"true"}
-
-		// Get up-JWT from request header and verify it
-		upJWT := r.Header.Get("up-jwt") // RAVI! LOOK HERE
-		fmt.Println("up-jwt coming from client: ", upJWT)
-
-		if _, err := utils.ValidateUPTokenJWT(upJWT, os.Getenv("UP_999_SECRET_KEY")); err != nil {
-			fmt.Println("UP JWT verify error: ", err.Error())
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
+	// we expect a msg from the client, we already set the timeout so we don't expect blocking
+	_, msg, err := c.Read(ctx)
+	if err != nil {
+		fmt.Printf("error reading from client: %v", err)
+		return
 	}
 
-	backendSoc, _, err := websocket.Dial(ctx, backendURL, &websocket.DialOptions{HTTPHeader: r.Header})
+	var data WsPayload
+	if err = json.Unmarshal(msg, &data); err != nil {
+		fmt.Printf("error unmarshalling message: %v", err)
+		return
+	}
+
+	if data.Payload == "" {
+		fmt.Println("empty payload or metadata")
+		return
+	}
+
+	type IncomingMetadata struct {
+		BackendURL string `json:"backendURL"`
+	}
+
+	metadata, ok := data.MetaData.(IncomingMetadata)
+	if !ok {
+		fmt.Println("metadata is malformed")
+		return
+	}
+
+	backendWithoutProtocol := utils.RemoveProtocolFromURL(metadata.BackendURL)
+
+	srv := r.Context().Value("service").(interfaces.IService)
+	client, err := srv.GetClientDataByBackendURL(backendWithoutProtocol)
+	if err != nil {
+		fmt.Println("Error getting client data:", err)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	mpJWT, err := utilities.GenerateStandardToken(os.Getenv("MP_123_SECRET_KEY"))
+	if err != nil {
+		fmt.Println("Error generating mpJWT:", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	serviceProviderSoc, _, err := websocket.Dial(ctx, metadata.BackendURL, &websocket.DialOptions{HTTPHeader: r.Header})
 	if err != nil {
 		fmt.Printf("error dialing backend: %v\n", err)
 		return
 	}
-	defer c.Close(websocket.StatusInternalError, "ws tunnel closed unexpectedly")
+	defer c.Close(websocket.StatusInternalError, "ws service provider closed unexpectedly")
 
-	l := rate.NewLimiter(rate.Every(time.Millisecond*100), 10)
+	// initialize the handshake
+	{
+		initTunnelPayload, err := json.Marshal(WsPayload{
+			Payload: string(msg),
+			MetaData: map[string]interface{}{
+				"x-tunnel": true,
+				"mp-jwt":   mpJWT,
+			},
+		})
+		if err != nil {
+			fmt.Printf("error marshalling init payload: %v\n", err)
+			return
+		}
+
+		if err = serviceProviderSoc.Write(ctx, websocket.MessageText, initTunnelPayload); err != nil {
+			fmt.Printf("error writing to backend: %v\n", err)
+			return
+		}
+
+		// we expect an ack from the service provider if the tunnel is established
+		_, msg, err := serviceProviderSoc.Read(ctx)
+		if err != nil {
+			fmt.Printf("error reading from service provider: %v\n", err)
+			return
+		}
+
+		var backendResp WsPayload
+		if err = json.Unmarshal(msg, &backendResp); err != nil {
+			fmt.Printf("error unmarshalling message: %v", err)
+			return
+		}
+
+		metadata, ok := backendResp.MetaData.(map[string]any)
+		if !ok {
+			fmt.Println("metadata is malformed")
+			return
+		}
+
+		if metadata["status"] != "ok" {
+			fmt.Println("tunnel not established: ", metadata["message"])
+			return
+		}
+
+		upJWT, err := utils.GenerateUPTokenJWT(os.Getenv("UP_999_SECRET_KEY"), client.ID)
+		if err != nil {
+			fmt.Println("Error generating upJWT:", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		server_pubKeyECDH, err := utilities.B64ToJWK(string(msg))
+		if err != nil {
+			fmt.Println("Error acquiring server_pubKeyECDH from Headers:", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Make a json response of server_pubKeyECDH and up_JWT and send it back to client
+		data := map[string]interface{}{
+			"server_pubKeyECDH": server_pubKeyECDH,
+			"up-JWT":            upJWT,
+		}
+
+		fmt.Println("Data returning to the user from the Service Provider: ", data)
+
+		datatoSend, err := json.Marshal(&data)
+		if err != nil {
+			fmt.Println("Error marshalling data:", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if err = c.Write(ctx, websocket.MessageText, datatoSend); err != nil {
+			fmt.Printf("error writing to client: %v\n", err)
+			return
+		}
+
+		fmt.Println("Tunnel established successfully")
+	}
+
+	l := rate.NewLimiter(rate.Every(time.Millisecond*100), 30)
 	for {
 		// we provide it 10 seconds to complete or we close the connection
-		ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
+		ctx, cancel := context.WithTimeout(r.Context(), time.Second*30)
 		defer cancel()
 
 		err := l.Wait(ctx)
@@ -241,7 +351,7 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 		// interact with the backend server
 		var msg *websocket.MessageType
 		{
-			w, err := backendSoc.Writer(ctx, typ)
+			w, err := serviceProviderSoc.Writer(ctx, typ)
 			if err == nil {
 				if isNormal(err) {
 					return
@@ -254,7 +364,7 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			message, _, err := backendSoc.Reader(ctx)
+			message, _, err := serviceProviderSoc.Reader(ctx)
 			if err != nil {
 				fmt.Printf("error reading from backend: %s \n", err)
 				return
