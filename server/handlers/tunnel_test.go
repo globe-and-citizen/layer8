@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
@@ -16,22 +17,29 @@ import (
 	"testing"
 	"github.com/stretchr/testify/assert"
 
-	utils "github.com/globe-and-citizen/layer8-utils"
 	"globe-and-citizen/layer8/server/resource_server/utils/mocks"
+
+	utils "github.com/globe-and-citizen/layer8-utils"
+	"globe-and-citizen/layer8/server/resource_server/models"
 )
 
-func prepareInitTunnelRequest(clientBackendUrl string) *http.Request {
+const name = "name"
+const redirectUri = "redirect_uri"
+const username = "username"
+const password = "password"
+
+func prepareInitTunnelRequest(clientBackendUrl string, mockRepo *mocks.MockRepository) *http.Request {
 	resourceService := service.NewService(
-		mocks.NewMockRepository(),
+		mockRepo,
 		&verification.EmailVerifier{},
 		&zk.ProofProcessor{},
 	)
 	resourceService.RegisterClient(dto.RegisterClientDTO{
-		Name:        "name",
-		RedirectURI: "redirect_uri",
+		Name:        name,
+		RedirectURI: redirectUri,
 		BackendURI:  resourceUtils.RemoveProtocolFromURL(clientBackendUrl),
-		Username:    "username",
-		Password:    "password",
+		Username:    username,
+		Password:    password,
 	})
 
 	reqToInitTunnel := httptest.NewRequest("GET", "/init-tunnel", nil)
@@ -73,7 +81,18 @@ func Test_InitTunnel_OK(t *testing.T) {
 		w.Write([]byte(b64PubJWK))
 	}))
 
-	reqToInitTunnel := prepareInitTunnelRequest(mockedServiceProvider.URL)
+	mockRepo := &mocks.MockRepository{
+		RegisterClientMock: func(client models.Client) error {
+			assert.Equal(t, name, client.Name)
+			assert.Equal(t, username, client.Username)
+			assert.Equal(t, redirectUri, client.RedirectURI)
+			assert.Equal(t, resourceUtils.RemoveProtocolFromURL(mockedServiceProvider.URL), client.BackendURI)
+
+			return fmt.Errorf("failed to store a client")
+		},
+	}
+
+	reqToInitTunnel := prepareInitTunnelRequest(mockedServiceProvider.URL, mockRepo)
 	responseRecorder := httptest.NewRecorder()
 
 	InitTunnel(responseRecorder, reqToInitTunnel)
@@ -124,7 +143,12 @@ func Test_InitTunnel_InvalidBackendURL(t *testing.T) {
 }
 
 func Test_InitTunnel_UnavailableBackend(t *testing.T) {
-	reqToInitTunnel := prepareInitTunnelRequest("http://localhost:8080")
+	mockRepo := &mocks.MockRepository{
+		RegisterClientMock: func(client models.Client) error {
+			return fmt.Errorf("failed to store a client")
+		},
+	}
+	reqToInitTunnel := prepareInitTunnelRequest("http://localhost:8080", mockRepo)
 	responseRecorder := httptest.NewRecorder()
 
 	InitTunnel(responseRecorder, reqToInitTunnel)

@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	serverModels "globe-and-citizen/layer8/server/models"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
@@ -61,198 +60,9 @@ var defaultMockSenderService = &mocks.MockEmailSenderService{
 	},
 }
 
-type mockRepository struct {
-	findUser                     func(userId uint) (models.User, error)
-	saveEmailVerificationData    func(data models.EmailVerificationData) error
-	getEmailVerificationData     func(userId uint) (models.EmailVerificationData, error)
-	deleteEmailVerificationData  func(userId uint) error
-	saveProofOfEmailVerification func(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error
-	setUserEmailVerified         func(userID uint) error
-	registerUser                 func(req dto.RegisterUserDTO, hashedPassword string, salt string) error
-	registerUserPrecheck         func(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error
-	registerUserv2               func(req dto.RegisterUserDTOv2) error
-	registerClient               func(client models.Client) error
-	getUserForUsername           func(username string) (models.User, error)
-	updateUserPassword           func(username string, password string) error
-	updateUserPasswordV2         func(username string, storedKey string, serverKey string) error
-}
-
-func (m *mockRepository) FindUser(userId uint) (models.User, error) {
-	return m.findUser(userId)
-}
-
-func (m *mockRepository) RegisterUser(req dto.RegisterUserDTO, hashedPassword string, salt string) error {
-	return m.registerUser(req, hashedPassword, salt)
-}
-
-func (m *mockRepository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error {
-	if m.registerUserPrecheck != nil {
-		return m.registerUserPrecheck(req, salt, iterCount)
-	}
-	return nil
-}
-
-func (m *mockRepository) RegisterUserv2(req dto.RegisterUserDTOv2) error {
-	return m.registerUserv2(req)
-}
-
-func (m *mockRepository) LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string, error) {
-	return "test_user", "ThisIsARandomSalt123!@#", nil
-}
-
-func (m *mockRepository) LoginUser(req dto.LoginUserDTO) (models.User, error) {
-	return models.User{
-		Username:  "test_user",
-		FirstName: "Test",
-		LastName:  "User",
-		Password:  "34efcb97e704298f3d64159ee858c6c1826755b37523cfac8a79c2130ea7b16f",
-		Salt:      "312c4a2c46405ba4f70f7be070f4d4f7cdede09d4b218bf77c01f9706d7505c9",
-	}, nil
-}
-
-func (m *mockRepository) ProfileUser(userID uint) (models.User, []models.UserMetadata, error) {
-	if userID == 1 {
-		return models.User{
-				Username:  "test_user",
-				FirstName: "Test",
-				LastName:  "User",
-				Password:  "34efcb97e704298f3d64159ee858c6c1826755b37523cfac8a79c2130ea7b16f",
-				Salt:      "312c4a2c46405ba4f70f7be070f4d4f7cdede09d4b218bf77c01f9706d7505c9",
-			}, []models.UserMetadata{
-				{
-					UserID: 1,
-					Key:    "email_verified",
-					Value:  "true",
-				},
-				{
-					UserID: 1,
-					Key:    "display_name",
-					Value:  "user",
-				},
-				{
-					UserID: 1,
-					Key:    "country",
-					Value:  "Unknown",
-				},
-			}, nil
-	}
-	return models.User{}, []models.UserMetadata{}, fmt.Errorf("User not found")
-}
-
-func (m *mockRepository) SaveProofOfEmailVerification(
-	userID uint, verificationCode string, proof []byte, zkKeyPairId uint,
-) error {
-	return m.saveProofOfEmailVerification(userID, verificationCode, proof, zkKeyPairId)
-}
-
-func (m *mockRepository) SaveEmailVerificationData(data models.EmailVerificationData) error {
-	return m.saveEmailVerificationData(data)
-}
-
-func (m *mockRepository) GetEmailVerificationData(userId uint) (models.EmailVerificationData, error) {
-	return m.getEmailVerificationData(userId)
-}
-
-func (m *mockRepository) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
-	return nil
-}
-
-func (m *mockRepository) RegisterClient(client models.Client) error {
-	return m.registerClient(client)
-}
-
-func (m *mockRepository) IsBackendURIExists(backendURL string) (bool, error) {
-	return true, nil
-}
-
-func (m *mockRepository) CheckBackendURI(backendURL string) (bool, error) {
-	// Your mock implementation of CheckBackendURI here
-	return true, nil
-}
-
-func (m *mockRepository) GetClientData(clientName string) (models.Client, error) {
-	if clientName == "testclient" {
-		return models.Client{
-			ID:          "1",
-			Secret:      "testsecret",
-			Name:        "testclient",
-			RedirectURI: "https://gcitizen.com/callback",
-		}, nil
-	}
-	return models.Client{}, fmt.Errorf("Client not found")
-}
-
-func (m *mockRepository) LoginUserPrecheck(username string) (string, error) {
-	return "", nil
-}
-
-func (m *mockRepository) GetUser(username string) (*serverModels.User, error) {
-	return &serverModels.User{}, nil
-}
-
-func (m *mockRepository) GetUserByID(id int64) (*serverModels.User, error) {
-	return &serverModels.User{}, nil
-}
-
-func (m *mockRepository) GetUserMetadata(userID int64, key string) (*serverModels.UserMetadata, error) {
-	return &serverModels.UserMetadata{}, nil
-}
-
-func (m *mockRepository) SetClient(client *serverModels.Client) error {
-	return nil
-}
-
-func (m *mockRepository) GetClient(clientName string) (*serverModels.Client, error) {
-	return &serverModels.Client{}, nil
-}
-
-func (m *mockRepository) SetTTL(key string, value []byte, time time.Duration) error {
-	return nil
-}
-
-func (m *mockRepository) GetTTL(key string) ([]byte, error) {
-	return []byte{}, nil
-}
-
-func (m *mockRepository) LoginClient(req dto.LoginClientDTO) (models.Client, error) {
-	return models.Client{}, nil
-}
-
-func (m *mockRepository) LoginPreCheckClient(req dto.LoginPrecheckDTO) (string, string, error) {
-	return "", "", nil
-}
-
-func (m *mockRepository) ProfileClient(userID string) (models.Client, error) {
-	return models.Client{}, nil
-}
-
-func (m *mockRepository) GetClientDataByBackendURL(backendURL string) (models.Client, error) {
-	return models.Client{}, nil
-}
-
-func (m *mockRepository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (uint, error) {
-	return 0, nil
-}
-
-func (m *mockRepository) GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
-	return models.ZkSnarksKeyPair{}, nil
-}
-
-func (m *mockRepository) GetUserForUsername(username string) (models.User, error) {
-	return m.getUserForUsername(username)
-}
-
-func (m *mockRepository) UpdateUserPassword(username string, password string) error {
-	return m.updateUserPassword(username, password)
-}
-
-func (m *mockRepository) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
-	return m.updateUserPasswordV2(username, storedKey, serverKey)
-}
-
 func TestRegisterUser_RepositoryFailedToStoreUserData(t *testing.T) {
-	mockRepo := &mockRepository{
-		registerUser: func(req dto.RegisterUserDTO, hashedPassword string, salt string) error {
+	mockRepo := &mocks.MockRepository{
+		RegisterUserMock: func(req dto.RegisterUserDTO, hashedPassword string, salt string) error {
 			assert.Equal(t, username, req.Username)
 			assert.Equal(t, firstName, req.FirstName)
 			assert.Equal(t, lastName, req.LastName)
@@ -279,8 +89,8 @@ func TestRegisterUser_RepositoryFailedToStoreUserData(t *testing.T) {
 }
 
 func TestRegisterUser_Success(t *testing.T) {
-	mockRepo := &mockRepository{
-		registerUser: func(req dto.RegisterUserDTO, hashedPassword string, salt string) error {
+	mockRepo := &mocks.MockRepository{
+		RegisterUserMock: func(req dto.RegisterUserDTO, hashedPassword string, salt string) error {
 			assert.Equal(t, username, req.Username)
 			assert.Equal(t, firstName, req.FirstName)
 			assert.Equal(t, lastName, req.LastName)
@@ -307,8 +117,8 @@ func TestRegisterUser_Success(t *testing.T) {
 }
 
 func TestRegisterClient_RepositoryFailedToStoreClientData(t *testing.T) {
-	mockRepo := &mockRepository{
-		registerClient: func(client models.Client) error {
+	mockRepo := &mocks.MockRepository{
+		RegisterClientMock: func(client models.Client) error {
 			assert.Equal(t, firstName, client.Name)
 			assert.Equal(t, username, client.Username)
 			assert.Equal(t, redirectUri, client.RedirectURI)
@@ -333,8 +143,8 @@ func TestRegisterClient_RepositoryFailedToStoreClientData(t *testing.T) {
 }
 
 func TestRegisterClient_Success(t *testing.T) {
-	mockRepo := &mockRepository{
-		registerClient: func(client models.Client) error {
+	mockRepo := &mocks.MockRepository{
+		RegisterClientMock: func(client models.Client) error {
 			assert.Equal(t, firstName, client.Name)
 			assert.Equal(t, username, client.Username)
 			assert.Equal(t, redirectUri, client.RedirectURI)
@@ -360,7 +170,7 @@ func TestRegisterClient_Success(t *testing.T) {
 
 func TestLoginPreCheckUser(t *testing.T) {
 	// Create a new mock repository
-	mockRepo := new(mockRepository)
+	mockRepo := new(mocks.MockRepository)
 
 	// Create a new service by passing the mock repository
 	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
@@ -384,7 +194,7 @@ func TestLoginPreCheckUser(t *testing.T) {
 
 func TestLoginUser(t *testing.T) {
 	// Create a new mock repository
-	mockRepo := new(mockRepository)
+	mockRepo := new(mocks.MockRepository)
 
 	// Create a new service by passing the mock repository
 	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
@@ -408,7 +218,7 @@ func TestLoginUser(t *testing.T) {
 
 func TestProfileUser(t *testing.T) {
 	// Create a new mock repository
-	mockRepo := new(mockRepository)
+	mockRepo := new(mocks.MockRepository)
 
 	// Create a new service by passing the mock repository
 	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
@@ -426,7 +236,7 @@ func TestProfileUser(t *testing.T) {
 
 func TestUpdateDisplayName(t *testing.T) {
 	// Create a new mock repository
-	mockRepo := new(mockRepository)
+	mockRepo := new(mocks.MockRepository)
 
 	// Create a new service by passing the mock repository
 	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
@@ -448,7 +258,7 @@ func TestUpdateDisplayName(t *testing.T) {
 
 func TestGetClientData(t *testing.T) {
 	// Create a new mock repository
-	mockRepo := new(mockRepository)
+	mockRepo := new(mocks.MockRepository)
 
 	// Create a new service by passing the mock repository
 	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
@@ -466,7 +276,7 @@ func TestGetClientData(t *testing.T) {
 }
 
 func TestCheckBackendURI(t *testing.T) {
-	mockRepo := new(mockRepository)
+	mockRepo := new(mocks.MockRepository)
 
 	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, &zk.ProofProcessor{})
 
@@ -487,8 +297,8 @@ func TestCheckBackendURI(t *testing.T) {
 }
 
 func TestVerifyEmail_UserDoesNotExist(t *testing.T) {
-	mockRepo := &mockRepository{
-		findUser: func(userId uint) (models.User, error) {
+	mockRepo := &mocks.MockRepository{
+		FindUserMock: func(userId uint) (models.User, error) {
 			return models.User{}, fmt.Errorf("user %d does not exist", userId)
 		},
 	}
@@ -501,8 +311,8 @@ func TestVerifyEmail_UserDoesNotExist(t *testing.T) {
 }
 
 func TestVerifyEmail_UserExists_EmailFailedToBeSent(t *testing.T) {
-	mockRepo := &mockRepository{
-		findUser: func(userId uint) (models.User, error) {
+	mockRepo := &mocks.MockRepository{
+		FindUserMock: func(userId uint) (models.User, error) {
 			return models.User{
 				ID:               userId,
 				Username:         username,
@@ -530,15 +340,15 @@ func TestVerifyEmail_UserExists_EmailFailedToBeSent(t *testing.T) {
 }
 
 func TestVerifyEmail_UserExists_EmailSent_VerificationDataNotSaved(t *testing.T) {
-	mockRepo := &mockRepository{
-		findUser: func(userId uint) (models.User, error) {
+	mockRepo := &mocks.MockRepository{
+		FindUserMock: func(userId uint) (models.User, error) {
 			return models.User{
 				ID:               userId,
 				Username:         username,
 				VerificationCode: "",
 			}, nil
 		},
-		saveEmailVerificationData: func(data models.EmailVerificationData) error {
+		SaveEmailVerificationDataMock: func(data models.EmailVerificationData) error {
 			return fmt.Errorf("could not save the verification data")
 		},
 	}
@@ -557,15 +367,15 @@ func TestVerifyEmail_UserExists_EmailSent_VerificationDataNotSaved(t *testing.T)
 }
 
 func TestVerifyEmail_Success(t *testing.T) {
-	mockRepo := &mockRepository{
-		findUser: func(userId uint) (models.User, error) {
+	mockRepo := &mocks.MockRepository{
+		FindUserMock: func(userId uint) (models.User, error) {
 			return models.User{
 				ID:               userId,
 				Username:         username,
 				VerificationCode: "",
 			}, nil
 		},
-		saveEmailVerificationData: func(data models.EmailVerificationData) error {
+		SaveEmailVerificationDataMock: func(data models.EmailVerificationData) error {
 			return nil
 		},
 	}
@@ -584,8 +394,8 @@ func TestVerifyEmail_Success(t *testing.T) {
 }
 
 func TestCheckEmailVerificationCode_VerificationDataDoesNotExist(t *testing.T) {
-	mockRepo := &mockRepository{
-		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
+	mockRepo := &mocks.MockRepository{
+		GetEmailVerificationDataMock: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{},
 				fmt.Errorf("could not get the verification data for user %d", userId)
 		},
@@ -599,8 +409,8 @@ func TestCheckEmailVerificationCode_VerificationDataDoesNotExist(t *testing.T) {
 }
 
 func TestCheckEmailVerificationCode_VerificationCodeMismatch(t *testing.T) {
-	mockRepo := &mockRepository{
-		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
+	mockRepo := &mocks.MockRepository{
+		GetEmailVerificationDataMock: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{
 				UserId:           userId,
 				VerificationCode: verificationCode,
@@ -623,8 +433,8 @@ func TestCheckEmailVerificationCode_VerificationCodeMismatch(t *testing.T) {
 }
 
 func TestCheckEmailVerificationCode_VerificationCodeIsExpired(t *testing.T) {
-	mockRepo := &mockRepository{
-		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
+	mockRepo := &mocks.MockRepository{
+		GetEmailVerificationDataMock: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{
 				UserId:           userId,
 				VerificationCode: verificationCode,
@@ -649,8 +459,8 @@ func TestCheckEmailVerificationCode_VerificationCodeIsExpired(t *testing.T) {
 }
 
 func TestCheckEmailVerificationCode_Success(t *testing.T) {
-	mockRepo := &mockRepository{
-		getEmailVerificationData: func(userId uint) (models.EmailVerificationData, error) {
+	mockRepo := &mocks.MockRepository{
+		GetEmailVerificationDataMock: func(userId uint) (models.EmailVerificationData, error) {
 			return models.EmailVerificationData{
 				UserId:           userId,
 				VerificationCode: verificationCode,
@@ -673,8 +483,8 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 }
 
 func TestSaveProofOfEmailVerification_ProofFailedToBeSaved(t *testing.T) {
-	mockRepo := &mockRepository{
-		saveProofOfEmailVerification: func(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error {
+	mockRepo := &mocks.MockRepository{
+		SaveProofOfEmailVerificationMock: func(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error {
 			return fmt.Errorf("could not save proof of verification for user %d", userID)
 		},
 	}
@@ -693,8 +503,8 @@ func TestSaveProofOfEmailVerification_ProofFailedToBeSaved(t *testing.T) {
 }
 
 func TestSaveProofOfEmailVerification_Success(t *testing.T) {
-	mockRepo := &mockRepository{
-		saveProofOfEmailVerification: func(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error {
+	mockRepo := &mocks.MockRepository{
+		SaveProofOfEmailVerificationMock: func(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error {
 			return nil
 		},
 	}
@@ -713,8 +523,8 @@ func TestSaveProofOfEmailVerification_Success(t *testing.T) {
 }
 
 func TestFindUser_UserNotFound(t *testing.T) {
-	mockRepo := &mockRepository{
-		findUser: func(userId uint) (models.User, error) {
+	mockRepo := &mocks.MockRepository{
+		FindUserMock: func(userId uint) (models.User, error) {
 			return models.User{}, fmt.Errorf("user not found for id %d", userId)
 		},
 	}
@@ -726,8 +536,8 @@ func TestFindUser_UserNotFound(t *testing.T) {
 }
 
 func TestFindUser_Success(t *testing.T) {
-	mockRepo := &mockRepository{
-		findUser: func(userId uint) (models.User, error) {
+	mockRepo := &mocks.MockRepository{
+		FindUserMock: func(userId uint) (models.User, error) {
 			return models.User{ID: userId}, nil
 		},
 	}
@@ -749,7 +559,7 @@ func TestGenerateZkProofOfEmailVerification_FailedToGenerateZkProof(t *testing.T
 		Code:  verificationCode,
 	}
 
-	mockRepo := &mockRepository{}
+	mockRepo := &mocks.MockRepository{}
 	mockProofGenerator := &mocks.MockProofGenerator{
 		GenerateProofFunc: func(
 			emailAddress string, salt string, code string,
@@ -785,7 +595,7 @@ func TestGenerateZkProofOfEmailVerification_Success(t *testing.T) {
 		Code:  verificationCode,
 	}
 
-	mockRepo := &mockRepository{}
+	mockRepo := &mocks.MockRepository{}
 	mockProofGenerator := &mocks.MockProofGenerator{
 		GenerateProofFunc: func(
 			emailAddress string, salt string, code string,
@@ -814,8 +624,8 @@ func TestGenerateZkProofOfEmailVerification_Success(t *testing.T) {
 }
 
 func TestGetUserForUsername_UserNotFound(t *testing.T) {
-	mockRepo := &mockRepository{
-		getUserForUsername: func(username string) (models.User, error) {
+	mockRepo := &mocks.MockRepository{
+		GetUserForUsernameMock: func(username string) (models.User, error) {
 			return models.User{}, fmt.Errorf("user not found")
 		},
 	}
@@ -827,8 +637,8 @@ func TestGetUserForUsername_UserNotFound(t *testing.T) {
 }
 
 func TestGetUserForUsername_Success(t *testing.T) {
-	mockRepo := &mockRepository{
-		getUserForUsername: func(currUsername string) (models.User, error) {
+	mockRepo := &mocks.MockRepository{
+		GetUserForUsernameMock: func(currUsername string) (models.User, error) {
 			if currUsername != username {
 				t.Fatalf("Username mismatch: expected %s, got %s", username, currUsername)
 			}
@@ -855,8 +665,8 @@ func TestGetUserForUsername_Success(t *testing.T) {
 }
 
 func TestUpdateUserPassword_FailedToUpdatePasswordInDB(t *testing.T) {
-	mockRepo := &mockRepository{
-		updateUserPassword: func(currUsername string, currPassword string) error {
+	mockRepo := &mocks.MockRepository{
+		UpdateUserPasswordMock: func(currUsername string, currPassword string) error {
 			if currUsername != username {
 				t.Fatalf("Username mismatch: expected %s, got %s", username, currUsername)
 			}
@@ -875,8 +685,8 @@ func TestUpdateUserPassword_FailedToUpdatePasswordInDB(t *testing.T) {
 }
 
 func TestUpdateUserPassword_Success(t *testing.T) {
-	mockRepo := &mockRepository{
-		updateUserPassword: func(currUsername string, currPassword string) error {
+	mockRepo := &mocks.MockRepository{
+		UpdateUserPasswordMock: func(currUsername string, currPassword string) error {
 			if currUsername != username {
 				t.Fatalf("Username mismatch: expected %s, got %s", username, currUsername)
 			}
@@ -896,7 +706,7 @@ func TestUpdateUserPassword_Success(t *testing.T) {
 
 func TestValidateSignature_SignatureIsInvalid(t *testing.T) {
 	currService := service.NewService(
-		&mockRepository{},
+		&mocks.MockRepository{},
 		&verification.EmailVerifier{},
 		&mocks.MockProofGenerator{},
 	)
@@ -918,7 +728,7 @@ func TestValidateSignature_SignatureIsInvalid(t *testing.T) {
 
 func TestValidateSignature_Success(t *testing.T) {
 	currService := service.NewService(
-		&mockRepository{},
+		&mocks.MockRepository{},
 		&verification.EmailVerifier{},
 		&mocks.MockProofGenerator{},
 	)
@@ -937,8 +747,8 @@ func TestValidateSignature_Success(t *testing.T) {
 }
 
 func TestRegisterUserPrecheck_Success(t *testing.T) {
-	mockRepo := &mockRepository{
-		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, rmSalt string, iterCount int) error {
+	mockRepo := &mocks.MockRepository{
+		RegisterUserPrecheckMock: func(req dto.RegisterUserPrecheckDTO, rmSalt string, iterCount int) error {
 			assert.Equal(t, username, req.Username, "Username should match")
 			assert.NotEmpty(t, rmSalt, "Salt should not be empty")
 			assert.Equal(t, 4096, iterCount, "Iteration count should match")
@@ -960,8 +770,8 @@ func TestRegisterUserPrecheck_Success(t *testing.T) {
 }
 
 func TestRegisterUserPrecheck_RepositoryError(t *testing.T) {
-	mockRepo := &mockRepository{
-		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, rmSalt string, iterCount int) error {
+	mockRepo := &mocks.MockRepository{
+		RegisterUserPrecheckMock: func(req dto.RegisterUserPrecheckDTO, rmSalt string, iterCount int) error {
 			return errors.New("repository error")
 		},
 	}
@@ -981,8 +791,8 @@ func TestRegisterUserPrecheck_RepositoryError(t *testing.T) {
 }
 
 func TestRegisterUserPrecheck_InvalidIterationCount(t *testing.T) {
-	mockRepo := &mockRepository{
-		registerUserPrecheck: func(req dto.RegisterUserPrecheckDTO, rmSalt string, iterCount int) error {
+	mockRepo := &mocks.MockRepository{
+		RegisterUserPrecheckMock: func(req dto.RegisterUserPrecheckDTO, rmSalt string, iterCount int) error {
 			assert.Equal(t, username, req.Username, "Username should match")
 			assert.Equal(t, 0, iterCount, "Iteration count should match")
 			return nil
@@ -1003,8 +813,8 @@ func TestRegisterUserPrecheck_InvalidIterationCount(t *testing.T) {
 }
 
 func TestRegisterUserv2_RepositoryFailedToStoreUserData(t *testing.T) {
-	mockRepo := &mockRepository{
-		registerUserv2: func(req dto.RegisterUserDTOv2) error {
+	mockRepo := &mocks.MockRepository{
+		RegisterUserv2Mock: func(req dto.RegisterUserDTOv2) error {
 			assert.Equal(t, username, req.Username)
 			assert.Equal(t, firstName, req.FirstName)
 			assert.Equal(t, lastName, req.LastName)
@@ -1036,8 +846,8 @@ func TestRegisterUserv2_RepositoryFailedToStoreUserData(t *testing.T) {
 }
 
 func TestRegisterUserv2_Success(t *testing.T) {
-	mockRepo := &mockRepository{
-		registerUserv2: func(req dto.RegisterUserDTOv2) error {
+	mockRepo := &mocks.MockRepository{
+		RegisterUserv2Mock: func(req dto.RegisterUserDTOv2) error {
 			assert.Equal(t, username, req.Username)
 			assert.Equal(t, firstName, req.FirstName)
 			assert.Equal(t, lastName, req.LastName)
@@ -1066,8 +876,8 @@ func TestRegisterUserv2_Success(t *testing.T) {
 }
 
 func TestUpdateUserPasswordV2_Success(t *testing.T) {
-	mockRepo := &mockRepository{
-		updateUserPasswordV2: func(currUsername, currStoredKey, currServerKey string) error {
+	mockRepo := &mocks.MockRepository{
+		UpdateUserPasswordV2Mock: func(currUsername, currStoredKey, currServerKey string) error {
 			assert.Equal(t, username, currUsername)
 			assert.Equal(t, storedKey, currStoredKey)
 			assert.Equal(t, serverKey, currServerKey)
@@ -1082,8 +892,8 @@ func TestUpdateUserPasswordV2_Success(t *testing.T) {
 }
 
 func TestUpdateUserPasswordV2_RepositoryError(t *testing.T) {
-	mockRepo := &mockRepository{
-		updateUserPasswordV2: func(currUsername, currStoredKey, currServerKey string) error {
+	mockRepo := &mocks.MockRepository{
+		UpdateUserPasswordV2Mock: func(currUsername, currStoredKey, currServerKey string) error {
 			assert.Equal(t, username, currUsername)
 			assert.Equal(t, storedKey, currStoredKey)
 			assert.Equal(t, serverKey, currServerKey)
