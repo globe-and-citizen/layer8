@@ -724,15 +724,21 @@ func TestLoginPrecheckHandlerv2_Success(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 
 	// Decode the response body
-	var response models.LoginPrecheckResponseOutputv2
+	var response utils.Response
 	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
 		t.Fatal(err)
 	}
 
+	salt := response.Data.(map[string]interface{})["salt"]
+
+	nonce := response.Data.(map[string]interface{})["nonce"]
+
+	iterCount := response.Data.(map[string]interface{})["iter_count"]
+
 	// Now assert the fields directly
-	assert.Equal(t, userSalt, response.Salt)
-	assert.Equal(t, iterCount, response.IterCount)
-	assert.Equal(t, nonce, response.Nonce)
+	assert.Equal(t, userSalt, salt)
+	assert.Equal(t, iterCount, iterCount)
+	assert.Equal(t, nonce, nonce)
 }
 
 func TestLoginUserHandler_InvalidHttpRequestMethod(t *testing.T) {
@@ -1015,14 +1021,18 @@ func TestLoginUserHandlerv2_Success(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 
 	// Decode the response body
-	var response models.LoginUserResponseOutputv2
+	var response utils.Response
 	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
 		t.Fatal(err)
 	}
 
+	token := response.Data.(map[string]interface{})["token"]
+
+	server_signature := response.Data.(map[string]interface{})["server_signature"]
+
 	// Now assert the fields directly
-	assert.Equal(t, testToken, response.Token)
-	assert.Equal(t, serverSignature, response.ServerSignature)
+	assert.Equal(t, testToken, token)
+	assert.Equal(t, serverSignature, server_signature)
 }
 
 func TestProfileHandler_InvalidHttpRequestMethod(t *testing.T) {
