@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -170,11 +171,19 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 
 	// This operation is blocking, let's confirm if the tunnel is established
 	if wsIdentifier := r.Header.Get("upgrade"); strings.EqualFold(wsIdentifier, "websocket") {
+		// we need to strip the host and origin headers
+		r.Header.Del("Host")
+		r.Header.Del("Origin")
+
 		wsTunnel(w, r)
 		return
 	}
 
 	httpTunnel(w, r)
+}
+
+type WsRoundtripEnvelope struct {
+	WebSocket WsPayload
 }
 
 type WsPayload struct {
@@ -200,28 +209,27 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var data WsPayload
+	logrus.Info("Read message from client")
+	logrus.Info("Message from client: ", string(msg))
+
+	var data WsRoundtripEnvelope
 	if err = json.Unmarshal(msg, &data); err != nil {
 		fmt.Printf("error unmarshalling message: %v", err)
 		return
 	}
 
-	if data.Payload == "" {
+	if data.WebSocket.Payload == "" {
 		fmt.Println("empty payload or metadata")
 		return
 	}
 
-	type IncomingMetadata struct {
-		BackendURL string `json:"backendURL"`
-	}
-
-	metadata, ok := data.MetaData.(IncomingMetadata)
-	if !ok {
-		fmt.Println("metadata is malformed")
+	metadata, ok := data.WebSocket.MetaData.(map[string]any)
+	if !ok || metadata["backend_url"] == "" {
+		fmt.Println("metadata is malformed --", data.WebSocket.MetaData)
 		return
 	}
 
-	backendWithoutProtocol := utils.RemoveProtocolFromURL(metadata.BackendURL)
+	backendWithoutProtocol := utils.RemoveProtocolFromURL(metadata["backend_url"].(string))
 
 	srv := r.Context().Value("service").(interfaces.IService)
 	client, err := srv.GetClientDataByBackendURL(backendWithoutProtocol)
@@ -238,7 +246,7 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	serviceProviderSoc, _, err := websocket.Dial(ctx, metadata.BackendURL, &websocket.DialOptions{HTTPHeader: r.Header})
+	serviceProviderSoc, _, err := websocket.Dial(ctx, metadata["backend_url"].(string), &websocket.DialOptions{HTTPHeader: r.Header})
 	if err != nil {
 		fmt.Printf("error dialing backend: %v\n", err)
 		return
@@ -247,11 +255,13 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 
 	// initialize the handshake
 	{
-		initTunnelPayload, err := json.Marshal(WsPayload{
-			Payload: string(msg),
-			MetaData: map[string]interface{}{
-				"x-tunnel": true,
-				"mp-jwt":   mpJWT,
+		initTunnelPayload, err := json.Marshal(WsRoundtripEnvelope{
+			WebSocket: WsPayload{
+				Payload: string(msg),
+				MetaData: map[string]interface{}{
+					"x-tunnel": true,
+					"mp-jwt":   mpJWT,
+				},
 			},
 		})
 		if err != nil {
@@ -371,7 +381,7 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// if here, we have a message to send to the client
-			*msg = message
+			msg = &message
 		}
 
 		if msg != nil {
