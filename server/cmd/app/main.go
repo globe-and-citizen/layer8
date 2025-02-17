@@ -216,6 +216,12 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 			staticFS, _ := fs.Sub(StaticFiles, "dist")
 			httpFS := http.FileServer(http.FS(staticFS))
 
+			// better logic here
+			if wsIdentifier := r.Header.Get("upgrade"); strings.EqualFold(wsIdentifier, "websocket") {
+				handlers.Tunnel(w, r)
+				return
+			}
+
 			if r.Header.Get("up-JWT") != "" {
 				handlers.Tunnel(w, r)
 				return
