@@ -23,6 +23,9 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 func LoginUserPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/login.html")
 }
+func LoginUserPagev2(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/login_v2.html")
+}
 func RegisterUserPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/register.html")
 }
@@ -215,6 +218,36 @@ func LoginPrecheckHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func LoginPrecheckHandlerv2(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.LoginPrecheckDTOv2](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	loginPrecheckResp, err := newService.LoginPrecheckUserv2(request)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to perform precheck, service error", err)
+		return
+	}
+
+	response := utils.BuildResponse(w, http.StatusOK, "Precheck successful", loginPrecheckResp)
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
+	}
+}
+
 func LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	if !validateHttpMethod(w, r.Method, http.MethodPost) {
 		return
@@ -234,6 +267,36 @@ func LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(tokenResp); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
+	}
+}
+
+func LoginUserHandlerv2(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.LoginUserDTOv2](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	serverSignatureResp, err := newService.LoginUserv2(request)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to perform login", err)
+		return
+	}
+
+	response := utils.BuildResponse(w, http.StatusOK, "Login successful", serverSignatureResp)
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		utils.HandleError(
 			w,
 			http.StatusInternalServerError,

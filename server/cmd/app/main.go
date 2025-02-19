@@ -249,6 +249,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.UserHandler(w, r)
 			case path == "/user-login-page":
 				Ctl.LoginUserPage(w, r)
+			case path == "/v2/user-login-page":
+				Ctl.LoginUserPagev2(w, r)
 			case path == "/user-register-page":
 				Ctl.RegisterUserPage(w, r)
 			case path == "/v2/user-register-page":
@@ -277,8 +279,12 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.GetClientData(w, r)
 			case path == "/api/v1/login-precheck":
 				Ctl.LoginPrecheckHandler(w, r)
+			case path == "/api/v2/login-precheck":
+				Ctl.LoginPrecheckHandlerv2(w, r)
 			case path == "/api/v1/login-user":
 				Ctl.LoginUserHandler(w, r)
+			case path == "/api/v2/login-user":
+				Ctl.LoginUserHandlerv2(w, r)
 			case path == "/api/v1/login-client":
 				Ctl.LoginClientHandler(w, r) // Login Client
 			case path == "/api/v1/profile":

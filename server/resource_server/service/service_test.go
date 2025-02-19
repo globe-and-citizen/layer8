@@ -12,6 +12,7 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/service"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 	"globe-and-citizen/layer8/server/resource_server/utils/mocks"
+	"strings"
 	"testing"
 	"time"
 
@@ -22,18 +23,23 @@ import (
 
 const userId uint = 1
 const adminEmail = "admin@email.com"
-const username = "user"
-const password = "password"
+const username = "test_user"
+const password = "1234"
 const userEmail = "user@email.com"
 const firstName = "first_name"
 const lastName = "second_name"
 const displayName = "display_name"
 const country = "country"
 const verificationCode = "123456"
-const userSalt = "salt"
 const publicKey = "0xaaaaa"
-const serverKey = "0xbbbbb"
-const storedKey = "0xccccc"
+const cNonce = "1a7fa8e9dc2a68049358a08349cdde50"
+const nonce = "1a7fa8e9dc2a68049358a08349cdde50d6d6f9c5e632f599881d99fe9c62b362"
+const clientProof = "96260616beaabaa6d168b9ce7e15b127b6bcbcb88fd0b5de1e6162b948881155"
+const storedKey = "222f705167604c99f81c7c6acfa974706fa9dd0b445a8bc34fb5accc9b032558"
+const serverKey = "f6e938506893b10799038c2b4225f7e8e72f01c7ab25c3da905803ee93ec5536"
+const salt = "c8f720569d7a50d4c812431cf8a242fd608f3a5b4610659b92f6aa553fbe68e0"
+const testServerSignature = "138c0fecd0326896fe21398137c1aa0b9866242abc02bd3e9a5a0016013ef5f0"
+const iterationCount = 4096
 
 const redirectUri = "redirect_uri"
 const backendUri = "backend_uri"
@@ -43,7 +49,7 @@ const zkKeyPairId uint = 2
 const verificationCodeValidityDuration = 2 * time.Minute
 
 var emailProof = []byte("proof")
-var hashedPassword = utils.SaltAndHashPassword(password, userSalt)
+var hashedPassword = utils.SaltAndHashPassword(password, salt)
 
 var zkProof = []byte("zk_proof")
 var timestamp = time.Date(2024, time.May, 24, 14, 0, 0, 0, time.UTC)
@@ -65,9 +71,7 @@ type mockRepository struct {
 	findUser                     func(userId uint) (models.User, error)
 	saveEmailVerificationData    func(data models.EmailVerificationData) error
 	getEmailVerificationData     func(userId uint) (models.EmailVerificationData, error)
-	deleteEmailVerificationData  func(userId uint) error
 	saveProofOfEmailVerification func(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error
-	setUserEmailVerified         func(userID uint) error
 	registerUser                 func(req dto.RegisterUserDTO, hashedPassword string, salt string) error
 	registerUserPrecheck         func(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error
 	registerUserv2               func(req dto.RegisterUserDTOv2) error
@@ -97,7 +101,7 @@ func (m *mockRepository) RegisterUserv2(req dto.RegisterUserDTOv2) error {
 }
 
 func (m *mockRepository) LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string, error) {
-	return "test_user", "ThisIsARandomSalt123!@#", nil
+	return username, salt, nil
 }
 
 func (m *mockRepository) LoginUser(req dto.LoginUserDTO) (models.User, error) {
@@ -367,7 +371,7 @@ func TestLoginPreCheckUser(t *testing.T) {
 
 	// Create a new mock request
 	req := dto.LoginPrecheckDTO{
-		Username: "test_user",
+		Username: username,
 	}
 
 	// Call the LoginPreCheckUser method of the mock service
@@ -378,8 +382,54 @@ func TestLoginPreCheckUser(t *testing.T) {
 
 	// Use assert to check if the error is nil
 	assert.Nil(t, err)
-	assert.Equal(t, loginPrecheckResp.Username, "test_user")
-	assert.Equal(t, loginPrecheckResp.Salt, "ThisIsARandomSalt123!@#")
+	assert.Equal(t, loginPrecheckResp.Username, username)
+	assert.Equal(t, loginPrecheckResp.Salt, salt)
+}
+
+func TestLoginPreCheckUserV2_RepositoryError(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{}, errors.New("repository error")
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginPrecheckDTOv2{
+		Username: username,
+		CNonce:   cNonce,
+	}
+
+	loginPrecheckResp, err := currService.LoginPrecheckUserv2(req)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "repository error", err.Error())
+	assert.Empty(t, loginPrecheckResp)
+}
+
+func TestLoginPreCheckUserV2_Success(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{
+				Username:       username,
+				Salt:           salt,
+				IterationCount: iterationCount,
+			}, nil
+		},
+	}
+
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginPrecheckDTOv2{
+		Username: username,
+		CNonce:   cNonce,
+	}
+
+	loginPrecheckResp, err := currService.LoginPrecheckUserv2(req)
+
+	assert.Nil(t, err)
+	assert.Equal(t, loginPrecheckResp.Salt, salt)
+	assert.Equal(t, strings.HasPrefix(loginPrecheckResp.Nonce, cNonce), true)
+	assert.Equal(t, loginPrecheckResp.IterCount, iterationCount)
 }
 
 func TestLoginUser(t *testing.T) {
@@ -391,9 +441,9 @@ func TestLoginUser(t *testing.T) {
 
 	// Create a new mock request
 	req := dto.LoginUserDTO{
-		Username: "test_user",
+		Username: username,
 		Password: "12345",
-		Salt:     "312c4a2c46405ba4f70f7be070f4d4f7cdede09d4b218bf77c01f9706d7505c9",
+		Salt:     salt,
 	}
 
 	// Call the LoginUser method of the mock service
@@ -404,6 +454,183 @@ func TestLoginUser(t *testing.T) {
 
 	// Use assert to check if the error is nil
 	assert.Nil(t, err)
+}
+
+func TestLoginUserV2_RepositoryError(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{}, errors.New("repository error")
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginUserDTOv2{
+		Username:    username,
+		CNonce:      cNonce,
+		Nonce:       nonce,
+		ClientProof: clientProof,
+	}
+
+	loginUserResp, err := currService.LoginUserv2(req)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "repository error", err.Error())
+	assert.Empty(t, loginUserResp)
+}
+
+func TestLoginUserV2_DecodingStoredKeyError(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{
+				StoredKey: "TEST_STORED_KEY_FOR_DECODE_ERROR_!@#", // Invalid stored key
+			}, nil
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginUserDTOv2{
+		Username:    username,
+		CNonce:      cNonce,
+		Nonce:       nonce,
+		ClientProof: clientProof,
+	}
+
+	loginUserResp, err := currService.LoginUserv2(req)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "error decoding stored key: encoding/hex: invalid byte: U+0054 'T'", err.Error())
+	assert.Empty(t, loginUserResp)
+}
+
+func TestLoginUserV2_DecodingClientProofError(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{
+				StoredKey:      storedKey,
+				Salt:           salt,
+				IterationCount: iterationCount,
+			}, nil
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginUserDTOv2{
+		Username:    username,
+		CNonce:      cNonce,
+		Nonce:       nonce,
+		ClientProof: "TEST_CLIENT_PROOF_FOR_DECODE_ERROR_!@#", // Invalid client proof
+	}
+
+	loginUserResp, err := currService.LoginUserv2(req)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "error decoding client proof: encoding/hex: invalid byte: U+0054 'T'", err.Error())
+	assert.Empty(t, loginUserResp)
+}
+
+func TestLoginUserV2_XorOperationError(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{
+				StoredKey:      storedKey,
+				Salt:           salt,
+				IterationCount: iterationCount,
+			}, nil
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginUserDTOv2{
+		Username:    username,
+		CNonce:      cNonce,
+		Nonce:       nonce,
+		ClientProof: "", // Sending empty client proof to fail the XOR operation, since it requires equal length slices
+	}
+
+	loginUserResp, err := currService.LoginUserv2(req)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "error performing XOR operation: slices must have the same length", err.Error())
+	assert.Empty(t, loginUserResp)
+}
+
+func TestLoginUserV2_AuthFailedKeyMismatchError(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{
+				StoredKey:      "", // Empty stored key
+				Salt:           salt,
+				IterationCount: iterationCount,
+			}, nil
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginUserDTOv2{
+		Username:    username,
+		CNonce:      cNonce,
+		Nonce:       nonce,
+		ClientProof: clientProof,
+	}
+
+	loginUserResp, err := currService.LoginUserv2(req)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "server failed to authenticate the user", err.Error())
+	assert.Empty(t, loginUserResp)
+}
+
+func TestLoginUserV2_DecodingServerKeyError(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{
+				StoredKey:      storedKey,
+				ServerKey:      "TEST_SERVER_KEY_FOR_DECODE_ERROR_!@#", // Invalid server key
+				Salt:           salt,
+				IterationCount: iterationCount,
+			}, nil
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginUserDTOv2{
+		Username:    username,
+		CNonce:      cNonce,
+		Nonce:       nonce,
+		ClientProof: clientProof,
+	}
+
+	loginUserResp, err := currService.LoginUserv2(req)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "error decoding server key: encoding/hex: invalid byte: U+0054 'T'", err.Error())
+	assert.Empty(t, loginUserResp)
+}
+
+func TestLoginUserV2_Success(t *testing.T) {
+	mockRepo := &mockRepository{
+		getUserForUsername: func(username string) (models.User, error) {
+			return models.User{
+				StoredKey:      storedKey,
+				ServerKey:      serverKey,
+				Salt:           salt,
+				IterationCount: iterationCount,
+			}, nil
+		},
+	}
+	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
+
+	req := dto.LoginUserDTOv2{
+		Username:    username,
+		CNonce:      cNonce,
+		Nonce:       nonce,
+		ClientProof: clientProof,
+	}
+
+	loginUserResp, err := currService.LoginUserv2(req)
+
+	assert.Nil(t, err)
+	assert.Equal(t, testServerSignature, loginUserResp.ServerSignature)
 }
 
 func TestProfileUser(t *testing.T) {
@@ -421,7 +648,7 @@ func TestProfileUser(t *testing.T) {
 
 	// Use assert to check if the error is nil
 	assert.Nil(t, err)
-	assert.Equal(t, userDetails.Username, "test_user")
+	assert.Equal(t, userDetails.Username, username)
 }
 
 func TestUpdateDisplayName(t *testing.T) {
@@ -742,7 +969,7 @@ func TestFindUser_Success(t *testing.T) {
 func TestGenerateZkProofOfEmailVerification_FailedToGenerateZkProof(t *testing.T) {
 	user := models.User{
 		ID:   userId,
-		Salt: userSalt,
+		Salt: salt,
 	}
 	request := dto.CheckEmailVerificationCodeDTO{
 		Email: userEmail,
@@ -752,13 +979,13 @@ func TestGenerateZkProofOfEmailVerification_FailedToGenerateZkProof(t *testing.T
 	mockRepo := &mockRepository{}
 	mockProofGenerator := &mocks.MockProofGenerator{
 		GenerateProofFunc: func(
-			emailAddress string, salt string, code string,
+			emailAddress string, userSalt string, code string,
 		) ([]byte, uint, error) {
 			if emailAddress != userEmail {
 				t.Fatalf("User's email mismatch: expected %s, got %s", userEmail, emailAddress)
 			}
-			if salt != userSalt {
-				t.Fatalf("User's salt mimatch: expected %s, got %s", userSalt, salt)
+			if userSalt != salt {
+				t.Fatalf("User's salt mimatch: expected %s, got %s", salt, userSalt)
 			}
 			if code != verificationCode {
 				t.Fatalf("Verification code mismatch: expected %s, got %s", verificationCode, code)
@@ -778,7 +1005,7 @@ func TestGenerateZkProofOfEmailVerification_FailedToGenerateZkProof(t *testing.T
 func TestGenerateZkProofOfEmailVerification_Success(t *testing.T) {
 	user := models.User{
 		ID:   userId,
-		Salt: userSalt,
+		Salt: salt,
 	}
 	request := dto.CheckEmailVerificationCodeDTO{
 		Email: userEmail,
@@ -788,13 +1015,13 @@ func TestGenerateZkProofOfEmailVerification_Success(t *testing.T) {
 	mockRepo := &mockRepository{}
 	mockProofGenerator := &mocks.MockProofGenerator{
 		GenerateProofFunc: func(
-			emailAddress string, salt string, code string,
+			emailAddress string, userSalt string, code string,
 		) ([]byte, uint, error) {
 			if emailAddress != userEmail {
 				t.Fatalf("User's email mismatch: expected %s, got %s", userEmail, emailAddress)
 			}
-			if salt != userSalt {
-				t.Fatalf("User's salt mimatch: expected %s, got %s", userSalt, salt)
+			if userSalt != salt {
+				t.Fatalf("User's salt mimatch: expected %s, got %s", salt, userSalt)
 			}
 			if code != verificationCode {
 				t.Fatalf("Verification code mismatch: expected %s, got %s", verificationCode, code)
@@ -869,7 +1096,7 @@ func TestUpdateUserPassword_FailedToUpdatePasswordInDB(t *testing.T) {
 	}
 
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
-	err := currService.UpdateUserPassword(username, password, userSalt)
+	err := currService.UpdateUserPassword(username, password, salt)
 
 	assert.NotNil(t, err)
 }
@@ -889,7 +1116,7 @@ func TestUpdateUserPassword_Success(t *testing.T) {
 	}
 
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
-	err := currService.UpdateUserPassword(username, password, userSalt)
+	err := currService.UpdateUserPassword(username, password, salt)
 
 	assert.Nil(t, err)
 }
