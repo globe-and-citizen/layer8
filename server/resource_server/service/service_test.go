@@ -12,6 +12,7 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/service"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 	"globe-and-citizen/layer8/server/resource_server/utils/mocks"
+	"strings"
 	"testing"
 	"time"
 
@@ -70,9 +71,7 @@ type mockRepository struct {
 	findUser                     func(userId uint) (models.User, error)
 	saveEmailVerificationData    func(data models.EmailVerificationData) error
 	getEmailVerificationData     func(userId uint) (models.EmailVerificationData, error)
-	// deleteEmailVerificationData  func(userId uint) error
 	saveProofOfEmailVerification func(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error
-	// setUserEmailVerified         func(userID uint) error
 	registerUser                 func(req dto.RegisterUserDTO, hashedPassword string, salt string) error
 	registerUserPrecheck         func(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error
 	registerUserv2               func(req dto.RegisterUserDTOv2) error
@@ -413,7 +412,7 @@ func TestLoginPreCheckUserV2_Success(t *testing.T) {
 			return models.User{
 				Username:       username,
 				Salt:           salt,
-				IterationCount: 4096,
+				IterationCount: iterationCount,
 			}, nil
 		},
 	}
@@ -429,7 +428,8 @@ func TestLoginPreCheckUserV2_Success(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, loginPrecheckResp.Salt, salt)
-	assert.Equal(t, loginPrecheckResp.IterCount, 4096)
+	assert.Equal(t, strings.HasPrefix(loginPrecheckResp.Nonce, cNonce), true)
+	assert.Equal(t, loginPrecheckResp.IterCount, iterationCount)
 }
 
 func TestLoginUser(t *testing.T) {
