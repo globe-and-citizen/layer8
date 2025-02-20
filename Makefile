@@ -10,7 +10,13 @@ npm_install_all:
 
 ## Build bundled .js file with bip-39 & bip-32 related functions
 build_mnemonic_bundle:
-	cd server/mnemonic && npm run build
+	cd server/mnemonic && npm install && npm run build
+
+build_scram_bundle:
+	cd server/scram && npm install && npm run build
+
+test_scram_ts:
+	cd server/scram && npm run test
 
 ## Run Service Provider Mocks
 run_wgp_frontend: # Port 5173

@@ -10,6 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
 
   <script src="../assets-v1/templates/assets/js/bundled.js"></script>
+  <script src="../assets-v1/templates/assets/js/scram-bundled.js"></script>
 </head>
 
 <body>
@@ -121,47 +122,32 @@
           return;
         }
 
-        const saltedPassword = CryptoJS.PBKDF2(
-          loginPassword.value,
-          CryptoJS.enc.Hex.parse(loginPrecheckResponseBody.data.salt),
-          {
-            keySize: 160 / 32,
-            iterations: loginPrecheckResponseBody.data.iter_count,
-            hasher: CryptoJS.algo.SHA1,
-          }
-        ).toString(CryptoJS.enc.Hex);
+        const saltedPassword = scram.saltAndHashPassword(loginPassword.value, loginPrecheckResponseBody.data.salt, loginPrecheckResponseBody.data.iter_count)
 
-        const clientKey = CryptoJS.HmacSHA256(
-          CryptoJS.enc.Hex.parse(saltedPassword),
-          CryptoJS.enc.Utf8.parse("Client Key")
-        ).toString(CryptoJS.enc.Hex);
+        // HMAC for clientKey
+        const clientKey = scram.clientKeyHMAC(saltedPassword);
 
-        const clientKeyBytes = hexStringToBytes(clientKey);
+        const clientKeyBytes = scram.hexStringToBytes(clientKey);
 
-        const storedKey = CryptoJS.SHA256(
-          CryptoJS.enc.Hex.parse(clientKey)
-        ).toString(CryptoJS.enc.Hex);
+        // SHA256 for storedKey
+        const storedKey = scram.storedKeySHA256(clientKey);
 
-        const serverKey = CryptoJS.HmacSHA256(
-          CryptoJS.enc.Hex.parse(saltedPassword),
-          CryptoJS.enc.Utf8.parse("Server Key")
-        ).toString(CryptoJS.enc.Hex);
+        // HMAC for serverKey
+        const serverKey = scram.serverKeyHMAC(saltedPassword);
 
         const authMessage = `[n=${loginUsername.value},r=${cNonce.value},s=${loginPrecheckResponseBody.data.salt},i=${loginPrecheckResponseBody.data.iter_count},r=${loginPrecheckResponseBody.data.nonce}]`;
 
-        const clientSignature = CryptoJS.HmacSHA256(
-          CryptoJS.enc.Utf8.parse(authMessage),
-          CryptoJS.enc.Hex.parse(storedKey)
-        ).toString(CryptoJS.enc.Hex);
+        // Signature HMAC
+        const clientSignature = scram.SignatureHMAC(authMessage, storedKey);
 
-        const clientSignatureBytes = hexStringToBytes(clientSignature);
+        const clientSignatureBytes = scram.hexStringToBytes(clientSignature);
 
-        const clientProofBytes = xorBytes(
+        const clientProofBytes = scram.xorBytes(
           clientKeyBytes,
           clientSignatureBytes
         );
 
-        const clientProof = bytesToHexString(clientProofBytes);
+        const clientProof = scram.bytesToHexString(clientProofBytes);
 
         const loginUserResponse = await window.fetch(
           "[[ .ProxyURL ]]/api/v2/login-user",
@@ -182,10 +168,7 @@
         const loginUserResponseJSON = await loginUserResponse.json();
 
         if (loginUserResponseJSON.data.server_signature) {
-          const serverSignatureCheck = CryptoJS.HmacSHA256(
-            CryptoJS.enc.Utf8.parse(authMessage),
-            CryptoJS.enc.Hex.parse(serverKey)
-          ).toString(CryptoJS.enc.Hex);
+          const serverSignatureCheck = scram.SignatureHMAC(authMessage, serverKey);
 
           if (serverSignatureCheck === loginUserResponseJSON.data.server_signature) {
             token.value = loginUserResponseJSON.data.token;
@@ -212,22 +195,6 @@
         showToast.value = false;
       }, 3000);
     };
-
-    function hexStringToBytes(hex) {
-      const bytes = [];
-      for (let i = 0; i < hex.length; i += 2) {
-        bytes.push(parseInt(hex.substr(i, 2), 16));
-      }
-      return bytes;
-    }
-
-    function bytesToHexString(bytes) {
-      return bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
-    }
-
-    function xorBytes(bytesA, bytesB) {
-      return bytesA.map((byte, index) => byte ^ bytesB[index]);
-    }
 
     const app = createApp({
       setup() {

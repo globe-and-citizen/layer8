@@ -16,6 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
 
     <script src="../assets-v1/templates/assets/js/bundled.js"></script>
+    <script src="../assets-v1/templates/assets/js/scram-bundled.js"></script>
   </head>
 
   <body>
@@ -267,32 +268,16 @@
             return;
           }
 
-          const saltedPassword = CryptoJS.PBKDF2(
-            registerPassword.value,
-            CryptoJS.enc.Hex.parse(registerPrecheckResponseBody.data.salt),
-            {
-              keySize: 160 / 32,
-              iterations: registerPrecheckResponseBody.data.iterationCount,
-              hasher: CryptoJS.algo.SHA1,
-            }
-          ).toString(CryptoJS.enc.Hex);
+          const saltedPassword = scram.saltAndHashPassword(registerPassword.value, registerPrecheckResponseBody.data.salt, registerPrecheckResponseBody.data.iterationCount)
 
           // HMAC for clientKey
-          const clientKey = CryptoJS.HmacSHA256(
-            CryptoJS.enc.Hex.parse(saltedPassword),
-            CryptoJS.enc.Utf8.parse("Client Key")
-          ).toString(CryptoJS.enc.Hex);
+          const clientKey = scram.clientKeyHMAC(saltedPassword);
 
           // HMAC for serverKey
-          const serverKey = CryptoJS.HmacSHA256(
-            CryptoJS.enc.Hex.parse(saltedPassword),
-            CryptoJS.enc.Utf8.parse("Server Key")
-          ).toString(CryptoJS.enc.Hex);
+          const serverKey = scram.serverKeyHMAC(saltedPassword);
 
           // SHA256 for storedKey
-          const storedKey = CryptoJS.SHA256(
-            CryptoJS.enc.Hex.parse(clientKey)
-          ).toString(CryptoJS.enc.Hex);
+          const storedKey = scram.storedKeySHA256(clientKey);
 
           const resp = await window.fetch("[[ .ProxyURL ]]/api/v2/register-user", {
             method: "POST",
