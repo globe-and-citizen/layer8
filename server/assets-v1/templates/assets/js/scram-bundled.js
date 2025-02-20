@@ -6594,9 +6594,9 @@ var scram = (() => {
     }
   });
 
-  // index.ts
-  var index_exports = {};
-  __export(index_exports, {
+  // cryptoUtils.ts
+  var cryptoUtils_exports = {};
+  __export(cryptoUtils_exports, {
     SignatureHMAC: () => SignatureHMAC,
     bytesToHexString: () => bytesToHexString,
     clientKeyHMAC: () => clientKeyHMAC,
@@ -6654,7 +6654,7 @@ var scram = (() => {
   function xorBytes(bytesA, bytesB) {
     return bytesA.map((byte, index) => byte ^ bytesB[index]);
   }
-  return __toCommonJS(index_exports);
+  return __toCommonJS(cryptoUtils_exports);
 })();
 /*! Bundled license information:
 
