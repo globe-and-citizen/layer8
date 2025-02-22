@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"golang.org/x/time/rate"
 
 	utilities "github.com/globe-and-citizen/layer8-utils"
 
@@ -214,12 +213,7 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 
 	var data WsRoundtripEnvelope
 	if err = json.Unmarshal(msg, &data); err != nil {
-		fmt.Printf("error unmarshalling message: %v", err)
-		return
-	}
-
-	if data.WebSocket.Payload == "" {
-		fmt.Println("empty payload or metadata")
+		fmt.Printf("error unmarshalling message-: %v", err)
 		return
 	}
 
@@ -257,10 +251,11 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 	{
 		initTunnelPayload, err := json.Marshal(WsRoundtripEnvelope{
 			WebSocket: WsPayload{
-				Payload: string(msg),
 				MetaData: map[string]interface{}{
-					"x-tunnel": true,
-					"mp-jwt":   mpJWT,
+					"x-tunnel":      true,
+					"mp-jwt":        mpJWT,
+					"x-ecdh-init":   metadata["x-ecdh-init"],
+					"x-client-uuid": metadata["x-client-uuid"],
 				},
 			},
 		})
@@ -281,53 +276,56 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		var backendResp WsPayload
+		var backendResp WsRoundtripEnvelope
 		if err = json.Unmarshal(msg, &backendResp); err != nil {
 			fmt.Printf("error unmarshalling message: %v", err)
 			return
 		}
 
-		metadata, ok := backendResp.MetaData.(map[string]any)
+		metadata, ok := backendResp.WebSocket.MetaData.(map[string]any)
 		if !ok {
 			fmt.Println("metadata is malformed")
 			return
 		}
 
-		if metadata["status"] != "ok" {
-			fmt.Println("tunnel not established: ", metadata["message"])
-			return
+		var dataToSend []byte
+		if val, ok := metadata["server_pubKeyECDH"]; !ok || val == "" {
+			fmt.Println("tunnel not established; the server_pubKeyECDH is missing")
+			dataToSend = msg
+		} else {
+			upJWT, err := utils.GenerateUPTokenJWT(os.Getenv("UP_999_SECRET_KEY"), client.ID)
+			if err != nil {
+				fmt.Println("Error generating upJWT:", err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			server_pubKeyECDH, err := utilities.B64ToJWK(metadata["server_pubKeyECDH"].(string))
+			if err != nil {
+				fmt.Println("Error acquiring server_pubKeyECDH from Headers:", err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// Make a json response of server_pubKeyECDH and up_JWT and send it back to client
+			data := map[string]interface{}{
+				"server_pubKeyECDH": server_pubKeyECDH,
+				"up-JWT":            upJWT,
+			}
+
+			fmt.Println("Data returning to the user from the Service Provider: ", data)
+
+			if dataToSend, err = json.Marshal(&WsRoundtripEnvelope{
+				WebSocket: WsPayload{
+					MetaData: data,
+				}}); err != nil {
+				fmt.Println("Error marshalling data:", err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 
-		upJWT, err := utils.GenerateUPTokenJWT(os.Getenv("UP_999_SECRET_KEY"), client.ID)
-		if err != nil {
-			fmt.Println("Error generating upJWT:", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		server_pubKeyECDH, err := utilities.B64ToJWK(string(msg))
-		if err != nil {
-			fmt.Println("Error acquiring server_pubKeyECDH from Headers:", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Make a json response of server_pubKeyECDH and up_JWT and send it back to client
-		data := map[string]interface{}{
-			"server_pubKeyECDH": server_pubKeyECDH,
-			"up-JWT":            upJWT,
-		}
-
-		fmt.Println("Data returning to the user from the Service Provider: ", data)
-
-		datatoSend, err := json.Marshal(&data)
-		if err != nil {
-			fmt.Println("Error marshalling data:", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if err = c.Write(ctx, websocket.MessageText, datatoSend); err != nil {
+		if err = c.Write(ctx, websocket.MessageText, dataToSend); err != nil {
 			fmt.Printf("error writing to client: %v\n", err)
 			return
 		}
@@ -335,68 +333,72 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Tunnel established successfully")
 	}
 
-	l := rate.NewLimiter(rate.Every(time.Millisecond*100), 30)
+	var (
+		fromServiceProvider = make(chan []byte, 5)
+		fromClient          = make(chan []byte, 5)
+	)
+
+	go read_from_client(ctx, c, fromClient)
+	go read_from_service_provider(serviceProviderSoc, fromServiceProvider)
+
 	for {
-		// we provide it 10 seconds to complete or we close the connection
-		ctx, cancel := context.WithTimeout(r.Context(), time.Second*30)
-		defer cancel()
+		select {
+		case data := <-fromClient:
+			var data_ WsRoundtripEnvelope
+			if err = json.Unmarshal(data, &data_); err != nil {
+				fmt.Printf("error unmarshalling message: %v", err)
+				return
+			}
 
-		err := l.Wait(ctx)
-		if err != nil {
-			fmt.Printf("rate limit error: %v\n", err)
-			return
-		}
-
-		typ, r, err := c.Read(ctx)
-		if err != nil {
-			return
-		}
-
-		// for now let's just log the bytes for now; rm fixme
-		if len(r) > 0 {
-			fmt.Printf("received %d bytes from client\n", len(r))
-			fmt.Printf("received message from client: %s\n", string(r))
-		}
-
-		// interact with the backend server
-		var msg *websocket.MessageType
-		{
-			w, err := serviceProviderSoc.Writer(ctx, typ)
-			if err == nil {
+			if err = serviceProviderSoc.Write(ctx, websocket.MessageText, data); err != nil {
 				if isNormal(err) {
 					return
 				}
-				err = w.Close()
-			}
 
-			if err != nil {
-				fmt.Printf("failed to send to backend url: %s \n", err)
+				fmt.Printf("error writing to backend: %v\n", err)
 				return
 			}
 
-			message, _, err := serviceProviderSoc.Reader(ctx)
-			if err != nil {
-				fmt.Printf("error reading from backend: %s \n", err)
+		case data := <-fromServiceProvider:
+			var data_ WsRoundtripEnvelope
+			if err = json.Unmarshal(data, &data_); err != nil {
+				fmt.Printf("error unmarshalling message: %v", err)
 				return
 			}
 
-			// if here, we have a message to send to the client
-			msg = &message
-		}
-
-		if msg != nil {
-			w, err := c.Writer(ctx, *msg)
-			if err == nil {
-				err = w.Close()
-			}
-			if err != nil {
+			if err = c.Write(ctx, websocket.MessageText, data); err != nil {
 				if isNormal(err) {
 					return
 				}
-				fmt.Printf("failed to send to client: %v\n", err)
+
+				fmt.Printf("error writing to client: %v\n", err)
 				return
 			}
 		}
+	}
+}
+
+func read_from_client(ctx context.Context, upstream *websocket.Conn, data chan []byte) {
+	for {
+		_, msg, err := upstream.Read(ctx)
+		if err != nil {
+			fmt.Printf("error reading from client: %v", err)
+			return
+		}
+
+		data <- msg
+	}
+}
+
+func read_from_service_provider(service_provider *websocket.Conn, data chan []byte) {
+	for {
+		_, msg, err := service_provider.Read(context.Background())
+		if err != nil {
+			fmt.Printf("error reading from service provider: %v", err)
+			return
+		}
+
+		data <- msg
 	}
 }
 
