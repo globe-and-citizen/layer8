@@ -70,7 +70,6 @@ func TestTunnel_WebSocketImpl(t *testing.T) {
 	req.Header.Add("X-Forwarded-Host", url_parts[1])
 
 	// this bit here is to make the request a websocket request
-
 	server, _ := net.Pipe()
 
 	rw := bufio.NewReadWriter(bufio.NewReader(server), bufio.NewWriter(server))
