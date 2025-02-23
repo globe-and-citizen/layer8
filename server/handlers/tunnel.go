@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -213,7 +214,7 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 
 	var data WsRoundtripEnvelope
 	if err = json.Unmarshal(msg, &data); err != nil {
-		fmt.Printf("error unmarshalling message-: %v", err)
+		fmt.Printf("error unmarshaling message-: %v", err)
 		return
 	}
 
@@ -249,7 +250,7 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 
 	// initialize the handshake
 	{
-		initTunnelPayload, err := json.Marshal(WsRoundtripEnvelope{
+		initTunnelPayload, err := json.Marshal(&WsRoundtripEnvelope{
 			WebSocket: WsPayload{
 				MetaData: map[string]interface{}{
 					"x-tunnel":      true,
@@ -270,7 +271,7 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// we expect an ack from the service provider if the tunnel is established
-		_, msg, err := serviceProviderSoc.Read(ctx)
+		_, msg, err = serviceProviderSoc.Read(ctx)
 		if err != nil {
 			fmt.Printf("error reading from service provider: %v\n", err)
 			return
@@ -278,7 +279,7 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 
 		var backendResp WsRoundtripEnvelope
 		if err = json.Unmarshal(msg, &backendResp); err != nil {
-			fmt.Printf("error unmarshalling message: %v", err)
+			fmt.Printf("error unmarshaling message: %v", err)
 			return
 		}
 
@@ -338,15 +339,18 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 		fromClient          = make(chan []byte, 5)
 	)
 
-	go read_from_client(ctx, c, fromClient)
-	go read_from_service_provider(serviceProviderSoc, fromServiceProvider)
+	// TODO: this may not be the right way of going about this; redesign
+	{
+		go read_from_client(ctx, c, fromClient)
+		go read_from_service_provider(serviceProviderSoc, fromServiceProvider)
+	}
 
 	for {
 		select {
 		case data := <-fromClient:
 			var data_ WsRoundtripEnvelope
 			if err = json.Unmarshal(data, &data_); err != nil {
-				fmt.Printf("error unmarshalling message: %v", err)
+				fmt.Printf("121212 error unmarshaling message: %v", err)
 				return
 			}
 
@@ -362,7 +366,7 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 		case data := <-fromServiceProvider:
 			var data_ WsRoundtripEnvelope
 			if err = json.Unmarshal(data, &data_); err != nil {
-				fmt.Printf("error unmarshalling message: %v", err)
+				fmt.Printf("00000 error unmarshaling message: %v", err)
 				return
 			}
 
@@ -382,6 +386,9 @@ func read_from_client(ctx context.Context, upstream *websocket.Conn, data chan [
 	for {
 		_, msg, err := upstream.Read(ctx)
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				continue
+			}
 			fmt.Printf("error reading from client: %v", err)
 			return
 		}
@@ -394,6 +401,9 @@ func read_from_service_provider(service_provider *websocket.Conn, data chan []by
 	for {
 		_, msg, err := service_provider.Read(context.Background())
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				continue
+			}
 			fmt.Printf("error reading from service provider: %v", err)
 			return
 		}
