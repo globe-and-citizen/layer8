@@ -34,10 +34,10 @@ export function storedKeySHA256(clientKey: string): string {
 }
 
 // Can be used for both, clientSignature and serverSignature
-export function SignatureHMAC(authMessage: string, Key: string): string {
+export function SignatureHMAC(authMessage: string, key: string): string {
     return CryptoJS.HmacSHA256(
         CryptoJS.enc.Utf8.parse(authMessage),
-        CryptoJS.enc.Hex.parse(Key)
+        CryptoJS.enc.Hex.parse(key)
     ).toString(CryptoJS.enc.Hex);
 }
 
