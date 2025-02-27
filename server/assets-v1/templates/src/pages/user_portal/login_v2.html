@@ -116,7 +116,6 @@
           }
         );
         const loginPrecheckResponseBody = await loginPrecheckResponse.json();
-        console.log("loginPrecheckResponseBody: ", loginPrecheckResponseBody);
         if (loginPrecheckResponse.status !== 200) {
           showToastMessage("Failed to login", "error");
           return;
