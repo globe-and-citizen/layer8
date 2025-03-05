@@ -1,9 +1,6 @@
 import {
-  saltAndHashPassword,
-  clientKeyHMAC,
-  serverKeyHMAC,
-  storedKeySHA256,
-  SignatureHMAC,
+  keysHMAC,
+  signatureHMAC,
   hexStringToBytes,
   bytesToHexString,
   xorBytes,
@@ -17,56 +14,32 @@ describe("Crypto Functions", () => {
   const authMessage = "authMessage";
   const clientKey = "clientKey";
 
-  test("saltAndHashPassword should return a hashed password", () => {
-    const hashedPassword = saltAndHashPassword(password, salt, iterationCount);
-    expect(hashedPassword).toBeDefined();
-    expect(hashedPassword.length).toBe(40); // SHA-1 produces a 40-character hex string
-  });
-
-  // test saltAndHashedPassword with special characters
-  test("saltAndHashPassword should return a hashed password with special characters", () => {
-    const hashedPassword = saltAndHashPassword(
-      "password!@#$",
+  // keysHMAC should return three keys
+  test("keysHMAC should return three keys", () => {
+    const [clientKey, serverKey, storedKey] = keysHMAC(
+      password,
       salt,
       iterationCount
     );
-    expect(hashedPassword).toBeDefined();
-    expect(hashedPassword.length).toBe(40);
-  });
-
-  // test saltAndHashedPassword with a very long password
-  test("saltAndHashPassword should return a hashed password with a very long password", () => {
-    const hashedPassword = saltAndHashPassword(
-      "ThisIsaVeryLongStringPasswordWithNumbers1234567890AndSpecialCharacters!@#$%^&*()",
-      salt,
-      iterationCount
+    expect(clientKey).toBeDefined();
+    expect(serverKey).toBeDefined();
+    expect(storedKey).toBeDefined();
+    expect(clientKey.length).toBe(64); // SHA-256 produces a 64-character hex string
+    expect(serverKey.length).toBe(64); // SHA-256 produces a 64-character hex string
+    expect(storedKey.length).toBe(64); // SHA-256 produces a 64-character hex string
+    expect(clientKey).toBe(
+      "d8cde98fb85f1e12796adec01247a3a0fd39088e75b933a81cc6204fc1b1736a"
     );
-    expect(hashedPassword).toBeDefined();
-    expect(hashedPassword.length).toBe(40);
-  });
-
-  test("clientKeyHMAC should return a HMAC-SHA256 hash", () => {
-    const saltedPassword = saltAndHashPassword(password, salt, iterationCount);
-    const hmac = clientKeyHMAC(saltedPassword);
-    expect(hmac).toBeDefined();
-    expect(hmac.length).toBe(64); // SHA-256 produces a 64-character hex string
-  });
-
-  test("serverKeyHMAC should return a HMAC-SHA256 hash", () => {
-    const saltedPassword = saltAndHashPassword(password, salt, iterationCount);
-    const hmac = serverKeyHMAC(saltedPassword);
-    expect(hmac).toBeDefined();
-    expect(hmac.length).toBe(64); // SHA-256 produces a 64-character hex string
-  });
-
-  test("storedKeySHA256 should return a SHA-256 hash", () => {
-    const hash = storedKeySHA256(clientKey);
-    expect(hash).toBeDefined();
-    expect(hash.length).toBe(64); // SHA-256 produces a 64-character hex string
+    expect(serverKey).toBe(
+      "006cd21a24ef54c13dcece0dfa52de8d43871f24d3a7848bb0a136eed6ddeece"
+    );
+    expect(storedKey).toBe(
+      "1d282febf2a3aa49c13c172fcf7dbb47fd1cc868332bf1d4edeb326f3c53d415"
+    );
   });
 
   test("SignatureHMAC should return a HMAC-SHA256 hash", () => {
-    const signature = SignatureHMAC(authMessage, clientKey);
+    const signature = signatureHMAC(authMessage, clientKey);
     expect(signature).toBeDefined();
     expect(signature.length).toBe(64); // SHA-256 produces a 64-character hex string
   });
