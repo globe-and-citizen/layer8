@@ -268,29 +268,34 @@
             return;
           }
 
-          const [storedKey, serverKey, clientKey] = scram.keysHMAC(registerPassword.value, registerPrecheckResponseBody.data.salt, registerPrecheckResponseBody.data.iterationCount)
+          const { data } = scram.keysHMAC(
+            registerPassword.value,
+            registerPrecheckResponseBody.data.salt,
+            registerPrecheckResponseBody.data.iterationCount
+          );
 
-          console.log(storedKey, serverKey, clientKey)
-
-          const resp = await window.fetch("[[ .ProxyURL ]]/api/v2/register-user", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              username: registerUsername.value,
-              first_name: registerFirstName.value,
-              last_name: registerLastName.value,
-              display_name: registerDisplayName.value,
-              country: registerCountry.value,
-              public_key: Array.from(keyPair.publicKey),
-              stored_key: storedKey,
-              server_key: serverKey,
-            }),
-          });
+          const resp = await window.fetch(
+            "[[ .ProxyURL ]]/api/v2/register-user",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                username: registerUsername.value,
+                first_name: registerFirstName.value,
+                last_name: registerLastName.value,
+                display_name: registerDisplayName.value,
+                country: registerCountry.value,
+                public_key: Array.from(keyPair.publicKey),
+                stored_key: data.storedKey,
+                server_key: data.serverKey,
+              }),
+            }
+          );
           const registerResponseBody = await resp.json();
           if (resp.status === 201) {
-              modalWindowActive.value = true;
+            modalWindowActive.value = true;
           } else if (registerResponseBody.message) {
             showToastMessage(registerResponseBody.message, "error");
           } else {

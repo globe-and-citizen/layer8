@@ -6598,16 +6598,13 @@ var scram = (() => {
   var cryptoUtils_exports = {};
   __export(cryptoUtils_exports, {
     bytesToHexString: () => bytesToHexString,
-    clientAndServerKeyHMAC: () => clientAndServerKeyHMAC,
-    clientKeyHMAC: () => clientKeyHMAC,
     hexStringToBytes: () => hexStringToBytes,
-    serverKeyHMAC: () => serverKeyHMAC,
+    keysHMAC: () => keysHMAC,
     signatureHMAC: () => signatureHMAC,
-    storedKeySHA256: () => storedKeySHA256,
     xorBytes: () => xorBytes
   });
   var CryptoJS = __toESM(require_crypto_js());
-  function clientAndServerKeyHMAC(password, salt, iterationCount) {
+  function keysHMAC(password, salt, iterationCount) {
     const hashedPassword = CryptoJS.PBKDF2(
       password,
       CryptoJS.enc.Hex.parse(salt),
@@ -6628,24 +6625,13 @@ var scram = (() => {
     const storedKey = CryptoJS.SHA256(CryptoJS.enc.Hex.parse(clientKey)).toString(
       CryptoJS.enc.Hex
     );
-    return [storedKey, serverKey, clientKey];
-  }
-  function clientKeyHMAC(saltedPassword) {
-    return CryptoJS.HmacSHA256(
-      CryptoJS.enc.Hex.parse(saltedPassword),
-      CryptoJS.enc.Utf8.parse("Client Key")
-    ).toString(CryptoJS.enc.Hex);
-  }
-  function serverKeyHMAC(saltedPassword) {
-    return CryptoJS.HmacSHA256(
-      CryptoJS.enc.Hex.parse(saltedPassword),
-      CryptoJS.enc.Utf8.parse("Server Key")
-    ).toString(CryptoJS.enc.Hex);
-  }
-  function storedKeySHA256(clientKey) {
-    return CryptoJS.SHA256(CryptoJS.enc.Hex.parse(clientKey)).toString(
-      CryptoJS.enc.Hex
-    );
+    return {
+      data: {
+        storedKey,
+        serverKey,
+        clientKey
+      }
+    };
   }
   function signatureHMAC(authMessage, key) {
     return CryptoJS.HmacSHA256(

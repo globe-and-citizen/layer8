@@ -1,12 +1,11 @@
 "use strict";
 import * as CryptoJS from "crypto-js";
 
-// clientAndServerKeyHMAC will return three keys
 export function keysHMAC(
   password: string,
   salt: string,
   iterationCount: number
-): string[] {
+): { data: { storedKey: string; serverKey: string; clientKey: string } } {
   const hashedPassword = CryptoJS.PBKDF2(
     password,
     CryptoJS.enc.Hex.parse(salt),
@@ -31,7 +30,13 @@ export function keysHMAC(
     CryptoJS.enc.Hex
   );
 
-  return [storedKey, serverKey, clientKey];
+  return {
+    data: {
+      storedKey,
+      serverKey,
+      clientKey,
+    },
+  };
 }
 
 // Can be used for both, clientSignature and serverSignature

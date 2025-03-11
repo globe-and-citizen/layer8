@@ -121,17 +121,19 @@
           return;
         }
 
-        const [storedKey, serverKey, clientKey] = scram.keysHMAC(loginPassword.value, loginPrecheckResponseBody.data.salt, loginPrecheckResponseBody.data.iter_count)
+        const { data } = scram.keysHMAC(
+          loginPassword.value,
+          loginPrecheckResponseBody.data.salt,
+          loginPrecheckResponseBody.data.iter_count
+          );
 
-        console.log(storedKey, serverKey, clientKey)
 
-
-        const clientKeyBytes = scram.hexStringToBytes(clientKey);
+        const clientKeyBytes = scram.hexStringToBytes(data.clientKey);
 
         const authMessage = `[n=${loginUsername.value},r=${cNonce.value},s=${loginPrecheckResponseBody.data.salt},i=${loginPrecheckResponseBody.data.iter_count},r=${loginPrecheckResponseBody.data.nonce}]`;
 
         // Signature HMAC
-        const clientSignature = scram.signatureHMAC(authMessage, storedKey);
+        const clientSignature = scram.signatureHMAC(authMessage, data.storedKey);
 
         const clientSignatureBytes = scram.hexStringToBytes(clientSignature);
 
@@ -161,7 +163,7 @@
         const loginUserResponseJSON = await loginUserResponse.json();
 
         if (loginUserResponseJSON.data.server_signature) {
-          const serverSignatureCheck = scram.signatureHMAC(authMessage, serverKey);
+          const serverSignatureCheck = scram.signatureHMAC(authMessage, data.serverKey);
 
           if (serverSignatureCheck === loginUserResponseJSON.data.server_signature) {
             token.value = loginUserResponseJSON.data.token;

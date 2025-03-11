@@ -16,25 +16,25 @@ describe("Crypto Functions", () => {
 
   // keysHMAC should return three keys
   test("keysHMAC should return three keys", () => {
-    const [clientKey, serverKey, storedKey] = keysHMAC(
+    const { data } = keysHMAC(
       password,
       salt,
       iterationCount
     );
-    expect(clientKey).toBeDefined();
-    expect(serverKey).toBeDefined();
-    expect(storedKey).toBeDefined();
-    expect(clientKey.length).toBe(64); // SHA-256 produces a 64-character hex string
-    expect(serverKey.length).toBe(64); // SHA-256 produces a 64-character hex string
-    expect(storedKey.length).toBe(64); // SHA-256 produces a 64-character hex string
-    expect(clientKey).toBe(
-      "d8cde98fb85f1e12796adec01247a3a0fd39088e75b933a81cc6204fc1b1736a"
+    expect(data.clientKey).toBeDefined();
+    expect(data.serverKey).toBeDefined();
+    expect(data.storedKey).toBeDefined();
+    expect(data.clientKey.length).toBe(64); // SHA-256 produces a 64-character hex string
+    expect(data.serverKey.length).toBe(64); // SHA-256 produces a 64-character hex string
+    expect(data.storedKey.length).toBe(64); // SHA-256 produces a 64-character hex string
+    expect(data.clientKey).toBe(
+      "1d282febf2a3aa49c13c172fcf7dbb47fd1cc868332bf1d4edeb326f3c53d415"
     );
-    expect(serverKey).toBe(
+    expect(data.serverKey).toBe(
       "006cd21a24ef54c13dcece0dfa52de8d43871f24d3a7848bb0a136eed6ddeece"
     );
-    expect(storedKey).toBe(
-      "1d282febf2a3aa49c13c172fcf7dbb47fd1cc868332bf1d4edeb326f3c53d415"
+    expect(data.storedKey).toBe(
+      "d8cde98fb85f1e12796adec01247a3a0fd39088e75b933a81cc6204fc1b1736a"
     );
   });
 
