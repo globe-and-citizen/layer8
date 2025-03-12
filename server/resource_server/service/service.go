@@ -65,6 +65,14 @@ func (s *service) RegisterClient(req dto.RegisterClientDTO) error {
 	return s.repository.RegisterClient(client)
 }
 
+func (s *service) RegisterClientv2(req dto.RegisterClientDTOv2) error {
+	clientUUID := utils.GenerateUUID()
+	clientSecret := utils.GenerateSecret(utils.SecretSize)
+	req.BackendURI = utils.RemoveProtocolFromURL(req.BackendURI)
+
+	return s.repository.RegisterClientv2(req, clientUUID, clientSecret)
+}
+
 func (s *service) GetClientData(clientName string) (models.ClientResponseOutput, error) {
 	clientData, err := s.repository.GetClientData(clientName)
 	if err != nil {
@@ -343,6 +351,17 @@ func (s *service) RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCoun
 	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
 
 	err := s.repository.RegisterPrecheckUser(req, rmSalt, iterCount)
+	if err != nil {
+		return "", err
+	}
+
+	return rmSalt, nil
+}
+
+func (s *service) RegisterClientPrecheck(req dto.RegisterClientPrecheckDTO, iterCount int) (string, error) {
+	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
+
+	err := s.repository.RegisterPrecheckClient(req, rmSalt, iterCount)
 	if err != nil {
 		return "", err
 	}

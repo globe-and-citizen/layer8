@@ -448,6 +448,14 @@ func (r *MemoryRepository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO,
 	return nil
 }
 
+func (r *MemoryRepository) RegisterPrecheckClient(req dto.RegisterClientPrecheckDTO, salt string, iterCount int) error {
+	return nil
+}
+
+func (r *MemoryRepository) RegisterClientv2(req dto.RegisterClientDTOv2, clientUUID string, clientSecret string) error {
+	return nil
+}
+
 func (r *MemoryRepository) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
 	return nil
 }

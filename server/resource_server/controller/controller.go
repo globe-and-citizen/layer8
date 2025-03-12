@@ -41,6 +41,9 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 func ClientHandler(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/register.html")
 }
+func ClientHandlerv2(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/register_v2.html")
+}
 func LoginClientPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/login.html")
 }
@@ -96,6 +99,50 @@ func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
 			w,
 			http.StatusInternalServerError,
 			"Internal error: could not encode response into json",
+			err,
+		)
+	}
+}
+
+func RegisterClientPrecheckHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService, ok := r.Context().Value("service").(interfaces.IService)
+	if !ok {
+		utils.HandleError(w, http.StatusInternalServerError, "Service not found in context", nil)
+		return
+	}
+
+	iterCount, err := strconv.Atoi(os.Getenv("SCRAM_ITERATION_COUNT"))
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Invalid iteration count configuration", err)
+		return
+	}
+
+	request, err := utils.DecodeJsonFromRequest[dto.RegisterClientPrecheckDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	salt, err := newService.RegisterClientPrecheck(request, iterCount)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
+		return
+	}
+
+	registerClientPrecheckResp := models.RegisterClientPrecheckResponseOutput{
+		Salt:           salt,
+		IterationCount: iterCount,
+	}
+
+	resp := utils.BuildResponse(w, http.StatusCreated, "Client is successfully registered", registerClientPrecheckResp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal Server Error",
 			err,
 		)
 	}
@@ -173,6 +220,35 @@ func RegisterClientHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = newService.RegisterClient(request)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to register client", err)
+		return
+	}
+
+	res := utils.BuildResponseWithNoBody(w, http.StatusCreated, "Client registered successfully")
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
+	}
+}
+
+func RegisterClientHandlerv2(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.RegisterClientDTOv2](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	err = newService.RegisterClientv2(request)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to register client", err)
 		return

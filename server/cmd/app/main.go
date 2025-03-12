@@ -261,6 +261,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.InputVerificationCodePage(w, r)
 			case path == "/client-register-page":
 				Ctl.ClientHandler(w, r)
+			case path == "/v2/client-register-page":
+				Ctl.ClientHandlerv2(w, r)
 			case path == "/client-login-page":
 				Ctl.LoginClientPage(w, r)
 			case path == "/client-profile":
@@ -285,6 +287,10 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.LoginUserHandler(w, r)
 			case path == "/api/v2/login-user":
 				Ctl.LoginUserHandlerv2(w, r)
+			case path == "/api/v2/register-client-precheck":
+				Ctl.RegisterClientPrecheckHandler(w, r)
+			case path == "/api/v2/register-client":
+				Ctl.RegisterClientHandlerv2(w, r)
 			case path == "/api/v1/login-client":
 				Ctl.LoginClientHandler(w, r) // Login Client
 			case path == "/api/v1/profile":

@@ -165,6 +165,14 @@ func (m *mockRepository) RegisterClient(client models.Client) error {
 	return m.registerClient(client)
 }
 
+func (m *mockRepository) RegisterPrecheckClient(req dto.RegisterClientPrecheckDTO, salt string, iterCount int) error {
+	return nil
+}
+
+func (m *mockRepository) RegisterClientv2(req dto.RegisterClientDTOv2, id string, secret string) error {
+	return nil
+}
+
 func (m *mockRepository) IsBackendURIExists(backendURL string) (bool, error) {
 	return true, nil
 }

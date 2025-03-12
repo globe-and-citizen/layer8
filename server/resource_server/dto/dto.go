@@ -52,12 +52,25 @@ type UpdateDisplayNameDTO struct {
 	DisplayName string `json:"display_name" validate:"required"`
 }
 
+type RegisterClientPrecheckDTO struct {
+	Username string `json:"username" validate:"required,min=3,max=50"`
+}
+
 type RegisterClientDTO struct {
 	Name        string `json:"name" validate:"required"`
 	RedirectURI string `json:"redirect_uri" validate:"required"`
 	BackendURI  string `json:"backend_uri" validate:"required"`
 	Username    string `json:"username" validate:"required,min=3,max=50"`
 	Password    string `json:"password" validate:"required"`
+}
+
+type RegisterClientDTOv2 struct {
+	Name        string `json:"name" validate:"required"`
+	RedirectURI string `json:"redirect_uri" validate:"required"`
+	BackendURI  string `json:"backend_uri" validate:"required"`
+	Username    string `json:"username" validate:"required,min=3,max=50"`
+	StoredKey   string `json:"stored_key" validate:"required"`
+	ServerKey   string `json:"server_key" validate:"required"`
 }
 
 type CheckBackendURIDTO struct {

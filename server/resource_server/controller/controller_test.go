@@ -154,6 +154,16 @@ func (ms *MockService) RegisterClient(req dto.RegisterClientDTO) error {
 	return nil
 }
 
+func (ms *MockService) RegisterClientv2(req dto.RegisterClientDTOv2) error {
+	// Mock implementation for testing purposes.
+	return nil
+}
+
+func (ms *MockService) RegisterClientPrecheck(req dto.RegisterClientPrecheckDTO, iterCount int) (string, error) {
+	// Mock implementation for testing purposes.
+	return "", nil
+}
+
 func (ms *MockService) GetClientData(clientName string) (models.ClientResponseOutput, error) {
 	// Mock implementation for testing purposes.
 	return models.ClientResponseOutput{

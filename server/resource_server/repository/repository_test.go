@@ -226,10 +226,10 @@ func TestRegisterClient_InsertQueryFailed(t *testing.T) {
 
 	mock.ExpectExec(
 		regexp.QuoteMeta(
-			`INSERT INTO "clients" ("id","secret","name","redirect_uri","backend_uri","username","password","salt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+			`INSERT INTO "clients" ("id","secret","name","redirect_uri","backend_uri","username","password","salt","iteration_count","server_key","stored_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
 		),
 	).WithArgs(
-		clientId, clientSecret, clientName, redirectUri, backendUri, clientUsername, clientPassword, clientSalt,
+		clientId, clientSecret, clientName, redirectUri, backendUri, clientUsername, clientPassword, clientSalt, 0, "", "",
 	).WillReturnError(
 		fmt.Errorf("failed to insert client %s", clientId),
 	)
@@ -260,10 +260,10 @@ func TestRegisterClient_Success(t *testing.T) {
 
 	mock.ExpectExec(
 		regexp.QuoteMeta(
-			`INSERT INTO "clients" ("id","secret","name","redirect_uri","backend_uri","username","password","salt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+			`INSERT INTO "clients" ("id","secret","name","redirect_uri","backend_uri","username","password","salt","iteration_count","server_key","stored_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
 		),
 	).WithArgs(
-		clientId, clientSecret, clientName, redirectUri, backendUri, clientUsername, clientPassword, clientSalt,
+		clientId, clientSecret, clientName, redirectUri, backendUri, clientUsername, clientPassword, clientSalt, 0, "", "",
 	).WillReturnResult(
 		sqlmock.NewResult(1, 1),
 	)

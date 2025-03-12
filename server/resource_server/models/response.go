@@ -42,6 +42,11 @@ type RegisterUserPrecheckResponseOutput struct {
 	IterationCount int    `json:"iterationCount"`
 }
 
+type RegisterClientPrecheckResponseOutput struct {
+	Salt           string `json:"salt"`
+	IterationCount int    `json:"iterationCount"`
+}
+
 type ResetPasswordPrecheckResponseOutput struct {
 	Salt           string `json:"salt"`
 	IterationCount int    `json:"iterationCount"`

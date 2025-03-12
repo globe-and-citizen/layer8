@@ -25,6 +25,7 @@ type IService interface {
 	SaveProofOfEmailVerification(userID uint, verificationCode string, zkProof []byte, zkKeyPairId uint) error
 	UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error
 	RegisterClient(req dto.RegisterClientDTO) error
+	RegisterClientv2(req dto.RegisterClientDTOv2) error
 	GetClientData(clientName string) (models.ClientResponseOutput, error)
 	GetClientDataByBackendURL(backendURL string) (models.ClientResponseOutput, error)
 	CheckBackendURI(backendURL string) (bool, error)
@@ -33,4 +34,5 @@ type IService interface {
 	UpdateUserPassword(username string, newPassword string, salt string) error
 	UpdateUserPasswordV2(username string, storedKey string, serverKey string) error
 	RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error)
+	RegisterClientPrecheck(req dto.RegisterClientPrecheckDTO, iterCount int) (string, error)
 }
