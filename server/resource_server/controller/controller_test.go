@@ -30,6 +30,7 @@ const userEmail = "user@email.com"
 const userPassword = "test_password"
 const newUserPassword = "new_password"
 const userSalt = "ThisIsARandomSalt123!@#"
+const clientSalt = "TestSaltForClient123!@#$%"
 const iterCount = 4096
 const nonce = "Test_Nonce"
 const serverSignature = "Test_Server_Signature"
@@ -83,7 +84,9 @@ type MockService struct {
 	updateUserPassword                 func(username string, newPassword string, salt string) error
 	updateUserPasswordV2               func(username string, storedKey string, serverKey string) error
 	registerUserPrecheck               func(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error)
+	registerClientPrecheck             func(req dto.RegisterClientPrecheckDTO, iterCount int) (string, error)
 	registerUserv2                     func(req dto.RegisterUserDTOv2) error
+	registerClientv2                   func(req dto.RegisterClientDTOv2) error
 	loginPrecheckUserv2                func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error)
 	loginUserv2                        func(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error)
 }
@@ -155,13 +158,11 @@ func (ms *MockService) RegisterClient(req dto.RegisterClientDTO) error {
 }
 
 func (ms *MockService) RegisterClientv2(req dto.RegisterClientDTOv2) error {
-	// Mock implementation for testing purposes.
-	return nil
+	return ms.registerClientv2(req)
 }
 
 func (ms *MockService) RegisterClientPrecheck(req dto.RegisterClientPrecheckDTO, iterCount int) (string, error) {
-	// Mock implementation for testing purposes.
-	return "", nil
+	return ms.registerClientPrecheck(req, iterCount)
 }
 
 func (ms *MockService) GetClientData(clientName string) (models.ClientResponseOutput, error) {
@@ -198,6 +199,14 @@ func (m *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserRespo
 	return models.LoginUserResponseOutput{
 		Token: testToken,
 	}, nil
+}
+
+func (m *MockService) LoginClientv2(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error) {
+	return models.LoginUserResponseOutputv2{}, nil
+}
+
+func (m *MockService) LoginPrecheckClientv2(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
+	return models.LoginPrecheckResponseOutputv2{}, nil
 }
 
 func (m *MockService) GetUserForUsername(username string) (models.User, error) {
@@ -2933,4 +2942,327 @@ func TestResetPasswordHandlerV2_MissingRequiredField(t *testing.T) {
 	assert.Equal(t, false, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 	assert.NotNil(t, response.Message)
+}
+
+func TestRegisterClientPrecheck_Success(t *testing.T) {
+	requestBody := []byte(`{"username": "test_user"}`)
+
+	req, err := http.NewRequest("POST", "/api/v2/register-client-precheck", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{
+		registerClientPrecheck: func(req dto.RegisterClientPrecheckDTO, iterCount int) (string, error) {
+			assert.Equal(t, "test_user", req.Username, "Username should match")
+			assert.Equal(t, 4096, iterCount, "Iteration count should match")
+
+			return clientSalt, nil
+		},
+	}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	t.Setenv("SCRAM_ITERATION_COUNT", "4096")
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterClientPrecheckHandler(rr, req)
+
+	assert.Equal(t, http.StatusCreated, rr.Code, "Response code should be 201 Created")
+
+	response := decodeResponseBodyForResponse(t, rr)
+
+	assert.Equal(t, true, response.IsSuccess)
+	assert.Equal(t, "Client is successfully registered", response.Message, "Response message should match")
+	assert.Nil(t, response.Error)
+}
+
+func TestRegisterClientPrecheck_InvalidMethod(t *testing.T) {
+	req, err := http.NewRequest("GET", "/api/v2/register-client-precheck", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterClientPrecheckHandler(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code, "Expected HTTP 405 Method Not Allowed")
+}
+
+func TestRegisterClientPrecheck_InvalidIterationCount(t *testing.T) {
+	requestBody := []byte(`{
+		"username": "test_user"
+	}`)
+
+	req, err := http.NewRequest("POST", "/api/v2/register-client-precheck", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	t.Setenv("SCRAM_ITERATION_COUNT", "invalid_value")
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterClientPrecheckHandler(rr, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected HTTP 500 Internal Server Error")
+}
+
+func TestRegisterClientPrecheck_InvalidJSON(t *testing.T) {
+	requestBody := []byte(`invalid_json`)
+
+	req, err := http.NewRequest("POST", "/api/v2/register-client-precheck", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	t.Setenv("SCRAM_ITERATION_COUNT", "4096")
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterClientPrecheckHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
+}
+
+func TestRegisterClientPrecheck_MissingRequiredFields(t *testing.T) {
+	reqBody := []byte(`{
+		"other_field": "some value"
+	}`)
+
+	mockService := &MockService{
+		registerClientPrecheck: func(req dto.RegisterClientPrecheckDTO, iterCount int) (string, error) {
+			return "", nil
+		},
+	}
+
+	req := httptest.NewRequest("POST", "/api/v2/register-client-precheck", bytes.NewBuffer(reqBody))
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+	req.Header.Set("Content-Type", "application/json")
+
+	t.Setenv("SCRAM_ITERATION_COUNT", "4096")
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterClientPrecheckHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForResponse(t, rr)
+
+	assert.Equal(t, false, response.IsSuccess)
+	assert.Equal(t, "Input json is invalid", response.Message)
+}
+
+func TestRegisterClientPrecheck_ServiceError(t *testing.T) {
+	requestBody := []byte(`{
+		"username": "test_user"
+	}`)
+
+	req, err := http.NewRequest("POST", "/api/v2/register-client-precheck", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{
+		registerClientPrecheck: func(req dto.RegisterClientPrecheckDTO, iterCount int) (string, error) {
+			return "", fmt.Errorf("mock service error")
+		},
+	}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	t.Setenv("SCRAM_ITERATION_COUNT", "4096")
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterClientPrecheckHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
+}
+
+func TestRegisterClientHandlerv2_InvalidHttpRequestMethod(t *testing.T) {
+	requestBody := []byte(`{
+		"name": "test_client",
+		"redirect_uri": "https://localhost:3000/callback",
+		"backend_uri": "https://localhost:8080",
+		"username": "test_user",
+		"server_key": "0xbbbbbb",
+		"stored_key": "0xcccccc"
+	}`)
+
+	req, err := http.NewRequest("GET", "/api/v2/register-client", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	setMockServiceInContext(req)
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterClientHandlerv2(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected POST", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestRegisterClientHandlerv2_RequestJsonIsMalformed(t *testing.T) {
+	requestBody := []byte(`{
+		"name": "test_client",
+		"redirect_uri": "https://localhost:3000/callback",
+		"backend_uri": "https://localhost:8080",
+		"username": "test_user",
+		"server_key": "0xbbbbbb",
+		"stored_key": "0xcccccc"
+	}something_else`)
+
+	req, err := http.NewRequest("POST", "/api/v2/register-client", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+	// setMockServiceInContext(req)
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterClientHandlerv2(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestRegisterClientHandlerv2_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
+	requestBody := []byte(`{
+		"name": "test_client",
+		"redirect_uri": "https://localhost:3000/callback",
+		"backend_uri": "https://localhost:8080",
+		"server_key": "0xbbbbbb",
+		"stored_key": "0xcccccc"
+	}`)
+
+	req, err := http.NewRequest("POST", "/api/v2/register-client", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.RegisterClientHandlerv2(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Input json is invalid", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestRegisterClientHandlerv2_ServiceError(t *testing.T) {
+	// Mock request body
+	requestBody := []byte(`{
+		"name": "test_client",
+		"redirect_uri": "https://localhost:3000/callback",
+		"backend_uri": "https://localhost:8080",
+		"username": "test_user",
+		"server_key": "0xbbbbbb",
+		"stored_key": "0xcccccc"
+	}`)
+
+	// Create a mock request
+	req, err := http.NewRequest("POST", "/api/v2/register-client", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a mock service and set it in the request context
+	mockService := &MockService{
+		registerClientv2: func(req dto.RegisterClientDTOv2) error {
+			return fmt.Errorf("failed to register client")
+		},
+	}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	// Create a ResponseRecorder to record the response
+	rr := httptest.NewRecorder()
+
+	// Call the handler function
+	Ctl.RegisterClientHandlerv2(rr, req)
+
+	// Check the status code
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	// Decode the response body
+	response := decodeResponseBodyForResponse(t, rr)
+
+	// Now assert the fields directly
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Failed to register client", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestRegisterClientHandlerv2_Success(t *testing.T) {
+	// Mock request body
+	requestBody := []byte(`{
+		"name": "test_client",
+		"redirect_uri": "https://localhost:3000/callback",
+		"backend_uri": "https://localhost:8080",
+		"username": "test_user",
+		"server_key": "0xbbbbbb",
+		"stored_key": "0xcccccc"
+	}`)
+
+	// Create a mock request
+	req, err := http.NewRequest("POST", "/api/v2/register-client", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a mock service and set it in the request context
+	mockService := &MockService{
+		registerClientv2: func(req dto.RegisterClientDTOv2) error {
+			return nil
+		},
+	}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	// Create a ResponseRecorder to record the response
+	rr := httptest.NewRecorder()
+
+	// Call the handler function
+	Ctl.RegisterClientHandlerv2(rr, req)
+
+	// Check the status code
+	assert.Equal(t, http.StatusCreated, rr.Code)
+
+	// Decode the response body
+	response := decodeResponseBodyForResponse(t, rr)
+
+	// Now assert the fields directly
+	assert.True(t, response.IsSuccess)
+	assert.Equal(t, "Client registered successfully", response.Message)
+	assert.Equal(t, nil, response.Data)
 }
