@@ -200,6 +200,14 @@ func (m *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserRespo
 	}, nil
 }
 
+func (m *MockService) LoginClientv2(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error) {
+	return models.LoginUserResponseOutputv2{}, nil
+}
+
+func (m *MockService) LoginPrecheckClientv2(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
+	return models.LoginPrecheckResponseOutputv2{}, nil
+}
+
 func (m *MockService) GetUserForUsername(username string) (models.User, error) {
 	return m.getUserForUsername(username)
 }
