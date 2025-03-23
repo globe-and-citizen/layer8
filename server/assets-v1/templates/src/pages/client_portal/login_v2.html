@@ -120,10 +120,9 @@
             return;
           }
 
-          const cNonceLength = 32;
-          const cNonceUintArray = new Uint8Array(cNonceLength);
-          window.crypto.getRandomValues(cNonceUintArray);
-          cNonce.value = btoa(String.fromCharCode(...cNonceUintArray));
+          cNonce.value = scram.generateCnonce();
+
+          console.log("cNonce: ", cNonce.value);
 
           const loginPrecheckResponse = await window.fetch(
             "[[ .ProxyURL ]]/api/v2/login-client-precheck",

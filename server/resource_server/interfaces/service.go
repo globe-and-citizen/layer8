@@ -15,7 +15,7 @@ type IService interface {
 	LoginUser(req dto.LoginUserDTO) (models.LoginUserResponseOutput, error)
 	LoginUserv2(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error)
 	LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseOutput, error)
-	LoginClientv2(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error)
+	LoginClientv2(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error)
 	ProfileUser(userID uint) (models.ProfileResponseOutput, error)
 	ProfileClient(userID string) (models.ClientResponseOutput, error)
 	FindUser(userID uint) (models.User, error)

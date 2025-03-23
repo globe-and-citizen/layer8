@@ -34,6 +34,13 @@ type LoginUserDTOv2 struct {
 	ClientProof string `json:"client_proof" validate:"required"`
 }
 
+type LoginClientDTOv2 struct {
+	Username    string `json:"username" validate:"required"`
+	Nonce       string `json:"nonce" validate:"required"`
+	CNonce      string `json:"c_nonce" validate:"required"`
+	ClientProof string `json:"client_proof" validate:"required"`
+}
+
 type LoginClientDTO struct {
 	Username string `json:"username" validate:"required"`
 	Password string `json:"password" validate:"required"`

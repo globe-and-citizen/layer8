@@ -170,8 +170,8 @@ func CompleteClientLogin(req dto.LoginClientDTO, client models.Client) (models.L
 }
 
 func CompleteClientLoginv2(client models.Client) (token string, err error) {
-	JWT_SECRET_STR := os.Getenv("JWT_SECRET_KEY")
-	JWT_SECRET_BYTE := []byte(JWT_SECRET_STR)
+	jwtSecretStr := os.Getenv("JWT_SECRET_KEY")
+	jwtSecretByte := []byte(jwtSecretStr)
 
 	expirationTime := time.Now().Add(60 * time.Minute)
 	claims := &models.ClientClaims{
@@ -183,7 +183,7 @@ func CompleteClientLoginv2(client models.Client) (token string, err error) {
 		},
 	}
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := jwtToken.SignedString(JWT_SECRET_BYTE)
+	tokenString, err := jwtToken.SignedString(jwtSecretByte)
 	if err != nil {
 		return "", err
 	}

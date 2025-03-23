@@ -87,7 +87,7 @@ type MockService struct {
 	loginPrecheckUserv2                func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error)
 	loginPrecheckClientv2              func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error)
 	loginUserv2                        func(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error)
-	loginClientv2                      func(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error)
+	loginClientv2                      func(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error)
 }
 
 func (ms *MockService) RegisterUser(req dto.RegisterUserDTO) error {
@@ -202,7 +202,7 @@ func (m *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserRespo
 	}, nil
 }
 
-func (m *MockService) LoginClientv2(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error) {
+func (m *MockService) LoginClientv2(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error) {
 	return m.loginClientv2(req)
 }
 
@@ -3215,8 +3215,8 @@ func TestLoginClientHandlerv2_ServiceError(t *testing.T) {
 
 	// Create a mock service and set it in the request context
 	mockService := &MockService{
-		loginClientv2: func(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error) {
-			return models.LoginUserResponseOutputv2{}, fmt.Errorf("mock service error")
+		loginClientv2: func(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error) {
+			return models.LoginClientResponseOutputv2{}, fmt.Errorf("mock service error")
 		},
 	}
 
@@ -3257,8 +3257,8 @@ func TestLoginClientHandlerv2_Success(t *testing.T) {
 
 	// Create a mock service and set it in the request context
 	mockService := &MockService{
-		loginClientv2: func(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error) {
-			return models.LoginUserResponseOutputv2{
+		loginClientv2: func(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error) {
+			return models.LoginClientResponseOutputv2{
 				Token:           testToken,
 				ServerSignature: serverSignature,
 			}, nil
@@ -3276,7 +3276,7 @@ func TestLoginClientHandlerv2_Success(t *testing.T) {
 	// Check the status code
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	response := decodeResponseBodyForErrorResponse(t, rr)
+	response := decodeResponseBodyForResponse(t, rr)
 
 	// Convert response.Data to JSON bytes for unmarshalling
 	dataBytes, err := json.Marshal(response.Data)
@@ -3284,7 +3284,7 @@ func TestLoginClientHandlerv2_Success(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var loginUserResponse models.LoginUserResponseOutputv2
+	var loginUserResponse models.LoginClientResponseOutputv2
 	if err := json.Unmarshal(dataBytes, &loginUserResponse); err != nil {
 		t.Fatal(err)
 	}

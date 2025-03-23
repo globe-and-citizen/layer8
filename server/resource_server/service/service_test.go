@@ -1376,7 +1376,7 @@ func TestLoginPreCheckClientV2_Success(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, loginPrecheckResp.Salt, salt)
-	assert.Equal(t, strings.HasPrefix(loginPrecheckResp.Nonce, cNonce), true)
+	assert.True(t, strings.HasPrefix(loginPrecheckResp.Nonce, cNonce))
 	assert.Equal(t, loginPrecheckResp.IterCount, iterationCount)
 }
 
@@ -1388,7 +1388,7 @@ func TestLoginClientV2_RepositoryError(t *testing.T) {
 	}
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
-	req := dto.LoginUserDTOv2{
+	req := dto.LoginClientDTOv2{
 		Username:    username,
 		CNonce:      cNonce,
 		Nonce:       nonce,
@@ -1412,7 +1412,7 @@ func TestLoginClientV2_DecodingStoredKeyError(t *testing.T) {
 	}
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
-	req := dto.LoginUserDTOv2{
+	req := dto.LoginClientDTOv2{
 		Username:    username,
 		CNonce:      cNonce,
 		Nonce:       nonce,
@@ -1438,7 +1438,7 @@ func TestLoginClientV2_DecodingClientProofError(t *testing.T) {
 	}
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
-	req := dto.LoginUserDTOv2{
+	req := dto.LoginClientDTOv2{
 		Username:    username,
 		CNonce:      cNonce,
 		Nonce:       nonce,
@@ -1464,7 +1464,7 @@ func TestLoginClientV2_XorOperationError(t *testing.T) {
 	}
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
-	req := dto.LoginUserDTOv2{
+	req := dto.LoginClientDTOv2{
 		Username:    username,
 		CNonce:      cNonce,
 		Nonce:       nonce,
@@ -1490,7 +1490,7 @@ func TestLoginClientV2_AuthFailedKeyMismatchError(t *testing.T) {
 	}
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
-	req := dto.LoginUserDTOv2{
+	req := dto.LoginClientDTOv2{
 		Username:    username,
 		CNonce:      cNonce,
 		Nonce:       nonce,
@@ -1517,7 +1517,7 @@ func TestLoginClientV2_DecodingServerKeyError(t *testing.T) {
 	}
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
-	req := dto.LoginUserDTOv2{
+	req := dto.LoginClientDTOv2{
 		Username:    username,
 		CNonce:      cNonce,
 		Nonce:       nonce,
@@ -1544,7 +1544,7 @@ func TestLoginClientV2_Success(t *testing.T) {
 	}
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
-	req := dto.LoginUserDTOv2{
+	req := dto.LoginClientDTOv2{
 		Username:    username,
 		CNonce:      cNonce,
 		Nonce:       nonce,

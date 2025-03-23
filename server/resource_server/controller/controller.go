@@ -115,7 +115,7 @@ func LoginClientHandlerv2(w http.ResponseWriter, r *http.Request) {
 
 	newService := r.Context().Value("service").(interfaces.IService)
 
-	request, err := utils.DecodeJsonFromRequest[dto.LoginUserDTOv2](w, r.Body)
+	request, err := utils.DecodeJsonFromRequest[dto.LoginClientDTOv2](w, r.Body)
 	if err != nil {
 		return
 	}
