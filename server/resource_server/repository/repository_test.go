@@ -1575,10 +1575,10 @@ func TestRegisterPrecheckClient_Success(t *testing.T) {
 	defer mockDB.Close()
 
 	req := dto.RegisterClientPrecheckDTO{
-		Username: "client_username",
+		Username: clientUsername,
 	}
-	salt := "client_salt"
-	iterCount := 4096
+	salt := clientSalt
+	iterCount := clientIterationCount
 
 	mock.ExpectBegin()
 
@@ -1600,15 +1600,15 @@ func TestRegisterPrecheckClient_Success(t *testing.T) {
 	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
 }
 
-func TestRegisterPrechecClient_RepositoryError(t *testing.T) {
+func TestRegisterPrecheckClient_RepositoryError(t *testing.T) {
 	SetUp(t)
 	defer mockDB.Close()
 
 	req := dto.RegisterClientPrecheckDTO{
-		Username: "client_username",
+		Username: clientUsername,
 	}
-	salt := "client_salt"
-	iterCount := 4096
+	salt := clientSalt
+	iterCount := clientIterationCount
 
 	mock.ExpectBegin()
 
@@ -1635,10 +1635,10 @@ func TestRegisterPrecheckClient_BeginTransactionFailure(t *testing.T) {
 	defer mockDB.Close()
 
 	req := dto.RegisterClientPrecheckDTO{
-		Username: "client_username",
+		Username: clientUsername,
 	}
-	salt := "client_salt"
-	iterCount := 4096
+	salt := clientSalt
+	iterCount := clientIterationCount
 
 	mock.ExpectBegin().WillReturnError(fmt.Errorf("failed to begin transaction"))
 

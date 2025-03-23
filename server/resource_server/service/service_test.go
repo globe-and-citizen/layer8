@@ -1352,9 +1352,8 @@ func TestRegisterClientPrecheck_Success(t *testing.T) {
 	req := dto.RegisterClientPrecheckDTO{
 		Username: username,
 	}
-	iterCount := 4096
 
-	salt, err := currService.RegisterClientPrecheck(req, iterCount)
+	salt, err := currService.RegisterClientPrecheck(req, iterationCount)
 
 	assert.Nil(t, err, "Expected no error during RegisterUserPrecheck")
 	assert.NotEmpty(t, salt, "Salt should not be empty in the response")
@@ -1372,9 +1371,8 @@ func TestRegisterClientPrecheck_RepositoryError(t *testing.T) {
 	req := dto.RegisterClientPrecheckDTO{
 		Username: username,
 	}
-	iterCount := 4096
 
-	salt, err := currService.RegisterClientPrecheck(req, iterCount)
+	salt, err := currService.RegisterClientPrecheck(req, iterationCount)
 
 	assert.NotNil(t, err, "Expected an error during RegisterClientPrecheck")
 	assert.Equal(t, "repository error", err.Error(), "Error message should match")

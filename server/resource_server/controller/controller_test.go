@@ -31,7 +31,7 @@ const userPassword = "test_password"
 const newUserPassword = "new_password"
 const userSalt = "ThisIsARandomSalt123!@#"
 const clientSalt = "TestSaltForClient123!@#$%"
-const iterCount = 4096
+const iterationCount = 4096
 const nonce = "Test_Nonce"
 const serverSignature = "Test_Server_Signature"
 const testToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImhtayIsInVzZXJfaWQiOjIsImlzcyI6Ikdsb2JlQW5kQ2l0aXplbiIsImV4cCI6MTcwNjUyNzY0NH0.AeQk23OPvlvauDEf45IlxxJ8ViSM5BlC6OlNkhXTomw"
@@ -725,7 +725,7 @@ func TestLoginPrecheckHandlerv2_Success(t *testing.T) {
 		loginPrecheckUserv2: func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
 			return models.LoginPrecheckResponseOutputv2{
 				Salt:      userSalt,
-				IterCount: iterCount,
+				IterCount: iterationCount,
 				Nonce:     nonce,
 			}, nil
 		},
@@ -760,7 +760,7 @@ func TestLoginPrecheckHandlerv2_Success(t *testing.T) {
 
 	// Now assert the fields directly
 	assert.Equal(t, userSalt, loginPrecheckResponse.Salt)
-	assert.Equal(t, iterCount, loginPrecheckResponse.IterCount)
+	assert.Equal(t, iterationCount, loginPrecheckResponse.IterCount)
 	assert.Equal(t, nonce, loginPrecheckResponse.Nonce)
 }
 
@@ -2954,8 +2954,8 @@ func TestRegisterClientPrecheck_Success(t *testing.T) {
 
 	mockService := &MockService{
 		registerClientPrecheck: func(req dto.RegisterClientPrecheckDTO, iterCount int) (string, error) {
-			assert.Equal(t, "test_user", req.Username, "Username should match")
-			assert.Equal(t, 4096, iterCount, "Iteration count should match")
+			assert.Equal(t, username, req.Username, "Username should match")
+			assert.Equal(t, iterationCount, iterCount, "Iteration count should match")
 
 			return clientSalt, nil
 		},
@@ -3134,7 +3134,6 @@ func TestRegisterClientHandlerv2_RequestJsonIsMalformed(t *testing.T) {
 
 	mockService := &MockService{}
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
-	// setMockServiceInContext(req)
 
 	rr := httptest.NewRecorder()
 
