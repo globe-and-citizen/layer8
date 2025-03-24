@@ -770,3 +770,60 @@ func ResetPasswordHandlerV2(w http.ResponseWriter, r *http.Request) {
 		utils.HandleError(w, http.StatusInternalServerError, "Failed to encode the response", err)
 	}
 }
+
+func PayClientTrafficHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.PayClientTrafficDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	err = newService.PayClientTraffic(request)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to pay for the client traffic consumption", err)
+		return
+	}
+
+	response := utils.BuildResponseWithNoBody(w, http.StatusCreated, "Your invoice was paid successfully")
+	if err := json.NewEncoder(w).Encode(&response); err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to encode the response", err)
+	}
+}
+
+func ClientUnpaidAmountHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.ClientUnpaidAmountDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	unpaidAmount, err := newService.GetClientUnpaidAmount(request.ClientId)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get client's unpaid amount", err)
+		return
+	}
+
+	clientUnpaidAmountResponseOutput := models.ClientUnpaidAmountResponseOutput{
+		UnpaidAmount: unpaidAmount,
+	}
+
+	response := utils.BuildResponse(
+		w,
+		http.StatusOK,
+		"successfully retrieved client's unpaid amount",
+		clientUnpaidAmountResponseOutput,
+	)
+	if err := json.NewEncoder(w).Encode(&response); err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to encode the response", err)
+	}
+}

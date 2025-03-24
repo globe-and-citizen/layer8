@@ -46,3 +46,7 @@ type ResetPasswordPrecheckResponseOutput struct {
 	Salt           string `json:"salt"`
 	IterationCount int    `json:"iterationCount"`
 }
+
+type ClientUnpaidAmountResponseOutput struct {
+	UnpaidAmount int `json:"unpaid_amount"`
+}

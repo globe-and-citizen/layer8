@@ -451,3 +451,23 @@ func (r *MemoryRepository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO,
 func (r *MemoryRepository) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
 	return nil
 }
+
+func (r *MemoryRepository) CreateClientTrafficStatisticsEntry(clientId string, rate int) error {
+	return nil
+}
+
+func (r *MemoryRepository) AddClientTrafficUsage(clientId string, consumedBytes int, now time.Time) error {
+	return nil
+}
+
+func (r *MemoryRepository) GetClientTrafficStatistics(clientId string) (*models.ClientTrafficStatistics, error) {
+	return nil, nil
+}
+
+func (r *MemoryRepository) PayClientTrafficUsage(clientId string, amountPaid int) error {
+	return nil
+}
+
+func (r *MemoryRepository) GetAllClientStatistics() ([]models.ClientTrafficStatistics, error) {
+	return nil, nil
+}
