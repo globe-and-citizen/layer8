@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"embed"
-	"flag"
 	"fmt"
 	"io/fs"
 	"log"
@@ -51,19 +50,6 @@ func getPwd() {
 }
 
 func main() {
-	// Use flags to set the port
-	port := flag.Int("port", 8080, "Port to run the server on")
-	jwtKey := flag.String("jwtKey", "secret", "Key to sign JWT tokens")
-	MpKey := flag.String("MpKey", "secret", "Key to sign mpJWT tokens")
-	UpKey := flag.String("UpKey", "secret", "Key to sign upJWT tokens")
-	ProxyURL := flag.String("ProxyURL", "http://localhost:5001", "URL to populate go HTML templates")
-	InMemoryDb := flag.Bool(
-		"InMemoryDb",
-		false,
-		"Defines whether or not to use the in-memory database implementation")
-
-	flag.Parse()
-
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
@@ -77,38 +63,12 @@ func main() {
 	var resourceRepository interfaces.IRepository
 	var oauthService *oauthSvc.Service
 
-	if *InMemoryDb {
-		os.Setenv("SERVER_PORT", strconv.Itoa(*port))
-		os.Setenv("JWT_SECRET_KEY", *jwtKey)
-		os.Setenv("MP_123_SECRET_KEY", *MpKey)
-		os.Setenv("UP_999_SECRET_KEY", *UpKey)
-		os.Setenv("PROXY_URL", *ProxyURL)
-
-		resourceRepository = rsRepo.NewMemoryRepository()
-		service := svc.NewService(resourceRepository, &verification.EmailVerifier{}, &zk.ProofProcessor{})
-		service.RegisterUser(dto.RegisterUserDTO{
-			Username:    "tester",
-			FirstName:   "Test",
-			LastName:    "User",
-			Password:    "12341234",
-			Country:     "Antarctica",
-			DisplayName: "test_user_mem",
-		})
-
-		oauthService = &oauthSvc.Service{Repo: resourceRepository}
-
-		fmt.Println("Running app with in-memory repository")
-	} else {
-		// If the user has set a database user or password, init the database
-		if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
-			config.InitDB()
-		}
-
-		resourceRepository = rsRepo.NewRepository(config.DB)
-		oauthService = &oauthSvc.Service{Repo: oauthRepo.NewOauthRepository(config.DB)}
-
-		fmt.Println("Running the app with postgres repository")
+	if os.Getenv("DB_USER") != "" || os.Getenv("DB_PASSWORD") != "" {
+		config.InitDB()
 	}
+
+	resourceRepository = rsRepo.NewRepository(config.DB)
+	oauthService = &oauthSvc.Service{Repo: oauthRepo.NewOauthRepository(config.DB)}
 
 	adminEmailAddress := fmt.Sprintf(
 		"%s@%s",
@@ -262,8 +222,14 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.InputVerificationCodePage(w, r)
 			case path == "/client-register-page":
 				Ctl.ClientHandler(w, r)
+			case path == "/v2/client-register-page":
+				Ctl.ClientHandlerv2(w, r)
 			case path == "/client-login-page":
 				Ctl.LoginClientPage(w, r)
+			case path == "/v2/client-login-page":
+				Ctl.LoginClientPagev2(w, r)
+			case path == "/api/v2/login-client-precheck":
+				Ctl.LoginClientPrecheckHandlerv2(w, r)
 			case path == "/client-profile":
 				Ctl.ClientProfilePage(w, r)
 			case path == "/reset-password-page":
@@ -286,8 +252,14 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.LoginUserHandler(w, r)
 			case path == "/api/v2/login-user":
 				Ctl.LoginUserHandlerv2(w, r)
+			case path == "/api/v2/register-client-precheck":
+				Ctl.RegisterClientPrecheckHandler(w, r)
+			case path == "/api/v2/register-client":
+				Ctl.RegisterClientHandlerv2(w, r)
 			case path == "/api/v1/login-client":
 				Ctl.LoginClientHandler(w, r) // Login Client
+			case path == "/api/v2/login-client":
+				Ctl.LoginClientHandlerv2(w, r) // Login Client
 			case path == "/api/v1/profile":
 				Ctl.ProfileHandler(w, r)
 			case path == "/api/v1/client-profile":

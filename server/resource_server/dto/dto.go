@@ -34,6 +34,13 @@ type LoginUserDTOv2 struct {
 	ClientProof string `json:"client_proof" validate:"required"`
 }
 
+type LoginClientDTOv2 struct {
+	Username    string `json:"username" validate:"required"`
+	Nonce       string `json:"nonce" validate:"required"`
+	CNonce      string `json:"c_nonce" validate:"required"`
+	ClientProof string `json:"client_proof" validate:"required"`
+}
+
 type LoginClientDTO struct {
 	Username string `json:"username" validate:"required"`
 	Password string `json:"password" validate:"required"`
@@ -52,12 +59,25 @@ type UpdateDisplayNameDTO struct {
 	DisplayName string `json:"display_name" validate:"required"`
 }
 
+type RegisterClientPrecheckDTO struct {
+	Username string `json:"username" validate:"required,min=3,max=50"`
+}
+
 type RegisterClientDTO struct {
 	Name        string `json:"name" validate:"required"`
 	RedirectURI string `json:"redirect_uri" validate:"required"`
 	BackendURI  string `json:"backend_uri" validate:"required"`
 	Username    string `json:"username" validate:"required,min=3,max=50"`
 	Password    string `json:"password" validate:"required"`
+}
+
+type RegisterClientDTOv2 struct {
+	Name        string `json:"name" validate:"required"`
+	RedirectURI string `json:"redirect_uri" validate:"required"`
+	BackendURI  string `json:"backend_uri" validate:"required"`
+	Username    string `json:"username" validate:"required,min=3,max=50"`
+	StoredKey   string `json:"stored_key" validate:"required"`
+	ServerKey   string `json:"server_key" validate:"required"`
 }
 
 type CheckBackendURIDTO struct {
