@@ -1577,9 +1577,6 @@ func TestRegisterPrecheckClient_Success(t *testing.T) {
 	req := dto.RegisterClientPrecheckDTO{
 		Username: clientUsername,
 	}
-	salt := clientSalt
-	iterCount := clientIterationCount
-
 	mock.ExpectBegin()
 
 	mock.ExpectExec(
@@ -1594,7 +1591,7 @@ func TestRegisterPrecheckClient_Success(t *testing.T) {
 
 	mock.ExpectCommit()
 
-	err := repository.RegisterPrecheckClient(req, salt, iterCount)
+	err := repository.RegisterPrecheckClient(req, clientSalt, clientIterationCount)
 
 	assert.Nil(t, err, "Error should be nil")
 	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
@@ -1607,8 +1604,6 @@ func TestRegisterPrecheckClient_RepositoryError(t *testing.T) {
 	req := dto.RegisterClientPrecheckDTO{
 		Username: clientUsername,
 	}
-	salt := clientSalt
-	iterCount := clientIterationCount
 
 	mock.ExpectBegin()
 
@@ -1622,7 +1617,7 @@ func TestRegisterPrecheckClient_RepositoryError(t *testing.T) {
 
 	mock.ExpectRollback()
 
-	err := repository.RegisterPrecheckClient(req, salt, iterCount)
+	err := repository.RegisterPrecheckClient(req, clientSalt, clientIterationCount)
 
 	assert.NotNil(t, err, "Expected error due to database error")
 	assert.Equal(t, "failed to create a new client: failed to create client", err.Error())
@@ -1637,12 +1632,10 @@ func TestRegisterPrecheckClient_BeginTransactionFailure(t *testing.T) {
 	req := dto.RegisterClientPrecheckDTO{
 		Username: clientUsername,
 	}
-	salt := clientSalt
-	iterCount := clientIterationCount
 
 	mock.ExpectBegin().WillReturnError(fmt.Errorf("failed to begin transaction"))
 
-	err := repository.RegisterPrecheckClient(req, salt, iterCount)
+	err := repository.RegisterPrecheckClient(req, clientSalt, clientIterationCount)
 
 	assert.NotNil(t, err, "Error should not be nil")
 	assert.Contains(t, err.Error(), "failed to begin transaction", "Error message should contain 'failed to begin transaction'")
