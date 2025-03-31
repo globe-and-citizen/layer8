@@ -196,3 +196,11 @@ func (m *MockRepository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (ui
 func (m *MockRepository) GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error) {
 	return models.ZkSnarksKeyPair{}, nil
 }
+
+func (m *MockRepository) RegisterClientv2(req dto.RegisterClientDTOv2, id string, secret string) error {
+	return nil
+}
+
+func (m *MockRepository) RegisterPrecheckClient(req dto.RegisterClientPrecheckDTO, salt string, iterCount int) error {
+	return nil
+}

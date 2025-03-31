@@ -15,12 +15,14 @@ import (
 	"os"
 	"strings"
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 
 	"globe-and-citizen/layer8/server/resource_server/utils/mocks"
 
-	utils "github.com/globe-and-citizen/layer8-utils"
 	"globe-and-citizen/layer8/server/resource_server/models"
+
+	utils "github.com/globe-and-citizen/layer8-utils"
 )
 
 const name = "name"
