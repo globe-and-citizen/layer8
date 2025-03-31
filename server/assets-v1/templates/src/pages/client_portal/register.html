@@ -7,12 +7,10 @@
       rel="stylesheet"
       href="/assets-v1/templates/assets/styles/output.css"
     />
-    <link
-      rel="stylesheet"
-      href="/assets-v1/templates/assets/styles/base.css"
-    />
+    <link rel="stylesheet" href="/assets-v1/templates/assets/styles/base.css" />
     <title>Register | Layer8</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+    <script src="../assets-v1/templates/assets/js/scram-bundled.js"></script>
   </head>
   <body>
     <div id="app">
@@ -20,7 +18,9 @@
         <div class="client-container">
           <div class="grid grid-cols-1 md:grid-cols-2 bg-white h-dvh">
             <div class="self-center">
-              <h1 class="font-bold text-3xl md:text-4xl text-[#3751FE] mb-11 animate-slideFromLeft">
+              <h1
+                class="font-bold text-3xl md:text-4xl text-[#3751FE] mb-11 animate-slideFromLeft"
+              >
                 Register your product
               </h1>
               <div class="mr-0 md:mr-16 lg:mr-28 animate-slideFromLeft">
@@ -52,7 +52,7 @@
                     @focus="isRUFocused = true"
                     @blur="isRUFocused = false"
                     class="w-full px-4 pt-10 pb-3 border-l-4 focus:border-blue-500 focus:outline-none text-lg text-[#3751FE]"
-                    :placeholder="isRUFocused ? 'http://localhost:5173/oauth' : ' '"
+                    :placeholder="isRUFocused ? 'https://www.example.com/oauth_redirect' : ' '"
                   />
                   <label
                     for="redirect_uri"
@@ -71,7 +71,7 @@
                     @focus="isBUFocused = true"
                     @blur="checkBackendUri"
                     class="w-full px-4 pt-10 pb-3 border-l-4 focus:border-blue-500 focus:outline-none text-lg text-[#3751FE]"
-                    :placeholder="isBUFocused ? 'localhost:3000' : ' '"
+                    :placeholder="isBUFocused ? 'www.example.com' : ' '"
                   />
                   <label
                     for="backend_uri"
@@ -136,14 +136,19 @@
             <div class="hidden"></div>
           </div>
         </div>
-        <div class="hidden md:flex lg:flex items-center absolute bg-[#E5E5E5] right-0 top-0 w-1/2 h-dvh pt-[8%]">
+        <div
+          class="hidden md:flex lg:flex items-center absolute bg-[#E5E5E5] right-0 top-0 w-1/2 h-dvh pt-[8%]"
+        >
           <img
             class="m-auto mt-10 animate-slideFromRight"
             src="/assets-v1/templates/assets/images/client-image.png"
           />
         </div>
       </div>
-      <div :class="showToast ? 'opacity-100' : 'opacity-0 pointer-events-none'" class="fixed top-3 right-3 bg-red-500 text-white p-2 rounded-md transition-opacity ease-in-out duration-500 z-50">
+      <div
+        :class="showToast ? 'opacity-100' : 'opacity-0 pointer-events-none'"
+        class="fixed top-3 right-3 bg-red-500 text-white p-2 rounded-md transition-opacity ease-in-out duration-500 z-50"
+      >
         {{ toastMessage }}
       </div>
     </div>
@@ -169,27 +174,40 @@
 
       const registerClient = async () => {
         try {
-          if(isBackendUrlUsed.value) {
-            showToastMessage(backendUriText.value + " is already registered to the other user!", "error")
+          if (isBackendUrlUsed.value) {
+            showToastMessage(
+              backendUriText.value +
+                " is already registered to the other user!",
+              "error"
+            );
             return;
           }
-          if (name.value == "" || redirect_uri.value == "" || backend_uri.value == "" || username.value == "" || password.value == "") {
-            showToastMessage("Please enter all fields!", "error")
+          if (
+            name.value == "" ||
+            redirect_uri.value == "" ||
+            backend_uri.value == "" ||
+            username.value == "" ||
+            password.value == ""
+          ) {
+            showToastMessage("Please enter all fields!", "error");
             return;
           }
-          const resp = await window.fetch("[[ .ProxyURL ]]/api/v1/register-client", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              name: name.value,
-              redirect_uri: redirect_uri.value,
-              backend_uri: backend_uri.value,
-              username: username.value,
-              password: password.value,
-            }),
-          });
+          const resp = await window.fetch(
+            "[[ .ProxyURL ]]/api/v1/register-client",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                name: name.value,
+                redirect_uri: redirect_uri.value,
+                backend_uri: backend_uri.value,
+                username: username.value,
+                password: password.value,
+              }),
+            }
+          );
           const registerResponseBody = await resp.json();
           if (resp.status === 201) {
             showToastMessage(registerResponseBody.message, "success");
@@ -201,32 +219,38 @@
           }
         } catch (error) {
           console.error(error);
-          showToastMessage("Registration failed!", "error")
+          showToastMessage("Registration failed!", "error");
         }
       };
 
       const checkBackendUri = async () => {
         try {
           if (!backend_uri.value) {
-            isBUFocused.value = false
+            isBUFocused.value = false;
             return false;
           }
 
-          isBUFocused.value = false
-          const response = await fetch("[[ .ProxyURL ]]/api/v1/check-backend-uri", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              backend_uri: backend_uri.value,
-            }),
-          });
+          isBUFocused.value = false;
+          const response = await fetch(
+            "[[ .ProxyURL ]]/api/v1/check-backend-uri",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                backend_uri: backend_uri.value,
+              }),
+            }
+          );
           isBackendUrlUsed.value = await response.json();
           if (isBackendUrlUsed.value == true) {
-            showToastMessage(backend_uri.value + " is already registered to the other user!", "error")
-            backendUriText.value = backend_uri.value
-            backend_uri.value = ""
+            showToastMessage(
+              backend_uri.value + " is already registered to the other user!",
+              "error"
+            );
+            backendUriText.value = backend_uri.value;
+            backend_uri.value = "";
           }
         } catch (error) {
           console.error(error);
@@ -240,7 +264,7 @@
         setTimeout(() => {
           showToast.value = false;
         }, 3000);
-      }
+      };
 
       const app = createApp({
         setup() {
@@ -262,7 +286,7 @@
             toastMessage,
             checkBackendUri,
             backendUriText,
-            isBackendUrlUsed
+            isBackendUrlUsed,
           };
         },
       });
