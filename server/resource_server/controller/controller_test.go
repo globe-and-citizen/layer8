@@ -90,7 +90,6 @@ type MockService struct {
 	loginPrecheckUserv2                func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error)
 	loginPrecheckClientv2              func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error)
 	loginUserv2                        func(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error)
-	loginPrecheckClientv2              func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error)
 	loginClientv2                      func(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error)
 }
 
@@ -202,14 +201,6 @@ func (m *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserRespo
 	return models.LoginUserResponseOutput{
 		Token: testToken,
 	}, nil
-}
-
-func (m *MockService) LoginClientv2(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error) {
-	return m.loginClientv2(req)
-}
-
-func (m *MockService) LoginPrecheckClientv2(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
-	return m.loginPrecheckClientv2(req)
 }
 
 func (m *MockService) LoginClientv2(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error) {
@@ -3081,7 +3072,7 @@ func TestLoginClientPrecheckHandlerv2_Success(t *testing.T) {
 		loginPrecheckClientv2: func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
 			return models.LoginPrecheckResponseOutputv2{
 				Salt:      userSalt,
-				IterCount: iterCount,
+				IterCount: iterationCount,
 				Nonce:     nonce,
 			}, nil
 		},
@@ -3116,7 +3107,7 @@ func TestLoginClientPrecheckHandlerv2_Success(t *testing.T) {
 
 	// Now assert the fields directly
 	assert.Equal(t, userSalt, loginPrecheckResponse.Salt)
-	assert.Equal(t, iterCount, loginPrecheckResponse.IterCount)
+	assert.Equal(t, iterationCount, loginPrecheckResponse.IterCount)
 	assert.Equal(t, nonce, loginPrecheckResponse.Nonce)
 }
 

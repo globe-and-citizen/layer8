@@ -84,7 +84,6 @@ type mockRepository struct {
 	profileClient                func(username string) (models.Client, error)
 	updateUserPassword           func(username string, password string) error
 	updateUserPasswordV2         func(username string, storedKey string, serverKey string) error
-	profileClient                func(username string) (models.Client, error)
 }
 
 func (m *mockRepository) FindUser(userId uint) (models.User, error) {
@@ -258,10 +257,6 @@ func (m *mockRepository) GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error)
 
 func (m *mockRepository) GetUserForUsername(username string) (models.User, error) {
 	return m.getUserForUsername(username)
-}
-
-func (m *mockRepository) ProfileClient(username string) (models.Client, error) {
-	return m.profileClient(username)
 }
 
 func (m *mockRepository) UpdateUserPassword(username string, password string) error {
