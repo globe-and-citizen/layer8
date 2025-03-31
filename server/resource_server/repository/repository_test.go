@@ -39,7 +39,7 @@ const redirectUri = "https://gcitizen.com/callback"
 const backendUri = "https://gcitizen.com/backend"
 const clientSalt = "client_salt"
 const clientPassword = "client_password"
-
+const clientIterationCount = 4096
 const zkKeyPairId uint = 2
 
 var timestamp = time.Date(2024, time.May, 24, 14, 0, 0, 0, time.UTC)
@@ -226,10 +226,10 @@ func TestRegisterClient_InsertQueryFailed(t *testing.T) {
 
 	mock.ExpectExec(
 		regexp.QuoteMeta(
-			`INSERT INTO "clients" ("id","secret","name","redirect_uri","backend_uri","username","password","salt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+			`INSERT INTO "clients" ("id","secret","name","redirect_uri","backend_uri","username","password","salt","iteration_count","server_key","stored_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
 		),
 	).WithArgs(
-		clientId, clientSecret, clientName, redirectUri, backendUri, clientUsername, clientPassword, clientSalt,
+		clientId, clientSecret, clientName, redirectUri, backendUri, clientUsername, clientPassword, clientSalt, 0, "", "",
 	).WillReturnError(
 		fmt.Errorf("failed to insert client %s", clientId),
 	)
@@ -260,10 +260,10 @@ func TestRegisterClient_Success(t *testing.T) {
 
 	mock.ExpectExec(
 		regexp.QuoteMeta(
-			`INSERT INTO "clients" ("id","secret","name","redirect_uri","backend_uri","username","password","salt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+			`INSERT INTO "clients" ("id","secret","name","redirect_uri","backend_uri","username","password","salt","iteration_count","server_key","stored_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
 		),
 	).WithArgs(
-		clientId, clientSecret, clientName, redirectUri, backendUri, clientUsername, clientPassword, clientSalt,
+		clientId, clientSecret, clientName, redirectUri, backendUri, clientUsername, clientPassword, clientSalt, 0, "", "",
 	).WillReturnResult(
 		sqlmock.NewResult(1, 1),
 	)
@@ -1568,4 +1568,141 @@ func TestUpdateUserPasswordV2_EdgeCaseUsername(t *testing.T) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("There were unfulfilled expectations: %s", err)
 	}
+}
+
+func TestRegisterPrecheckClient_Success(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	req := dto.RegisterClientPrecheckDTO{
+		Username: clientUsername,
+	}
+	mock.ExpectBegin()
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(
+			`INSERT INTO "clients" ("id","secret","name","redirect_uri","backend_uri","username","password","salt","iteration_count","server_key","stored_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+		),
+	).WithArgs(
+		"", "", "", "", "", clientUsername, "", clientSalt, clientIterationCount, sqlmock.AnyArg(), sqlmock.AnyArg(),
+	).WillReturnResult(
+		sqlmock.NewResult(1, 1),
+	)
+
+	mock.ExpectCommit()
+
+	err := repository.RegisterPrecheckClient(req, clientSalt, clientIterationCount)
+
+	assert.Nil(t, err, "Error should be nil")
+	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
+}
+
+func TestRegisterPrecheckClient_RepositoryError(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	req := dto.RegisterClientPrecheckDTO{
+		Username: clientUsername,
+	}
+
+	mock.ExpectBegin()
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(
+			`INSERT INTO "clients" ("id","secret","name","redirect_uri","backend_uri","username","password","salt","iteration_count","server_key","stored_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+		),
+	).WithArgs(
+		"", "", "", "", "", clientUsername, "", clientSalt, clientIterationCount, sqlmock.AnyArg(), sqlmock.AnyArg(),
+	).WillReturnError(fmt.Errorf("failed to create client"))
+
+	mock.ExpectRollback()
+
+	err := repository.RegisterPrecheckClient(req, clientSalt, clientIterationCount)
+
+	assert.NotNil(t, err, "Expected error due to database error")
+	assert.Equal(t, "failed to create a new client: failed to create client", err.Error())
+
+	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
+}
+
+func TestRegisterPrecheckClient_BeginTransactionFailure(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	req := dto.RegisterClientPrecheckDTO{
+		Username: clientUsername,
+	}
+
+	mock.ExpectBegin().WillReturnError(fmt.Errorf("failed to begin transaction"))
+
+	err := repository.RegisterPrecheckClient(req, clientSalt, clientIterationCount)
+
+	assert.NotNil(t, err, "Error should not be nil")
+	assert.Contains(t, err.Error(), "failed to begin transaction", "Error message should contain 'failed to begin transaction'")
+
+	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
+}
+
+func TestRegisterClientv2_FailToUpdateClientRecord(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(
+			`UPDATE "clients" SET "backend_uri"=$1,"id"=$2,"name"=$3,"redirect_uri"=$4,"secret"=$5,"server_key"=$6,"stored_key"=$7 WHERE username = $8`,
+		),
+	).WithArgs(
+		backendUri, clientId, clientName, redirectUri, clientSecret, serverKey, storedKey, clientUsername,
+	).WillReturnError(
+		fmt.Errorf("could not update client record"),
+	)
+
+	mock.ExpectRollback()
+
+	clientDto := dto.RegisterClientDTOv2{
+		Username:    clientUsername,
+		Name:        clientName,
+		RedirectURI: redirectUri,
+		BackendURI:  backendUri,
+		StoredKey:   storedKey,
+		ServerKey:   serverKey,
+	}
+	err = repository.RegisterClientv2(clientDto, clientId, clientSecret)
+
+	assert.NotNil(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
+}
+
+func TestRegisterClientv2_Success(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(
+			`UPDATE "clients" SET "backend_uri"=$1,"id"=$2,"name"=$3,"redirect_uri"=$4,"secret"=$5,"server_key"=$6,"stored_key"=$7 WHERE username = $8`,
+		),
+	).WithArgs(
+		backendUri, clientId, clientName, redirectUri, clientSecret, serverKey, storedKey, clientUsername,
+	).WillReturnResult(
+		sqlmock.NewResult(1, 1),
+	)
+
+	mock.ExpectCommit()
+
+	clientDto := dto.RegisterClientDTOv2{
+		Username:    clientUsername,
+		Name:        clientName,
+		RedirectURI: redirectUri,
+		BackendURI:  backendUri,
+		StoredKey:   storedKey,
+		ServerKey:   serverKey,
+	}
+	err = repository.RegisterClientv2(clientDto, clientId, clientSecret)
+
+	assert.Nil(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet(), "There were unfulfilled expectations!")
 }

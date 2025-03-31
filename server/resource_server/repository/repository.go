@@ -80,7 +80,7 @@ func (r *Repository) RegisterUserv2(req dto.RegisterUserDTOv2) error {
 
 	err := tx.Model(&user).Updates(map[string]interface{}{
 		"first_name": req.FirstName,
-		"last_name": req.LastName,
+		"last_name":  req.LastName,
 		"public_key": req.PublicKey,
 		"stored_key": req.StoredKey,
 		"server_key": req.ServerKey,
@@ -135,6 +135,35 @@ func (r *Repository) RegisterClient(client models.Client) error {
 		return fmt.Errorf("failed to create a new client record: %e", err)
 	}
 
+	return nil
+}
+
+func (r *Repository) RegisterClientv2(req dto.RegisterClientDTOv2, clientUUID string, clientSecret string) error {
+	tx := r.connection.Begin()
+
+	result := tx.Model(&models.Client{}).
+		Where("username = ?", req.Username).
+		Updates(map[string]interface{}{
+			"name":         req.Name,
+			"redirect_uri": req.RedirectURI,
+			"backend_uri":  req.BackendURI,
+			"id":           clientUUID,
+			"secret":       clientSecret,
+			"stored_key":   req.StoredKey,
+			"server_key":   req.ServerKey,
+		})
+
+	if result.Error != nil {
+		tx.Rollback()
+		return fmt.Errorf("could not update client: %v", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		tx.Rollback()
+		return fmt.Errorf("no client found with username: %s", req.Username)
+	}
+
+	tx.Commit()
 	return nil
 }
 
@@ -385,6 +414,20 @@ func (r *Repository) RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt 
 
 	if err := r.connection.Create(&user).Error; err != nil {
 		return fmt.Errorf("failed to create a new user: %v", err)
+	}
+
+	return nil
+}
+
+func (r *Repository) RegisterPrecheckClient(req dto.RegisterClientPrecheckDTO, salt string, iterCount int) error {
+	client := models.Client{
+		Username:       req.Username,
+		Salt:           salt,
+		IterationCount: iterCount,
+	}
+
+	if err := r.connection.Create(&client).Error; err != nil {
+		return fmt.Errorf("failed to create a new client: %v", err)
 	}
 
 	return nil

@@ -16,6 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
 
     <script src="../assets-v1/templates/assets/js/bundled.js"></script>
+    <script src="../assets-v1/templates/assets/js/scram-bundled.js"></script>
   </head>
 
   <body>
@@ -102,7 +103,7 @@
             </button>
             <a
               class="text-sm text-[#414141] font-normal text-center block cursor-pointer"
-              href="/user-login-page"
+              href="/v2/user-login-page"
               >Already have an account? <span class="font-bold">Login</span></a
             >
           </div>
@@ -228,7 +229,7 @@
       };
 
       const backToLogin = async () => {
-        window.location.href = "[[ .ProxyURL ]]/user-login-page";
+        window.location.href = "[[ .ProxyURL ]]/v2/user-login-page";
       };
 
       const registerUser = async () => {
@@ -267,52 +268,35 @@
             return;
           }
 
-          const saltedPassword = CryptoJS.PBKDF2(
+          const { data } = scram.keysHMAC(
             registerPassword.value,
-            CryptoJS.enc.Hex.parse(registerPrecheckResponseBody.data.salt),
+            registerPrecheckResponseBody.data.salt,
+            registerPrecheckResponseBody.data.iterationCount
+          );
+
+          const resp = await window.fetch(
+            "[[ .ProxyURL ]]/api/v2/register-user",
             {
-              keySize: 160 / 32,
-              iterations: registerPrecheckResponseBody.data.iterationCount,
-              hasher: CryptoJS.algo.SHA1,
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                username: registerUsername.value,
+                first_name: registerFirstName.value,
+                last_name: registerLastName.value,
+                display_name: registerDisplayName.value,
+                country: registerCountry.value,
+                public_key: Array.from(keyPair.publicKey),
+                stored_key: data.storedKey,
+                server_key: data.serverKey,
+              }),
             }
-          ).toString(CryptoJS.enc.Hex);
+          );
 
-          // HMAC for clientKey
-          const clientKey = CryptoJS.HmacSHA256(
-            CryptoJS.enc.Hex.parse(saltedPassword),
-            CryptoJS.enc.Utf8.parse("Client Key")
-          ).toString(CryptoJS.enc.Hex);
-
-          // HMAC for serverKey
-          const serverKey = CryptoJS.HmacSHA256(
-            CryptoJS.enc.Hex.parse(saltedPassword),
-            CryptoJS.enc.Utf8.parse("Server Key")
-          ).toString(CryptoJS.enc.Hex);
-
-          // SHA256 for storedKey
-          const storedKey = CryptoJS.SHA256(
-            CryptoJS.enc.Hex.parse(clientKey)
-          ).toString(CryptoJS.enc.Hex);
-
-          const resp = await window.fetch("[[ .ProxyURL ]]/api/v2/register-user", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              username: registerUsername.value,
-              first_name: registerFirstName.value,
-              last_name: registerLastName.value,
-              display_name: registerDisplayName.value,
-              country: registerCountry.value,
-              public_key: Array.from(keyPair.publicKey),
-              stored_key: storedKey,
-              server_key: serverKey,
-            }),
-          });
           const registerResponseBody = await resp.json();
           if (resp.status === 201) {
-              modalWindowActive.value = true;
+            modalWindowActive.value = true;
           } else if (registerResponseBody.message) {
             showToastMessage(registerResponseBody.message, "error");
           } else {
