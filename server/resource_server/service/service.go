@@ -142,6 +142,21 @@ func (s *service) LoginPreCheckClient(req dto.LoginPrecheckDTO) (models.LoginPre
 	return loginPrecheckResp, nil
 }
 
+func (s *service) LoginPrecheckClientv2(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
+	sNonce := utils.GenerateRandomSalt(utils.SaltSize)
+
+	client, err := s.repository.ProfileClient(req.Username)
+	if err != nil {
+		return models.LoginPrecheckResponseOutputv2{}, err
+	}
+	loginPrecheckResp := models.LoginPrecheckResponseOutputv2{
+		Salt:      client.Salt,
+		IterCount: client.IterationCount,
+		Nonce:     req.CNonce + sNonce,
+	}
+	return loginPrecheckResp, nil
+}
+
 func (s *service) LoginUser(req dto.LoginUserDTO) (models.LoginUserResponseOutput, error) {
 	user, err := s.repository.LoginUser(req)
 	if err != nil {
@@ -220,6 +235,61 @@ func (s *service) LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseO
 		return models.LoginUserResponseOutput{}, err
 	}
 	return tokenResp, nil
+}
+
+func (s *service) LoginClientv2(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error) {
+	client, err := s.repository.ProfileClient(req.Username)
+	if err != nil {
+		return models.LoginClientResponseOutputv2{}, err
+	}
+
+	storedKeyBytes, err := hex.DecodeString(client.StoredKey)
+	if err != nil {
+		return models.LoginClientResponseOutputv2{}, fmt.Errorf("error decoding stored key: %v", err)
+	}
+
+	authMessage := fmt.Sprintf("[n=%s,r=%s,s=%s,i=%d,r=%s]", req.Username, req.CNonce, client.Salt, client.IterationCount, req.Nonce)
+	authMessageBytes := []byte(authMessage)
+
+	clientSignatureHMAC := hmac.New(sha256.New, storedKeyBytes)
+	clientSignatureHMAC.Write(authMessageBytes)
+	clientSignature := clientSignatureHMAC.Sum(nil)
+
+	clientProofBytes, err := hex.DecodeString(req.ClientProof)
+	if err != nil {
+		return models.LoginClientResponseOutputv2{}, fmt.Errorf("error decoding client proof: %v", err)
+	}
+
+	clientKeyBytes, err := utils.XorBytes(clientSignature, clientProofBytes)
+	if err != nil {
+		return models.LoginClientResponseOutputv2{}, fmt.Errorf("error performing XOR operation: %v", err)
+	}
+
+	clientKeyHash := sha256.Sum256(clientKeyBytes)
+
+	clientKeyHashStr := hex.EncodeToString(clientKeyHash[:])
+	if clientKeyHashStr != client.StoredKey {
+		return models.LoginClientResponseOutputv2{}, fmt.Errorf("server failed to authenticate the user")
+	}
+
+	serverKeyBytes, err := hex.DecodeString(client.ServerKey)
+	if err != nil {
+		return models.LoginClientResponseOutputv2{}, fmt.Errorf("error decoding server key: %v", err)
+	}
+
+	serverSignatureHMAC := hmac.New(sha256.New, serverKeyBytes)
+	serverSignatureHMAC.Write(authMessageBytes)
+	serverSignatureHex := hex.EncodeToString(serverSignatureHMAC.Sum(nil))
+
+	tokenString, err := utils.CompleteClientLoginv2(client)
+	if err != nil {
+		return models.LoginClientResponseOutputv2{}, fmt.Errorf("error generating token: %v", err)
+	}
+
+	return models.LoginClientResponseOutputv2{
+		ServerSignature: serverSignatureHex,
+		Token:           tokenString,
+	}, nil
 }
 
 func (s *service) ProfileUser(userID uint) (models.ProfileResponseOutput, error) {

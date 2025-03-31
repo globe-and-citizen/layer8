@@ -88,6 +88,7 @@ type MockService struct {
 	registerUserv2                     func(req dto.RegisterUserDTOv2) error
 	registerClientv2                   func(req dto.RegisterClientDTOv2) error
 	loginPrecheckUserv2                func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error)
+	loginPrecheckClientv2              func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error)
 	loginUserv2                        func(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error)
 	loginPrecheckClientv2              func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error)
 	loginClientv2                      func(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error)
@@ -201,6 +202,14 @@ func (m *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserRespo
 	return models.LoginUserResponseOutput{
 		Token: testToken,
 	}, nil
+}
+
+func (m *MockService) LoginClientv2(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error) {
+	return m.loginClientv2(req)
+}
+
+func (m *MockService) LoginPrecheckClientv2(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
+	return m.loginPrecheckClientv2(req)
 }
 
 func (m *MockService) LoginClientv2(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error) {
