@@ -85,7 +85,9 @@ type MockService struct {
 	registerUserPrecheck               func(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error)
 	registerUserv2                     func(req dto.RegisterUserDTOv2) error
 	loginPrecheckUserv2                func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error)
+	loginPrecheckClientv2              func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error)
 	loginUserv2                        func(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error)
+	loginClientv2                      func(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error)
 }
 
 func (ms *MockService) RegisterUser(req dto.RegisterUserDTO) error {
@@ -154,6 +156,16 @@ func (ms *MockService) RegisterClient(req dto.RegisterClientDTO) error {
 	return nil
 }
 
+func (ms *MockService) RegisterClientv2(req dto.RegisterClientDTOv2) error {
+	// Mock implementation for testing purposes.
+	return nil
+}
+
+func (ms *MockService) RegisterClientPrecheck(req dto.RegisterClientPrecheckDTO, iterCount int) (string, error) {
+	// Mock implementation for testing purposes.
+	return "", nil
+}
+
 func (ms *MockService) GetClientData(clientName string) (models.ClientResponseOutput, error) {
 	// Mock implementation for testing purposes.
 	return models.ClientResponseOutput{
@@ -188,6 +200,14 @@ func (m *MockService) LoginClient(req dto.LoginClientDTO) (models.LoginUserRespo
 	return models.LoginUserResponseOutput{
 		Token: testToken,
 	}, nil
+}
+
+func (m *MockService) LoginClientv2(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error) {
+	return m.loginClientv2(req)
+}
+
+func (m *MockService) LoginPrecheckClientv2(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
+	return m.loginPrecheckClientv2(req)
 }
 
 func (m *MockService) GetUserForUsername(username string) (models.User, error) {
@@ -2923,4 +2943,357 @@ func TestResetPasswordHandlerV2_MissingRequiredField(t *testing.T) {
 	assert.Equal(t, false, response.IsSuccess)
 	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
 	assert.NotNil(t, response.Message)
+}
+
+func TestLoginClientPrecheckHandlerv2_InvalidHttpRequestMethod(t *testing.T) {
+	requestBody := []byte(`{"username": "test_client", "c_nonce": "Test_Nonce"}`)
+
+	req, err := http.NewRequest("GET", "/api/v2/login-client-precheck", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginClientPrecheckHandlerv2(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected POST", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestLoginClientPrecheckHandlerv2_RequestJsonIsMalformed(t *testing.T) {
+	requestBody := []byte(`{"username": "test_client", "c_nonce": "Test_Nonce"}something_else`)
+
+	req, err := http.NewRequest("POST", "/api/v2/login-client-precheck", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginClientPrecheckHandlerv2(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestLoginClientPrecheckHandlerv2_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
+	requestBody := []byte(`{}`)
+
+	req, err := http.NewRequest("POST", "/api/v2/login-client-precheck", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginClientPrecheckHandlerv2(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Input json is invalid", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestLoginClientPrecheckHandlerv2_ServiceError(t *testing.T) {
+	// Mock request body
+	requestBody := []byte(`{"username": "test_client", "c_nonce": "Test_Nonce"}`)
+
+	// Create a mock request
+	req, err := http.NewRequest("POST", "/api/v2/login-client-precheck", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a mock service and set it in the request context
+	mockService := &MockService{
+		loginPrecheckClientv2: func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
+			return models.LoginPrecheckResponseOutputv2{}, fmt.Errorf("mock service error")
+		},
+	}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	// Create a ResponseRecorder to record the response
+	rr := httptest.NewRecorder()
+
+	// Call the handler function
+	Ctl.LoginClientPrecheckHandlerv2(rr, req)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	// Now assert the fields directly
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Failed to perform precheck, service error", response.Message)
+	assert.NotNil(t, response.Error)
+
+	// Check the status code
+	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
+}
+
+func TestLoginClientPrecheckHandlerv2_Success(t *testing.T) {
+	// Mock request body
+	requestBody := []byte(`{"username": "test_client", "c_nonce": "Test_Nonce"}`)
+
+	// Create a mock request
+	req, err := http.NewRequest("POST", "/api/v2/login-client-precheck", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a mock service and set it in the request context
+	mockService := &MockService{
+		loginPrecheckClientv2: func(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
+			return models.LoginPrecheckResponseOutputv2{
+				Salt:      userSalt,
+				IterCount: iterCount,
+				Nonce:     nonce,
+			}, nil
+		},
+	}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	// Create a ResponseRecorder to record the response
+	rr := httptest.NewRecorder()
+
+	// Call the handler function
+	Ctl.LoginClientPrecheckHandlerv2(rr, req)
+
+	// Check the status code
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	response := decodeResponseBodyForResponse(t, rr)
+
+	// Convert response.Data to JSON bytes for unmarshalling
+	dataBytes, err := json.Marshal(response.Data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var loginPrecheckResponse models.LoginPrecheckResponseOutputv2
+	if err := json.Unmarshal(dataBytes, &loginPrecheckResponse); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.True(t, response.IsSuccess)
+	assert.Nil(t, response.Error)
+
+	// Now assert the fields directly
+	assert.Equal(t, userSalt, loginPrecheckResponse.Salt)
+	assert.Equal(t, iterCount, loginPrecheckResponse.IterCount)
+	assert.Equal(t, nonce, loginPrecheckResponse.Nonce)
+}
+
+func TestLoginClientHandlerv2_InvalidHttpRequestMethod(t *testing.T) {
+	requestBody := []byte(`{
+		"username": 	"test_client",
+		"nonce": 		"Test_Nonce",
+		"c_nonce": 		"Test_Nonce",
+		"client_proof": "Test_Client_Proof"
+		}`)
+
+	req, err := http.NewRequest("GET", "/api/v2/login-client", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginClientHandlerv2(rr, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Invalid http method. Expected POST", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestLoginClientHandlerv2_RequestJsonIsMalformed(t *testing.T) {
+	requestBody := []byte(`{
+		"username": 	"test_client",
+		"nonce": 		"Test_Nonce",
+		"c_nonce": 		"Test_Nonce",
+		"client_proof": "Test_Client_Proof"
+		}something_else`)
+
+	req, err := http.NewRequest("POST", "/api/v2/login-client", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginClientHandlerv2(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Request malformed: error while parsing json", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestLoginClientHandlerv2_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
+	requestBody := []byte(`{
+		"nonce": 		"Test_Nonce",
+		"client_proof": "Test_Client_Proof"
+		}`)
+
+	req, err := http.NewRequest("POST", "/api/v2/login-client", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockService := &MockService{}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.LoginClientHandlerv2(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Input json is invalid", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestLoginClientHandlerv2_ServiceError(t *testing.T) {
+	// Mock request body
+	requestBody := []byte(`{
+		"username": 	"test_client",
+		"nonce": 		"Test_Nonce",
+		"c_nonce": 		"Test_Nonce",
+		"client_proof": "Test_Client_Proof"
+		}`)
+
+	// Create a mock request
+	req, err := http.NewRequest("POST", "/api/v2/login-client", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a mock service and set it in the request context
+	mockService := &MockService{
+		loginClientv2: func(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error) {
+			return models.LoginClientResponseOutputv2{}, fmt.Errorf("mock service error")
+		},
+	}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	// Create a ResponseRecorder to record the response
+	rr := httptest.NewRecorder()
+
+	// Call the handler function
+	Ctl.LoginClientHandlerv2(rr, req)
+
+	// Decode the response body
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	// Now assert the fields directly
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Failed to perform login", response.Message)
+	assert.NotNil(t, response.Error)
+
+	// Check the status code
+	assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected HTTP 400 Bad Request")
+}
+
+func TestLoginClientHandlerv2_Success(t *testing.T) {
+	// Mock request body
+	requestBody := []byte(`{
+		"username": 	"test_client",
+		"nonce": 		"Test_Nonce",
+		"c_nonce": 		"Test_Nonce",
+		"client_proof": "Test_Client_Proof"
+		}`)
+
+	// Create a mock request
+	req, err := http.NewRequest("POST", "/api/v2/login-client", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a mock service and set it in the request context
+	mockService := &MockService{
+		loginClientv2: func(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error) {
+			return models.LoginClientResponseOutputv2{
+				Token:           testToken,
+				ServerSignature: serverSignature,
+			}, nil
+		},
+	}
+
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	// Create a ResponseRecorder to record the response
+	rr := httptest.NewRecorder()
+
+	// Call the handler function
+	Ctl.LoginClientHandlerv2(rr, req)
+
+	// Check the status code
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	response := decodeResponseBodyForResponse(t, rr)
+
+	// Convert response.Data to JSON bytes for unmarshalling
+	dataBytes, err := json.Marshal(response.Data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var loginUserResponse models.LoginClientResponseOutputv2
+	if err := json.Unmarshal(dataBytes, &loginUserResponse); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.True(t, response.IsSuccess)
+	assert.Nil(t, response.Error)
+	assert.Equal(t, "Login successful", response.Message)
+
+	// Now assert the fields directly
+	assert.Equal(t, testToken, loginUserResponse.Token)
+	assert.Equal(t, serverSignature, loginUserResponse.ServerSignature)
 }

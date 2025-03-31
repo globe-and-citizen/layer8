@@ -20,6 +20,11 @@ type LoginUserResponseOutputv2 struct {
 	Token           string `json:"token"`
 }
 
+type LoginClientResponseOutputv2 struct {
+	ServerSignature string `json:"server_signature"`
+	Token           string `json:"token"`
+}
+
 type ProfileResponseOutput struct {
 	Username      string `json:"username"`
 	FirstName     string `json:"first_name"`
@@ -38,6 +43,11 @@ type ClientResponseOutput struct {
 }
 
 type RegisterUserPrecheckResponseOutput struct {
+	Salt           string `json:"salt"`
+	IterationCount int    `json:"iterationCount"`
+}
+
+type RegisterClientPrecheckResponseOutput struct {
 	Salt           string `json:"salt"`
 	IterationCount int    `json:"iterationCount"`
 }

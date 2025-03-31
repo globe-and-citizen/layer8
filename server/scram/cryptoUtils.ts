@@ -62,3 +62,13 @@ export function bytesToHexString(bytes: number[]): string {
 export function xorBytes(bytesA: number[], bytesB: number[]): number[] {
   return bytesA.map((byte, index) => byte ^ bytesB[index]);
 }
+
+export function generateCnonce(): string {
+  let cNonce = "";
+  const cNonceUintArray = new Uint8Array(16);
+  crypto.getRandomValues(cNonceUintArray);
+  cNonce = Array.from(cNonceUintArray)
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
+  return cNonce;
+}
