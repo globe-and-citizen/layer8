@@ -122,8 +122,6 @@
 
           cNonce.value = scram.generateCnonce();
 
-          console.log("cNonce: ", cNonce.value);
-
           const loginPrecheckResponse = await window.fetch(
             "[[ .ProxyURL ]]/api/v2/login-client-precheck",
             {
