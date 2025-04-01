@@ -2,21 +2,28 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 
-	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
-	"globe-and-citizen/layer8/server/resource_server/utils"
-
-	utilities "github.com/globe-and-citizen/layer8-utils"
+	"github.com/coder/websocket"
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+
+	utilities "github.com/globe-and-citizen/layer8-utils"
+
+	interfaces "globe-and-citizen/layer8/server/resource_server/interfaces"
+	"globe-and-citizen/layer8/server/resource_server/utils"
 )
 
 var (
@@ -162,6 +169,254 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Protocol: ", r.Header.Get("X-Forwarded-Proto"))
 	fmt.Println("Host: ", r.Header.Get("X-Forwarded-Host"))
 
+	// This operation is blocking, let's confirm if the tunnel is established
+	if wsIdentifier := r.Header.Get("upgrade"); strings.EqualFold(wsIdentifier, "websocket") {
+		// we need to strip the host and origin headers
+		r.Header.Del("Host")
+		r.Header.Del("Origin")
+
+		wsTunnel(w, r)
+		return
+	}
+
+	httpTunnel(w, r)
+}
+
+type WsRoundtripEnvelope struct {
+	WebSocket WsPayload
+}
+
+type WsPayload struct {
+	Payload  string `json:"payload"`
+	MetaData any    `json:"metadata"`
+}
+
+func wsTunnel(w http.ResponseWriter, r *http.Request) {
+	c, err := websocket.Accept(w, r, nil)
+	if err != nil {
+		fmt.Printf("error accepting websocket: %v", err)
+		return
+	}
+	defer c.CloseNow()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	// we expect a msg from the client, we already set the timeout so we don't expect blocking
+	_, msg, err := c.Read(ctx)
+	if err != nil {
+		fmt.Printf("error reading from client: %v", err)
+		return
+	}
+
+	logrus.Info("Read message from client")
+	logrus.Info("Message from client: ", string(msg))
+
+	var data WsRoundtripEnvelope
+	if err = json.Unmarshal(msg, &data); err != nil {
+		fmt.Printf("error unmarshaling message-: %v", err)
+		return
+	}
+
+	metadata, ok := data.WebSocket.MetaData.(map[string]any)
+	if !ok || metadata["backend_url"] == "" {
+		fmt.Println("metadata is malformed --", data.WebSocket.MetaData)
+		return
+	}
+
+	backendWithoutProtocol := utils.RemoveProtocolFromURL(metadata["backend_url"].(string))
+
+	srv := r.Context().Value("service").(interfaces.IService)
+	client, err := srv.GetClientDataByBackendURL(backendWithoutProtocol)
+	if err != nil {
+		fmt.Println("Error getting client data:", err)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	mpJWT, err := utilities.GenerateStandardToken(os.Getenv("MP_123_SECRET_KEY"))
+	if err != nil {
+		fmt.Println("Error generating mpJWT:", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	serviceProviderSoc, _, err := websocket.Dial(ctx, metadata["backend_url"].(string), &websocket.DialOptions{HTTPHeader: r.Header})
+	if err != nil {
+		fmt.Printf("error dialing backend: %v\n", err)
+		return
+	}
+	defer c.Close(websocket.StatusInternalError, "ws service provider closed unexpectedly")
+
+	// initialize the handshake
+	{
+		initTunnelPayload, err := json.Marshal(&WsRoundtripEnvelope{
+			WebSocket: WsPayload{
+				MetaData: map[string]interface{}{
+					"x-tunnel":      true,
+					"mp-jwt":        mpJWT,
+					"x-ecdh-init":   metadata["x-ecdh-init"],
+					"x-client-uuid": metadata["x-client-uuid"],
+				},
+			},
+		})
+		if err != nil {
+			fmt.Printf("error marshalling init payload: %v\n", err)
+			return
+		}
+
+		if err = serviceProviderSoc.Write(ctx, websocket.MessageText, initTunnelPayload); err != nil {
+			fmt.Printf("error writing to backend: %v\n", err)
+			return
+		}
+
+		// we expect an ack from the service provider if the tunnel is established
+		_, msg, err = serviceProviderSoc.Read(ctx)
+		if err != nil {
+			fmt.Printf("error reading from service provider: %v\n", err)
+			return
+		}
+
+		var backendResp WsRoundtripEnvelope
+		if err = json.Unmarshal(msg, &backendResp); err != nil {
+			fmt.Printf("error unmarshaling message: %v", err)
+			return
+		}
+
+		metadata, ok := backendResp.WebSocket.MetaData.(map[string]any)
+		if !ok {
+			fmt.Println("metadata is malformed")
+			return
+		}
+
+		var dataToSend []byte
+		if val, ok := metadata["server_pubKeyECDH"]; !ok || val == "" {
+			fmt.Println("tunnel not established; the server_pubKeyECDH is missing")
+			dataToSend = msg
+		} else {
+			upJWT, err := utils.GenerateUPTokenJWT(os.Getenv("UP_999_SECRET_KEY"), client.ID)
+			if err != nil {
+				fmt.Println("Error generating upJWT:", err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			server_pubKeyECDH, err := utilities.B64ToJWK(metadata["server_pubKeyECDH"].(string))
+			if err != nil {
+				fmt.Println("Error acquiring server_pubKeyECDH from Headers:", err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// Make a json response of server_pubKeyECDH and up_JWT and send it back to client
+			data := map[string]interface{}{
+				"server_pubKeyECDH": server_pubKeyECDH,
+				"up-JWT":            upJWT,
+			}
+
+			fmt.Println("Data returning to the user from the Service Provider: ", data)
+
+			if dataToSend, err = json.Marshal(&WsRoundtripEnvelope{
+				WebSocket: WsPayload{
+					MetaData: data,
+				}}); err != nil {
+				fmt.Println("Error marshalling data:", err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		if err = c.Write(ctx, websocket.MessageText, dataToSend); err != nil {
+			fmt.Printf("error writing to client: %v\n", err)
+			return
+		}
+
+		fmt.Println("Tunnel established successfully")
+	}
+
+	var (
+		fromServiceProvider = make(chan []byte, 5)
+		fromClient          = make(chan []byte, 5)
+	)
+
+	// TODO: this may not be the right way of going about this; redesign
+	{
+		go read_from_client(ctx, c, fromClient)
+		go read_from_service_provider(serviceProviderSoc, fromServiceProvider)
+	}
+
+	for {
+		select {
+		case data := <-fromClient:
+			var data_ WsRoundtripEnvelope
+			if err = json.Unmarshal(data, &data_); err != nil {
+				fmt.Printf("121212 error unmarshaling message: %v", err)
+				return
+			}
+
+			if err = serviceProviderSoc.Write(ctx, websocket.MessageText, data); err != nil {
+				if isNormal(err) {
+					return
+				}
+
+				fmt.Printf("error writing to backend: %v\n", err)
+				return
+			}
+
+		case data := <-fromServiceProvider:
+			var data_ WsRoundtripEnvelope
+			if err = json.Unmarshal(data, &data_); err != nil {
+				fmt.Printf("00000 error unmarshaling message: %v", err)
+				return
+			}
+
+			if err = c.Write(ctx, websocket.MessageText, data); err != nil {
+				if isNormal(err) {
+					return
+				}
+
+				fmt.Printf("error writing to client: %v\n", err)
+				return
+			}
+		}
+	}
+}
+
+func read_from_client(ctx context.Context, upstream *websocket.Conn, data chan []byte) {
+	for {
+		_, msg, err := upstream.Read(ctx)
+		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				continue
+			}
+			fmt.Printf("error reading from client: %v", err)
+			return
+		}
+
+		data <- msg
+	}
+}
+
+func read_from_service_provider(service_provider *websocket.Conn, data chan []byte) {
+	for {
+		_, msg, err := service_provider.Read(context.Background())
+		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				continue
+			}
+			fmt.Printf("error reading from service provider: %v", err)
+			return
+		}
+
+		data <- msg
+	}
+}
+
+func isNormal(err error) bool {
+	return websocket.CloseStatus(err) == websocket.StatusNormalClosure
+}
+
+func httpTunnel(w http.ResponseWriter, r *http.Request) {
 	protocol := r.Header.Get("X-Forwarded-Proto")
 	host := r.Header.Get("X-Forwarded-Host")
 	backendURL := fmt.Sprintf("%s://%s", protocol, host+r.URL.Path) // RAVI
@@ -211,17 +466,6 @@ func Tunnel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println("\nReceived response from:", backendURL, " of code: ", res.StatusCode)
-
-	// Get mp-JWT from response header and verify it
-	// mpJWT := res.Header.Get("mp-jwt")
-	// fmt.Printf("mp-jwt coming from SP: %s***************\n", mpJWT[0:10])
-
-	// _, err = utilities.VerifyStandardToken(mpJWT, os.Getenv("MP_123_SECRET_KEY"))
-	// if err != nil {
-	// 	fmt.Printf("MP JWT verify error: %s. With status code: %d and text: %s", err.Error(), res.StatusCode, res.Status)
-	// 	http.Error(w, res.Status, res.StatusCode)
-	// 	return
-	// }
 
 	// copy response back
 	for k, v := range res.Header {

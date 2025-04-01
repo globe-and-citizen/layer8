@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,12 +11,15 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/service"
 	resourceUtils "globe-and-citizen/layer8/server/resource_server/utils"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/coder/websocket"
 	"github.com/stretchr/testify/assert"
 
 	"globe-and-citizen/layer8/server/resource_server/utils/mocks"
@@ -25,10 +29,73 @@ import (
 	utils "github.com/globe-and-citizen/layer8-utils"
 )
 
+type mockWsResponseRecorder struct {
+	http.ResponseWriter
+	hijack func() (net.Conn, *bufio.ReadWriter, error)
+}
+
+func (mj mockWsResponseRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return mj.hijack()
+}
+
+// Asserting we implement the http.Hijacker interface
+var _ http.Hijacker = &mockWsResponseRecorder{}
+
 const name = "name"
 const redirectUri = "redirect_uri"
 const username = "username"
 const password = "password"
+
+func TestTunnel_WebSocketImpl(t *testing.T) {
+	// create the ws Server connection
+	wsMockClient := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := websocket.Accept(w, r, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer c.CloseNow()
+
+		// Set the context as needed. Use of r.Context() is not recommended
+		// to avoid surprising behavior (see http.Hijacker).
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+
+		_, msg, err := c.Read(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, "Hello, Server!", string(msg))
+		c.Write(ctx, websocket.MessageText, []byte("Hello, Client!"))
+	}))
+
+	req, err := http.NewRequest("GET", wsMockClient.URL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	url_parts := strings.Split(wsMockClient.URL, "://")
+	req.Header.Add("X-Forwarded-Proto", "ws")
+	req.Header.Add("X-Forwarded-Host", url_parts[1])
+
+	// this bit here is to make the request a websocket request
+	server, _ := net.Pipe()
+
+	rw := bufio.NewReadWriter(bufio.NewReader(server), bufio.NewWriter(server))
+	responseRecorder := mockWsResponseRecorder{
+		ResponseWriter: httptest.NewRecorder(),
+		hijack: func() (net.Conn, *bufio.ReadWriter, error) {
+			return server, rw, nil
+		},
+	}
+
+	req.Header.Add("upgrade", "websocket")
+	req.Header.Add("connection", "upgrade")
+	req.Header.Add("sec-websocket-version", "13")
+	req.Header.Add("sec-websocket-key", "dGhlIHNhbXBsZSBub25jZQ==")
+
+	Tunnel(responseRecorder, req)
+}
 
 func prepareInitTunnelRequest(clientBackendUrl string, mockRepo *mocks.MockRepository) *http.Request {
 	resourceService := service.NewService(

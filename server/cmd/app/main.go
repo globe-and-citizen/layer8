@@ -4,15 +4,6 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"globe-and-citizen/layer8/server/config"
-	"globe-and-citizen/layer8/server/handlers"
-	"globe-and-citizen/layer8/server/opentelemetry"
-	"globe-and-citizen/layer8/server/resource_server/db"
-	"globe-and-citizen/layer8/server/resource_server/emails/sender"
-	"globe-and-citizen/layer8/server/resource_server/emails/verification"
-	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
-	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
-	"globe-and-citizen/layer8/server/resource_server/models"
 	"io/fs"
 	"log"
 	"net/http"
@@ -24,20 +15,24 @@ import (
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/constraint"
-
-	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
-	"globe-and-citizen/layer8/server/resource_server/interfaces"
-	"globe-and-citizen/layer8/server/resource_server/utils"
-
-	oauthRepo "globe-and-citizen/layer8/server/internals/repository"
-
-	rsRepo "globe-and-citizen/layer8/server/resource_server/repository"
-
-	svc "globe-and-citizen/layer8/server/resource_server/service" // there are two services
-
-	oauthSvc "globe-and-citizen/layer8/server/internals/service" // there are two services
-
 	"github.com/joho/godotenv"
+
+	"globe-and-citizen/layer8/server/config"
+	"globe-and-citizen/layer8/server/handlers"
+	oauthRepo "globe-and-citizen/layer8/server/internals/repository"
+	oauthSvc "globe-and-citizen/layer8/server/internals/service" // there are two services
+	"globe-and-citizen/layer8/server/opentelemetry"
+	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
+	"globe-and-citizen/layer8/server/resource_server/db"
+	"globe-and-citizen/layer8/server/resource_server/emails/sender"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
+	"globe-and-citizen/layer8/server/resource_server/interfaces"
+	"globe-and-citizen/layer8/server/resource_server/models"
+	rsRepo "globe-and-citizen/layer8/server/resource_server/repository"
+	svc "globe-and-citizen/layer8/server/resource_server/service" // there are two services
+	"globe-and-citizen/layer8/server/resource_server/utils"
 )
 
 // go:embed dist
@@ -179,6 +174,12 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 
 			staticFS, _ := fs.Sub(StaticFiles, "dist")
 			httpFS := http.FileServer(http.FS(staticFS))
+
+			// better logic here
+			if wsIdentifier := r.Header.Get("upgrade"); strings.EqualFold(wsIdentifier, "websocket") {
+				handlers.Tunnel(w, r)
+				return
+			}
 
 			if r.Header.Get("up-JWT") != "" {
 				handlers.Tunnel(w, r)
