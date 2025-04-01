@@ -24,7 +24,6 @@ import (
 	"globe-and-citizen/layer8/server/opentelemetry"
 	Ctl "globe-and-citizen/layer8/server/resource_server/controller"
 	"globe-and-citizen/layer8/server/resource_server/db"
-	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/sender"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"

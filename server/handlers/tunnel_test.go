@@ -41,6 +41,11 @@ func (mj mockWsResponseRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 // Asserting we implement the http.Hijacker interface
 var _ http.Hijacker = &mockWsResponseRecorder{}
 
+const name = "name"
+const redirectUri = "redirect_uri"
+const username = "username"
+const password = "password"
+
 func TestTunnel_WebSocketImpl(t *testing.T) {
 	// create the ws Server connection
 	wsMockClient := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +97,7 @@ func TestTunnel_WebSocketImpl(t *testing.T) {
 	Tunnel(responseRecorder, req)
 }
 
-func prepareInitTunnelRequest(clientBackendUrl string) *http.Request {
+func prepareInitTunnelRequest(clientBackendUrl string, mockRepo *mocks.MockRepository) *http.Request {
 	resourceService := service.NewService(
 		mockRepo,
 		&verification.EmailVerifier{},
