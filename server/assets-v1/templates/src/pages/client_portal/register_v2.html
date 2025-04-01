@@ -192,8 +192,34 @@
             showToastMessage("Please enter all fields!", "error");
             return;
           }
+
+          const responseOne = await window.fetch(
+            "[[ .ProxyURL ]]/api/v2/register-client-precheck",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                username: username.value,
+              }),
+            }
+          );
+
+          const registerPrecheckResponseBody = await responseOne.json();
+          if (responseOne.status !== 201) {
+            showToastMessage("Something went wrong!", "error");
+            return;
+          }
+
+          const { data } = scram.keysHMAC(
+            password.value,
+            registerPrecheckResponseBody.data.salt,
+            registerPrecheckResponseBody.data.iterationCount
+          );
+
           const resp = await window.fetch(
-            "[[ .ProxyURL ]]/api/v1/register-client",
+            "[[ .ProxyURL ]]/api/v2/register-client",
             {
               method: "POST",
               headers: {
@@ -204,14 +230,15 @@
                 redirect_uri: redirect_uri.value,
                 backend_uri: backend_uri.value,
                 username: username.value,
-                password: password.value,
+                stored_key: data.storedKey,
+                server_key: data.serverKey,
               }),
             }
           );
           const registerResponseBody = await resp.json();
           if (resp.status === 201) {
             showToastMessage(registerResponseBody.message, "success");
-            window.location.href = "[[ .ProxyURL ]]/client-login-page";
+            window.location.href = "[[ .ProxyURL ]]/v2/client-login-page";
           } else if (registerResponseBody.message) {
             showToastMessage(registerResponseBody.message, "error");
           } else {
@@ -225,11 +252,6 @@
 
       const checkBackendUri = async () => {
         try {
-          if (!backend_uri.value) {
-            isBUFocused.value = false;
-            return false;
-          }
-
           isBUFocused.value = false;
           const response = await fetch(
             "[[ .ProxyURL ]]/api/v1/check-backend-uri",

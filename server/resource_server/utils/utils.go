@@ -169,6 +169,28 @@ func CompleteClientLogin(req dto.LoginClientDTO, client models.Client) (models.L
 	return resp, nil
 }
 
+func CompleteClientLoginv2(client models.Client) (token string, err error) {
+	jwtSecretStr := os.Getenv("JWT_SECRET_KEY")
+	jwtSecretByte := []byte(jwtSecretStr)
+
+	expirationTime := time.Now().Add(60 * time.Minute)
+	claims := &models.ClientClaims{
+		UserName: client.Username,
+		ClientID: client.ID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			Issuer:    "GlobeAndCitizen",
+		},
+	}
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := jwtToken.SignedString(jwtSecretByte)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
 func ValidateToken(tokenString string) (uint, error) {
 	claims := &models.Claims{}
 	JWT_SECRET_STR := os.Getenv("JWT_SECRET_KEY")
@@ -261,4 +283,16 @@ func RemoveProtocolFromURL(url string) string {
 	cleanedURL := strings.Replace(url, "http://", "", -1)
 	cleanedURL = strings.Replace(cleanedURL, "https://", "", -1)
 	return cleanedURL
+}
+
+func XorBytes(bytesA, bytesB []byte) ([]byte, error) {
+	if len(bytesA) != len(bytesB) {
+		return nil, fmt.Errorf("slices must have the same length")
+	}
+
+	result := make([]byte, len(bytesA))
+	for i := range bytesA {
+		result[i] = bytesA[i] ^ bytesB[i]
+	}
+	return result, nil
 }

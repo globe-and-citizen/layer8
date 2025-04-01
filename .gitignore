@@ -36,7 +36,6 @@ sp_mocks/wgp/backend/pictures/dynamic/
 # Go workspace file
 go.work.sum
 
-
 #### #### #### #### 
 # NODE.JS IGNORES #
 #### #### #### #### 
@@ -176,3 +175,5 @@ dist
 # vscode config
 .vscode
 
+# cache files
+*.DS_Store

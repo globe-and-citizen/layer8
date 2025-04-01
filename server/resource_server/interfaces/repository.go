@@ -10,6 +10,7 @@ import (
 type IRepository interface {
 	// Resource Server methods
 	RegisterUser(req dto.RegisterUserDTO, hashedPassword string, salt string) error
+	RegisterUserv2(req dto.RegisterUserDTOv2) error
 	FindUser(userId uint) (models.User, error)
 	LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string, error)
 	LoginPreCheckClient(req dto.LoginPrecheckDTO) (string, string, error)
@@ -22,6 +23,7 @@ type IRepository interface {
 	GetEmailVerificationData(userId uint) (models.EmailVerificationData, error)
 	UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error
 	RegisterClient(client models.Client) error
+	RegisterClientv2(req dto.RegisterClientDTOv2, clientUUID string, clientSecret string) error
 	GetClientData(clientName string) (models.Client, error)
 	GetClientDataByBackendURL(backendURL string) (models.Client, error)
 	IsBackendURIExists(backendURL string) (bool, error)
@@ -29,6 +31,7 @@ type IRepository interface {
 	GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error)
 	GetUserForUsername(username string) (models.User, error)
 	UpdateUserPassword(username string, password string) error
+	UpdateUserPasswordV2(username string, storedKey string, serverKey string) error
 	// Oauth2 methods
 	LoginUserPrecheck(username string) (string, error)
 	GetUser(username string) (*serverModel.User, error)
@@ -38,4 +41,6 @@ type IRepository interface {
 	GetClient(id string) (*serverModel.Client, error)
 	SetTTL(key string, value []byte, ttl time.Duration) error
 	GetTTL(key string) ([]byte, error)
+	RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error
+	RegisterPrecheckClient(req dto.RegisterClientPrecheckDTO, salt string, iterCount int) error
 }
