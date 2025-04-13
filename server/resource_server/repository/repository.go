@@ -484,9 +484,9 @@ func (r *Repository) AddClientTrafficUsage(clientId string, consumedBytes int, n
 	err = r.connection.Model(&models.ClientTrafficStatistics{}).
 		Where("client_id = ?", clientId).
 		Updates(map[string]interface{}{
-			"total_usage_bytes":     newTrafficBytes,
-			"unpaid_amount":         newUnpaidAmount,
-			"last_update_timestamp": now,
+			"total_usage_bytes":             newTrafficBytes,
+			"unpaid_amount":                 newUnpaidAmount,
+			"last_traffic_update_timestamp": now,
 		}).Error
 
 	if err != nil {

@@ -83,7 +83,7 @@ func (s *StatRepository) GetTotalByDateRangeByClient(ctx context.Context, start 
 	|> range(start: %s, stop: %s)
 	|> filter(fn: (r) => r["_measurement"] == "total_byte_transferred")
 	|> filter(fn: (r) => r["client_id"] == "%s")
-	|> filter(fn: (r) => r["_field"] == "counter")
+	|> filter(fn: (r) => r["_field"] == "gauge")
 	|> group(columns: ["client_id"])
 	|> sum()`, start.Format(time.RFC3339), end.Format(time.RFC3339), clientID)
 

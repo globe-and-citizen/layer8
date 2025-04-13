@@ -24,6 +24,8 @@ func NewStatisticsUpdater(
 }
 
 func (s *StatisticsUpdater) Update(ctx context.Context, now time.Time) error {
+	fmt.Printf("Updating client traffic stats, timestamp: %d\n", now.UnixMilli())
+
 	allClientStatistics, err := s.repository.GetAllClientStatistics()
 	if err != nil {
 		return err
@@ -37,6 +39,9 @@ func (s *StatisticsUpdater) Update(ctx context.Context, now time.Time) error {
 		consumedBytesFloat, err := s.statRepository.GetTotalByDateRangeByClient(
 			ctx, clientStat.LastTrafficUpdateTimestamp, now, clientStat.ClientId,
 		)
+
+		fmt.Printf("consumed %f bytes", consumedBytesFloat)
+
 		if err != nil {
 			return fmt.Errorf("failed to get traffic updates for client %s: %e", clientStat.ClientId, err)
 		}
