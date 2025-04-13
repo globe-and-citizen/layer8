@@ -33,6 +33,11 @@ func RegisterUserPageV2(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/register_v2.html")
 }
 func ClientProfilePage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	utils.ParseHTML(w, http.StatusOK,
 		"assets-v1/templates/src/pages/client_portal/profile.html",
 		map[string]interface{}{
@@ -40,7 +45,6 @@ func ClientProfilePage(w http.ResponseWriter, r *http.Request) {
 			"SmartContractAddress": os.Getenv("SMART_CONTRACT_ADDRESS"),
 		},
 	)
-
 }
 func UserHandler(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/profile.html")
