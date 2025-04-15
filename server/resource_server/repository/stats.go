@@ -87,6 +87,8 @@ func (s *StatRepository) GetTotalByDateRangeByClient(ctx context.Context, start 
 	|> group(columns: ["client_id"])
 	|> sum()`, start.Format(time.RFC3339), end.Format(time.RFC3339), clientID)
 
+	fmt.Println(query)
+
 	rawDataFromInflux, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
 		return 0, err

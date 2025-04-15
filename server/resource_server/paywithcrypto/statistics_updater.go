@@ -33,11 +33,11 @@ func (s *StatisticsUpdater) Update(ctx context.Context, now time.Time) error {
 
 	for _, clientStat := range allClientStatistics {
 		fmt.Printf("client %s; statistics from: %s; to: %s\n",
-			clientStat.ClientId, clientStat.LastTrafficUpdateTimestamp.String(), now.String(),
+			clientStat.ClientId, clientStat.LastTrafficUpdateTimestamp.String(), now.UTC().String(),
 		)
 
 		consumedBytesFloat, err := s.statRepository.GetTotalByDateRangeByClient(
-			ctx, clientStat.LastTrafficUpdateTimestamp, now, clientStat.ClientId,
+			ctx, clientStat.LastTrafficUpdateTimestamp, now.UTC(), clientStat.ClientId,
 		)
 
 		fmt.Printf("consumed %f bytes", consumedBytesFloat)
@@ -52,7 +52,7 @@ func (s *StatisticsUpdater) Update(ctx context.Context, now time.Time) error {
 
 		consumedBytes := int(consumedBytesFloat)
 
-		err = s.repository.AddClientTrafficUsage(clientStat.ClientId, consumedBytes, now)
+		err = s.repository.AddClientTrafficUsage(clientStat.ClientId, consumedBytes, now.UTC())
 		if err != nil {
 			return err
 		}

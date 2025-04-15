@@ -47,13 +47,26 @@ func (l *EventListener) Start() {
 
 	websocketNodeURL := os.Getenv("WEBSOCKET_NODE_URL")
 
+	query := ethereum.FilterQuery{
+		Addresses: []common.Address{smartContractAddress},
+	}
+
+	for {
+		err := l.readEvents(websocketNodeURL, contractABI, query)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+}
+
+func (l *EventListener) readEvents(
+	websocketNodeURL string,
+	contractABI abi.ABI,
+	query ethereum.FilterQuery,
+) error {
 	client, err := ethclient.Dial(websocketNodeURL)
 	if err != nil {
 		log.Fatalf("failed to create an ethereum client: %e", err)
-	}
-
-	query := ethereum.FilterQuery{
-		Addresses: []common.Address{smartContractAddress},
 	}
 
 	logChannel := make(chan types.Log)
@@ -66,7 +79,7 @@ func (l *EventListener) Start() {
 	for {
 		select {
 		case err := <-sub.Err():
-			log.Fatalf("failed to read blockchain event log: %e", err)
+			return fmt.Errorf("failed to read blockchain event log: %e", err)
 		case eventLog := <-logChannel:
 			var event TrafficPaidEvent
 
@@ -74,8 +87,6 @@ func (l *EventListener) Start() {
 			if err != nil {
 				log.Fatalf("failed to decode a traffic paid event: %e", err)
 			}
-
-			fmt.Println(event)
 
 			err = l.handleTrafficPaidEvent(&event)
 			if err != nil {

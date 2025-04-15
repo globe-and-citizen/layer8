@@ -445,7 +445,7 @@ func (r *Repository) CreateClientTrafficStatisticsEntry(clientId string, rate in
 		RatePerByte:                rate,
 		TotalUsageBytes:            0,
 		UnpaidAmount:               0,
-		LastTrafficUpdateTimestamp: time.Now(),
+		LastTrafficUpdateTimestamp: time.Now().UTC(),
 	}).Error
 }
 
