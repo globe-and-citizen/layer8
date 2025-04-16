@@ -314,6 +314,11 @@
 
         console.log(unpaidAmountResponse);
 
+        if (unpaidAmountResponse.status !== 200) {
+            alert("Failed to fetch unpaid amount, retry later")
+            return
+        }
+
         const unpaidAmountBody = await unpaidAmountResponse.json();
 
         unpaidAmount.value = unpaidAmountBody.data.unpaid_amount;
