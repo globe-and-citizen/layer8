@@ -438,3 +438,107 @@ func (r *Repository) UpdateUserPasswordV2(username string, storedKey string, ser
 		Where("username=?", username).
 		Updates(map[string]interface{}{"stored_key": storedKey, "server_key": serverKey}).Error
 }
+
+func (r *Repository) CreateClientTrafficStatisticsEntry(clientId string, rate int) error {
+	return r.connection.Create(&models.ClientTrafficStatistics{
+		ClientId:                   clientId,
+		RatePerByte:                rate,
+		TotalUsageBytes:            0,
+		UnpaidAmount:               0,
+		LastTrafficUpdateTimestamp: time.Now().UTC(),
+	}).Error
+}
+
+func (r *Repository) GetClientTrafficStatistics(clientId string) (*models.ClientTrafficStatistics, error) {
+	// TODO: is isolation level higher then the default needed?
+	var clientStatistics models.ClientTrafficStatistics
+
+	err := r.connection.Model(&models.ClientTrafficStatistics{}).
+		Where("client_id = ?", clientId).
+		First(&clientStatistics).
+		Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &clientStatistics, nil
+}
+
+func (r *Repository) AddClientTrafficUsage(clientId string, consumedBytes int, now time.Time) error {
+	tx := r.connection.Begin(&sql.TxOptions{Isolation: sql.LevelRepeatableRead})
+
+	var clientStatistics models.ClientTrafficStatistics
+	err := tx.Where("client_id = ?", clientId).
+		First(&clientStatistics).
+		Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	newTrafficBytes := clientStatistics.TotalUsageBytes + consumedBytes
+	newUnpaidAmount := clientStatistics.UnpaidAmount + consumedBytes*clientStatistics.RatePerByte
+
+	err = r.connection.Model(&models.ClientTrafficStatistics{}).
+		Where("client_id = ?", clientId).
+		Updates(map[string]interface{}{
+			"total_usage_bytes":             newTrafficBytes,
+			"unpaid_amount":                 newUnpaidAmount,
+			"last_traffic_update_timestamp": now,
+		}).Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (r *Repository) PayClientTrafficUsage(clientId string, amountPaid int) error {
+	tx := r.connection.Begin(&sql.TxOptions{Isolation: sql.LevelRepeatableRead})
+
+	var clientStatistics models.ClientTrafficStatistics
+	err := tx.Where("client_id = ?", clientId).
+		First(&clientStatistics).
+		Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if amountPaid < clientStatistics.UnpaidAmount {
+		tx.Rollback()
+		return fmt.Errorf("full amount must be paid")
+	}
+
+	err = r.connection.Model(&models.ClientTrafficStatistics{}).
+		Where("client_id = ?", clientId).
+		Updates(map[string]interface{}{
+			"unpaid_amount": clientStatistics.UnpaidAmount - amountPaid,
+		}).Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (r *Repository) GetAllClientStatistics() ([]models.ClientTrafficStatistics, error) {
+	// TODO: is isolation level higher then the default needed?
+	var allClientStatistics []models.ClientTrafficStatistics
+
+	err := r.connection.Find(&allClientStatistics).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return allClientStatistics, nil
+}

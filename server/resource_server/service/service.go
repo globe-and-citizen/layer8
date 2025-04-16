@@ -11,6 +11,9 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
+	"log"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -47,7 +50,7 @@ func (s *service) RegisterClient(req dto.RegisterClientDTO) error {
 	clientSecret := utils.GenerateSecret(utils.SecretSize)
 
 	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
-	HashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
+	hashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
 
 	req.BackendURI = utils.RemoveProtocolFromURL(req.BackendURI)
 
@@ -58,11 +61,21 @@ func (s *service) RegisterClient(req dto.RegisterClientDTO) error {
 		RedirectURI: req.RedirectURI,
 		BackendURI:  req.BackendURI,
 		Username:    req.Username,
-		Password:    HashedAndSaltedPass,
+		Password:    hashedAndSaltedPass,
 		Salt:        rmSalt,
 	}
 
-	return s.repository.RegisterClient(client)
+	rate, err := strconv.ParseInt(os.Getenv("CLIENT_TRAFFIC_RATE_PER_BYTE"), 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse client traffic rate from .env: %e", err)
+	}
+
+	err = s.repository.RegisterClient(client)
+	if err != nil {
+		return err
+	}
+
+	return s.repository.CreateClientTrafficStatisticsEntry(clientUUID, int(rate))
 }
 
 func (s *service) RegisterClientv2(req dto.RegisterClientDTOv2) error {
@@ -445,4 +458,14 @@ func (s *service) RegisterUserv2(req dto.RegisterUserDTOv2) error {
 
 func (s *service) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
 	return s.repository.UpdateUserPasswordV2(username, storedKey, serverKey)
+}
+
+func (s *service) GetClientUnpaidAmount(clientId string) (int, error) {
+	stat, err := s.repository.GetClientTrafficStatistics(clientId)
+	if err != nil {
+		log.Printf("repository: %e\n", err)
+		return 0, err
+	}
+
+	return stat.UnpaidAmount, nil
 }

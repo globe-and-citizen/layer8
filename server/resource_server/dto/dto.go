@@ -113,3 +113,12 @@ type ResetPasswordDTOV2 struct {
 	StoredKey string `json:"stored_key" validation:"required,min=1"`
 	ServerKey string `json:"server_key" validation:"required,min=1"`
 }
+
+type PayClientTrafficDTO struct {
+	ClientId string `json:"client_id" validate:"required"`
+	Amount   int    `json:"amount" validate:"required"`
+}
+
+type ClientUnpaidAmountDTO struct {
+	ClientId string `json:"client_id" validate:"required"`
+}

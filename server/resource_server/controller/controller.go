@@ -33,7 +33,18 @@ func RegisterUserPageV2(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/register_v2.html")
 }
 func ClientProfilePage(w http.ResponseWriter, r *http.Request) {
-	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/profile.html")
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	utils.ParseHTML(w, http.StatusOK,
+		"assets-v1/templates/src/pages/client_portal/profile.html",
+		map[string]interface{}{
+			"ProxyURL":             os.Getenv("PROXY_URL"),
+			"SmartContractAddress": os.Getenv("SMART_CONTRACT_ADDRESS"),
+		},
+	)
 }
 func UserHandler(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/profile.html")
@@ -907,6 +918,39 @@ func ResetPasswordHandlerV2(w http.ResponseWriter, r *http.Request) {
 		w, http.StatusCreated, "Your password was updated successfully!",
 	)
 	if err := json.NewEncoder(w).Encode(&response); err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to encode the response", err)
+	}
+}
+
+func ClientUnpaidAmountHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	request, err := utils.DecodeJsonFromRequest[dto.ClientUnpaidAmountDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	unpaidAmount, err := newService.GetClientUnpaidAmount(request.ClientId)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "Failed to get client's unpaid amount", err)
+		return
+	}
+
+	clientUnpaidAmountResponseOutput := models.ClientUnpaidAmountResponseOutput{
+		UnpaidAmount: unpaidAmount,
+	}
+
+	response := utils.BuildResponse(
+		w,
+		http.StatusOK,
+		"successfully retrieved client's unpaid amount",
+		clientUnpaidAmountResponseOutput,
+	)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Failed to encode the response", err)
 	}
 }

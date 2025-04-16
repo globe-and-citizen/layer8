@@ -37,4 +37,5 @@ type IService interface {
 	UpdateUserPasswordV2(username string, storedKey string, serverKey string) error
 	RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error)
 	RegisterClientPrecheck(req dto.RegisterClientPrecheckDTO, iterCount int) (string, error)
+	GetClientUnpaidAmount(clientId string) (int, error)
 }
