@@ -2,338 +2,469 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/assets-v1/templates/assets/styles/output.css" />
-  <link rel="stylesheet" href="/assets-v1/templates/assets/styles/base.css" />
-  <title>Authentication Page</title>
-  <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet" href="/assets-v1/templates/assets/styles/modal.css"/>
+    <link rel="stylesheet" href="/assets-v1/templates/assets/styles/output.css" />
+    <link rel="stylesheet" href="/assets-v1/templates/assets/styles/base.css" />
+
+    <title>Authentication Page</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
 </head>
 <body class="bg-[#E5E5E5] h-dvh relative">
-  <div id="app">
+<div id="app">
     <div>
-      <div @click="showSidebar(false)" v-show="sidebarShow"
-        class="absolute block md:hidden lg:hidden top-0 left-0 h-dvh w-full bg-opacity-50 backdrop-blur-lg text-black">
-        <div class="w-[70%] h-dvh md:col-span-1 bg-white rounded-2xl px-5 py-2">
-          <div>
-            <span class="flex justify-end mb-4" @click="showSidebar(false)">&#x2715;</span>
-            <div class="flex space-x-2.5 items-center pl-7 py-2.5 cursor-pointer mb-5 rounded-md bg-[#e4f6ff]">
-              <img src="/assets-v1/templates/assets/images/icons/project-info.svg" alt="">
-              <span class="font-medium text-[#2F80ED] text-base">Project info</span>
-            </div>
-            <div @click="logoutUser" class="flex space-x-2.5 items-center pl-7 py-3 cursor-pointer mb-5">
-              <img src="/assets-v1/templates/assets/images/icons/logout-icon.svg" alt="">
-              <span class="font-medium text-black text-base">Log out</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="py-3 px-4 md:px-7 mb-2 md:mb-4 bg-white rounded-b-2xl flex justify-between items-center">
-        <div class="hidden md:block lg:block">
-          <div class="flex space-x-4 items-center">
-            <img src="/assets-v1/templates/assets/images/user_image.png" />
-            <div>{{ user.name }}</div>
-          </div>
-        </div>
-        <div class="cursor-pointer block md:hidden lg:hidden" @click="showSidebar(true)">
-          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M2 6C2 5.44772 2.44772 5 3 5H21C21.5523 5 22 5.44772 22 6C22 6.55228 21.5523 7 21 7H3C2.44772 7 2 6.55228 2 6Z"
-              fill="currentColor" />
-            <path
-              d="M2 12.0322C2 11.4799 2.44772 11.0322 3 11.0322H21C21.5523 11.0322 22 11.4799 22 12.0322C22 12.5845 21.5523 13.0322 21 13.0322H3C2.44772 13.0322 2 12.5845 2 12.0322Z"
-              fill="currentColor" />
-            <path
-              d="M3 17.0645C2.44772 17.0645 2 17.5122 2 18.0645C2 18.6167 2.44772 19.0645 3 19.0645H21C21.5523 19.0645 22 18.6167 22 18.0645C22 17.5122 21.5523 17.0645 21 17.0645H3Z"
-              fill="currentColor" />
-          </svg>
-        </div>
-        <div class="p-2 rounded-xl text-sm md:text-base bg-[#3751FE] text-white">Pay with metamask</div>
-      </div>
-      <div @click="showSidebar(false)" class="grid md:grid-cols-5 lg:grid-cols-5 gap-x-4 m-4">
-        <div class="md:col-span-1 bg-white rounded-2xl px-2 md:px-5 py-3 md:py-6 hidden md:block lg:block">
-          <div>
-            <div
-              class="flex space-x-2.5 items-center pl-2 md:pl-3 lg:pl-7 py-2.5 cursor-pointer mb-2 md:mb-5 rounded-md bg-[#e4f6ff]">
-              <img src="/assets-v1/templates/assets/images/icons/project-info.svg" alt="">
-              <span class="font-medium text-[#2F80ED] text-sm md:text-base">Project info</span>
-            </div>
-            <div @click="logoutUser"
-              class="flex space-x-2.5 items-center pl-2 md:pl-3 lg:pl-7 py-3 cursor-pointer mb-5">
-              <img src="/assets-v1/templates/assets/images/icons/logout-icon.svg" alt="">
-              <span class="font-medium text-black text-base">Log out</span>
-            </div>
-          </div>
-        </div>
-        <div class="md:col-span-4">
-          <div class="font-bold text-2xl md:text-4xl text-[#2F80ED] text-center my-4 md:my-9">Welcome “{{ user.name }}!”
-            Client Portal</div>
-          <div class="grid md:grid-cols-1 md:gap-x-4">
-            <div class="bg-white rounded-2xl py-3 md:py-4 px-4 md:px-6 mb-6 md:mb-0">
-              <h1 class="font-medium text-lg md:text-xl text-black mb-2 md:mb-4">Your data</h1>
-              <p class="font-normal text-sm md:text-base text-[#8E8E93] mb-6 md:mb-12">Your product data to use on your
-                own project</p>
-              <div class="grid grid-cols-3">
-                <ul class="col-span-1 flex flex-col space-y-6 my-auto">
-                  <li class="font-bold md:text-xl text-sm text-black">Name:</li>
-                  <li class="font-bold md:text-xl text-sm text-black">Redirect URI:</li>
-                  <li class="font-bold md:text-xl text-sm text-black">Backend URI:</li>
-                  <li class="font-bold md:text-xl text-sm text-black">UUID:</li>
-                  <li class="font-bold md:text-xl text-sm text-black">Secret:</li>
-                </ul>
-                <div class="col-span-2 flex flex-col space-y-2">
-                  <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
-                    placeholder="Name"
-                    :value="user.name" />
-                  <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
-                    placeholder="Redirect URI"
-                    :value="user.redirect_uri" />
-                  <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
-                    :value="user.backend_uri" />
-                  <div class="flex items-center space-x-2">
-                    <input readonly
-                      class="bg-[#ECF4FD] border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium shadow appearance-none"
-                      placeholder="UUID" 
-                      :value="user.id" />
-                    <button value="UUID" v-if="isCopied != user.id" @click="copyToClipboard(user.id)">
-                      <svg fill="#000000" width="30px" height="30px" viewBox="0 0 16 16"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M14 12V2H4V0h12v12h-2zM0 4h12v12H0V4zm2 2v8h8V6H2z" fill-rule="evenodd" />
-                      </svg>
-                    </button>
-                    <div v-if="isCopied == user.id">
-                      <svg fill="#000000" width="40px" height="40px" viewBox="0 0 32 32" version="1.1"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <title>checked</title>
-                        <path
-                          d="M26.5 27h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h2.5v-2.5c0-0.276 0.224-0.5 0.5-0.5 0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM26.5 21c-0.276 0-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5 0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM26.5 15c-0.276 0-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5 0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM26.5 9c-0.276 0-0.5-0.224-0.5-0.5v-2.5h-2.5c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h3c0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM14.666 21.053c-0.184 0.185-0.483 0.185-0.668 0l-1.002-1.002c-0.002-0.003-0.001-0.007-0.003-0.009l-3.188-3.212c-0.185-0.184-0.185-0.483 0-0.668l1.002-1.003c0.185-0.185 0.484-0.185 0.669 0l2.86 2.881 6.014-6.013c0.184-0.185 0.483-0.185 0.668 0l1.002 1.003c0.186 0.185 0.186 0.484 0 0.669l-7.354 7.354zM20.5 6h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5zM14.5 6h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5zM8.5 27h-3c-0.276 0-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5s0.5 0.224 0.5 0.5v2.5h2.5c0.276 0 0.5 0.224 0.5 0.5s-0.224 0.5-0.5 0.5zM8.5 6h-2.5v2.5c0 0.276-0.224 0.5-0.5 0.5s-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5h3c0.276 0 0.5 0.224 0.5 0.5s-0.224 0.5-0.5 0.5zM5.5 11c0.276 0 0.5 0.224 0.5 0.5v3c0 0.276-0.224 0.5-0.5 0.5s-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5zM5.5 17c0.276 0 0.5 0.224 0.5 0.5v3c0 0.276-0.224 0.5-0.5 0.5s-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5zM11.5 26h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5zM17.5 26h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5z">
-                        </path>
-                      </svg>
+        <div @click="showSidebar(false)" v-show="sidebarShow"
+             class="absolute block md:hidden lg:hidden top-0 left-0 h-dvh w-full bg-opacity-50 backdrop-blur-lg text-black">
+            <div class="w-[70%] h-dvh md:col-span-1 bg-white rounded-2xl px-5 py-2">
+                <div>
+                    <span class="flex justify-end mb-4" @click="showSidebar(false)">&#x2715;</span>
+                    <div class="flex space-x-2.5 items-center pl-7 py-2.5 cursor-pointer mb-5 rounded-md bg-[#e4f6ff]">
+                        <img src="/assets-v1/templates/assets/images/icons/project-info.svg" alt="">
+                        <span class="font-medium text-[#2F80ED] text-base">Project info</span>
                     </div>
-                  </div>
-                  <div class="flex items-center space-x-2">
-                    <input readonly
-                      class="bg-[#ECF4FD] border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
-                      placeholder="Secret"
-                      :value="user.secret" />
-                    <button value="Secret" v-if="isCopied != user.secret" @click="copyToClipboard(user.secret)">
-                      <svg fill="#000000" width="30px" height="30px" viewBox="0 0 16 16"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M14 12V2H4V0h12v12h-2zM0 4h12v12H0V4zm2 2v8h8V6H2z" fill-rule="evenodd" />
-                      </svg>
-                    </button>
-                    <div v-if="isCopied == user.secret">
-                      <svg fill="#000000" width="40px" height="40px" viewBox="0 0 32 32" version="1.1"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <title>checked</title>
-                        <path
-                          d="M26.5 27h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h2.5v-2.5c0-0.276 0.224-0.5 0.5-0.5 0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM26.5 21c-0.276 0-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5 0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM26.5 15c-0.276 0-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5 0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM26.5 9c-0.276 0-0.5-0.224-0.5-0.5v-2.5h-2.5c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h3c0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM14.666 21.053c-0.184 0.185-0.483 0.185-0.668 0l-1.002-1.002c-0.002-0.003-0.001-0.007-0.003-0.009l-3.188-3.212c-0.185-0.184-0.185-0.483 0-0.668l1.002-1.003c0.185-0.185 0.484-0.185 0.669 0l2.86 2.881 6.014-6.013c0.184-0.185 0.483-0.185 0.668 0l1.002 1.003c0.186 0.185 0.186 0.484 0 0.669l-7.354 7.354zM20.5 6h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5zM14.5 6h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5zM8.5 27h-3c-0.276 0-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5s0.5 0.224 0.5 0.5v2.5h2.5c0.276 0 0.5 0.224 0.5 0.5s-0.224 0.5-0.5 0.5zM8.5 6h-2.5v2.5c0 0.276-0.224 0.5-0.5 0.5s-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5h3c0.276 0 0.5 0.224 0.5 0.5s-0.224 0.5-0.5 0.5zM5.5 11c0.276 0 0.5 0.224 0.5 0.5v3c0 0.276-0.224 0.5-0.5 0.5s-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5zM5.5 17c0.276 0 0.5 0.224 0.5 0.5v3c0 0.276-0.224 0.5-0.5 0.5s-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5zM11.5 26h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5zM17.5 26h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5z">
-                        </path>
-                      </svg>
+                    <div @click="logoutUser" class="flex space-x-2.5 items-center pl-7 py-3 cursor-pointer mb-5">
+                        <img src="/assets-v1/templates/assets/images/icons/logout-icon.svg" alt="">
+                        <span class="font-medium text-black text-base">Log out</span>
                     </div>
-                  </div>
                 </div>
-              </div>
             </div>
-            <div class="bg-white rounded-2xl py-3 md:py-4 px-4 md:px-6 mb-6 md:mb-0 mt-6">
-              <h1 class="font-medium text-lg md:text-xl text-black">Your usage statistics</h1>
-              <p class="font-normal text-sm md:text-base text-[#8E8E93] mb-5">Your product data to use on your
-              <div class="grid grid-cols-4 gap-4">
-                <div class="col-span-1 md:ml-20">
-                  <h2 class="text-xl font-bold">{{ stats.last_thirty_days_statistic.total.toFixed(6) }} {{
-                    stats.unit_of_measurement }}</h2>
-                  <p class="text-gray-600 font-light">In Last 30 Days</p>
-                </div>
-                <div class="col-span-1 ml-10">
-                  <h2 class="text-xl font-bold">{{ stats.last_thirty_days_statistic.average.toFixed(6) }} {{
-                    stats.unit_of_measurement }}</h2>
-                  <p class="s text-gray-600 font-light">Daily Average</p>
-                </div>
-                <div class="col-span-2">
-                  <div class="max-w-md mx-auto bg-gray-400 rounded-xl shadow-md overflow-hidden">
-                    <div class="p-4">
-                      <div class="uppercase tracking-wide text-lg font-extrabold text-gray-100">{{
-                        stats.month_to_date.month }}</div>
-                      <h3 class="text-white text-sm font-light">Month-to-date usage : {{
-                        stats.month_to_date.month_to_date_usage.toFixed(6) }} {{ stats.unit_of_measurement }}</h3>
-                      <h3 class="text-white text-sm font-light">Forecasted end-of-month usage : {{
-                        stats.month_to_date.forecasted_end_of_month_usage.toFixed(6) }} {{ stats.unit_of_measurement }}</h3>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <canvas id="statisticChart"></canvas>
-                <p class="text-gray-600 font-ligh">The graph above presents statistics measured in kilobytes.</p>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
+        <div class="py-3 px-4 md:px-7 mb-2 md:mb-4 bg-white rounded-b-2xl flex justify-between items-center">
+            <div class="hidden md:block lg:block">
+                <div class="flex space-x-4 items-center">
+                    <img src="/assets-v1/templates/assets/images/user_image.png" />
+                    <div>{{ user.name }}</div>
+                </div>
+            </div>
+            <div class="cursor-pointer block md:hidden lg:hidden" @click="showSidebar(true)">
+                <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                            d="M2 6C2 5.44772 2.44772 5 3 5H21C21.5523 5 22 5.44772 22 6C22 6.55228 21.5523 7 21 7H3C2.44772 7 2 6.55228 2 6Z"
+                            fill="currentColor" />
+                    <path
+                            d="M2 12.0322C2 11.4799 2.44772 11.0322 3 11.0322H21C21.5523 11.0322 22 11.4799 22 12.0322C22 12.5845 21.5523 13.0322 21 13.0322H3C2.44772 13.0322 2 12.5845 2 12.0322Z"
+                            fill="currentColor" />
+                    <path
+                            d="M3 17.0645C2.44772 17.0645 2 17.5122 2 18.0645C2 18.6167 2.44772 19.0645 3 19.0645H21C21.5523 19.0645 22 18.6167 22 18.0645C22 17.5122 21.5523 17.0645 21 17.0645H3Z"
+                            fill="currentColor" />
+                </svg>
+            </div>
+            <w3m-button class="pr-4"></w3m-button>
+            <button v-if="walletConnected" class="rounded-lg text-center bg-[#4F80E1] text-white" @click="payTraffic">Pay traffic</button>
+        </div>
+        <div @click="showSidebar(false)" class="grid md:grid-cols-5 lg:grid-cols-5 gap-x-4 m-4">
+            <div class="md:col-span-1 bg-white rounded-2xl px-2 md:px-5 py-3 md:py-6 hidden md:block lg:block">
+                <div>
+                    <div
+                            class="flex space-x-2.5 items-center pl-2 md:pl-3 lg:pl-7 py-2.5 cursor-pointer mb-2 md:mb-5 rounded-md bg-[#e4f6ff]">
+                        <img src="/assets-v1/templates/assets/images/icons/project-info.svg" alt="">
+                        <span class="font-medium text-[#2F80ED] text-sm md:text-base">Project info</span>
+                    </div>
+                    <div @click="logoutUser"
+                         class="flex space-x-2.5 items-center pl-2 md:pl-3 lg:pl-7 py-3 cursor-pointer mb-5">
+                        <img src="/assets-v1/templates/assets/images/icons/logout-icon.svg" alt="">
+                        <span class="font-medium text-black text-base">Log out</span>
+                    </div>
+                </div>
+            </div>
+            <div class="md:col-span-4">
+                <div class="font-bold text-2xl md:text-4xl text-[#2F80ED] text-center my-4 md:my-9">Welcome “{{ user.name }}!”
+                    Client Portal</div>
+                <div class="grid md:grid-cols-1 md:gap-x-4">
+                    <div class="bg-white rounded-2xl py-3 md:py-4 px-4 md:px-6 mb-6 md:mb-0">
+                        <h1 class="font-medium text-lg md:text-xl text-black mb-2 md:mb-4">Your data</h1>
+                        <p class="font-normal text-sm md:text-base text-[#8E8E93] mb-6 md:mb-12">Your product data to use on your
+                            own project</p>
+                        <div class="grid grid-cols-3">
+                            <ul class="col-span-1 flex flex-col space-y-6 my-auto">
+                                <li class="font-bold md:text-xl text-sm text-black">Name:</li>
+                                <li class="font-bold md:text-xl text-sm text-black">Redirect URI:</li>
+                                <li class="font-bold md:text-xl text-sm text-black">Backend URI:</li>
+                                <li class="font-bold md:text-xl text-sm text-black">UUID:</li>
+                                <li class="font-bold md:text-xl text-sm text-black">Secret:</li>
+                            </ul>
+                            <div class="col-span-2 flex flex-col space-y-2">
+                                <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
+                                       placeholder="Name"
+                                       :value="user.name" />
+                                <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
+                                       placeholder="Redirect URI"
+                                       :value="user.redirect_uri" />
+                                <input class="bg-white border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
+                                       :value="user.backend_uri" />
+                                <div class="flex items-center space-x-2">
+                                    <input readonly
+                                           class="bg-[#ECF4FD] border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium shadow appearance-none"
+                                           placeholder="UUID"
+                                           :value="user.id" />
+                                    <button value="UUID" v-if="isCopied != user.id" @click="copyToClipboard(user.id)">
+                                        <svg fill="#000000" width="30px" height="30px" viewBox="0 0 16 16"
+                                             xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M14 12V2H4V0h12v12h-2zM0 4h12v12H0V4zm2 2v8h8V6H2z" fill-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                    <div v-if="isCopied == user.id">
+                                        <svg fill="#000000" width="40px" height="40px" viewBox="0 0 32 32" version="1.1"
+                                             xmlns="http://www.w3.org/2000/svg">
+                                            <title>checked</title>
+                                            <path
+                                                    d="M26.5 27h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h2.5v-2.5c0-0.276 0.224-0.5 0.5-0.5 0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM26.5 21c-0.276 0-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5 0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM26.5 15c-0.276 0-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5 0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM26.5 9c-0.276 0-0.5-0.224-0.5-0.5v-2.5h-2.5c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h3c0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM14.666 21.053c-0.184 0.185-0.483 0.185-0.668 0l-1.002-1.002c-0.002-0.003-0.001-0.007-0.003-0.009l-3.188-3.212c-0.185-0.184-0.185-0.483 0-0.668l1.002-1.003c0.185-0.185 0.484-0.185 0.669 0l2.86 2.881 6.014-6.013c0.184-0.185 0.483-0.185 0.668 0l1.002 1.003c0.186 0.185 0.186 0.484 0 0.669l-7.354 7.354zM20.5 6h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5zM14.5 6h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5zM8.5 27h-3c-0.276 0-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5s0.5 0.224 0.5 0.5v2.5h2.5c0.276 0 0.5 0.224 0.5 0.5s-0.224 0.5-0.5 0.5zM8.5 6h-2.5v2.5c0 0.276-0.224 0.5-0.5 0.5s-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5h3c0.276 0 0.5 0.224 0.5 0.5s-0.224 0.5-0.5 0.5zM5.5 11c0.276 0 0.5 0.224 0.5 0.5v3c0 0.276-0.224 0.5-0.5 0.5s-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5zM5.5 17c0.276 0 0.5 0.224 0.5 0.5v3c0 0.276-0.224 0.5-0.5 0.5s-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5zM11.5 26h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5zM17.5 26h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <input readonly
+                                           class="bg-[#ECF4FD] border border-[#EADFD8] p-1 md:p-3 rounded-lg w-full font-medium"
+                                           placeholder="Secret"
+                                           :value="user.secret" />
+                                    <button value="Secret" v-if="isCopied != user.secret" @click="copyToClipboard(user.secret)">
+                                        <svg fill="#000000" width="30px" height="30px" viewBox="0 0 16 16"
+                                             xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M14 12V2H4V0h12v12h-2zM0 4h12v12H0V4zm2 2v8h8V6H2z" fill-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                    <div v-if="isCopied == user.secret">
+                                        <svg fill="#000000" width="40px" height="40px" viewBox="0 0 32 32" version="1.1"
+                                             xmlns="http://www.w3.org/2000/svg">
+                                            <title>checked</title>
+                                            <path
+                                                    d="M26.5 27h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h2.5v-2.5c0-0.276 0.224-0.5 0.5-0.5 0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM26.5 21c-0.276 0-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5 0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM26.5 15c-0.276 0-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5 0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM26.5 9c-0.276 0-0.5-0.224-0.5-0.5v-2.5h-2.5c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h3c0.275 0 0.5 0.224 0.5 0.5v3c0 0.276-0.225 0.5-0.5 0.5zM14.666 21.053c-0.184 0.185-0.483 0.185-0.668 0l-1.002-1.002c-0.002-0.003-0.001-0.007-0.003-0.009l-3.188-3.212c-0.185-0.184-0.185-0.483 0-0.668l1.002-1.003c0.185-0.185 0.484-0.185 0.669 0l2.86 2.881 6.014-6.013c0.184-0.185 0.483-0.185 0.668 0l1.002 1.003c0.186 0.185 0.186 0.484 0 0.669l-7.354 7.354zM20.5 6h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5zM14.5 6h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5zM8.5 27h-3c-0.276 0-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5s0.5 0.224 0.5 0.5v2.5h2.5c0.276 0 0.5 0.224 0.5 0.5s-0.224 0.5-0.5 0.5zM8.5 6h-2.5v2.5c0 0.276-0.224 0.5-0.5 0.5s-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5h3c0.276 0 0.5 0.224 0.5 0.5s-0.224 0.5-0.5 0.5zM5.5 11c0.276 0 0.5 0.224 0.5 0.5v3c0 0.276-0.224 0.5-0.5 0.5s-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5zM5.5 17c0.276 0 0.5 0.224 0.5 0.5v3c0 0.276-0.224 0.5-0.5 0.5s-0.5-0.224-0.5-0.5v-3c0-0.276 0.224-0.5 0.5-0.5zM11.5 26h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5zM17.5 26h3c0.275 0 0.5 0.224 0.5 0.5s-0.225 0.5-0.5 0.5h-3c-0.276 0-0.5-0.224-0.5-0.5s0.224-0.5 0.5-0.5z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl py-3 md:py-4 px-4 md:px-6 mb-6 md:mb-0 mt-6">
+                        <h1 class="font-medium text-lg md:text-xl text-black">Your usage statistics</h1>
+                        <p class="font-normal text-sm md:text-base text-[#8E8E93] mb-5">Your product data to use on your
+                        <div class="grid grid-cols-4 gap-4">
+                            <div class="col-span-1 md:ml-20">
+                                <h2 class="text-xl font-bold">{{ stats.last_thirty_days_statistic.total.toFixed(6) }} {{
+                                        stats.unit_of_measurement }}</h2>
+                                <p class="text-gray-600 font-light">In Last 30 Days</p>
+                            </div>
+                            <div class="col-span-1 ml-10">
+                                <h2 class="text-xl font-bold">{{ stats.last_thirty_days_statistic.average.toFixed(6) }} {{
+                                        stats.unit_of_measurement }}</h2>
+                                <p class="s text-gray-600 font-light">Daily Average</p>
+                            </div>
+                            <div class="col-span-2">
+                                <div class="max-w-md mx-auto bg-gray-400 rounded-xl shadow-md overflow-hidden">
+                                    <div class="p-4">
+                                        <div class="uppercase tracking-wide text-lg font-extrabold text-gray-100">{{
+                                                stats.month_to_date.month }}</div>
+                                        <h3 class="text-white text-sm font-light">Month-to-date usage : {{
+                                                stats.month_to_date.month_to_date_usage.toFixed(6) }} {{ stats.unit_of_measurement }}</h3>
+                                        <h3 class="text-white text-sm font-light">Forecasted end-of-month usage : {{
+                                                stats.month_to_date.forecasted_end_of_month_usage.toFixed(6) }} {{ stats.unit_of_measurement }}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <canvas id="statisticChart"></canvas>
+                            <p class="text-gray-600 font-ligh">The graph above presents statistics measured in kilobytes.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+    <div class="modal__dialog" :class="{active: modalWindowActive}">
+        <div class="modal__content">
+            <h3 class="modal__header">
+                Pay for the traffic consumption using your crypto wallet!
+            </h3>
+            <div>
+                <div class="grid grid-cols-3">
+                    <div class="col-span-1 flex flex-col space-y-6 my-auto">
+                        <label for="unpaidAmount">Unpaid amount in ETH: </label>
+                        <label for="paymentAmount">Payment amount in ETH: </label>
+                    </div>
+                    <div class="col-span-2 flex flex-col space-y-6 my-auto">
+                        <input id="unpaidAmount" class="w-full font-medium" :value="unpaidAmountETH" readonly>
+                        <input id="paymentAmount"
+                               placeholder="0.01"
+                               class="w-full font-medium"
+                               v-model="paymentAmount"
+                        >
+                    </div>
+                </div>
+            </div>
+            <div class="modal__footer">
+                <button type="button" class="close-button" @click="cancelModel">Cancel</button>
+                <button type="button"
+                        class="bg-[#4F80E1] rounded-lg text-center text-white w-025"
+                        @click="payWithCrypto">Pay</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal__overlay"></div>
+
     <div :class="showToast ? 'opacity-100' : 'opacity-0 pointer-events-none'" class="fixed top-3 right-3 bg-green-500 text-white p-2 rounded-md transition-opacity ease-in-out duration-500 z-50">
-      {{ toastMessage }}
+        {{ toastMessage }}
     </div>
-  </div>
-  </div>
-  </div>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module">
+    const [
+        { reconnect, watchConnections },
+        { parseEther, formatEther },
+        { WAGMI_CONFIG, setupWeb3Modal },
+        { payBill },
+    ] = await Promise.all([
+        import('https://esm.sh/@wagmi/core@2.11.6'),
+        import("https://esm.sh/viem@2.17.0"),
+        import('/assets-v1/templates/assets/js/crypto/web3modal.js'),
+        import('/assets-v1/templates/assets/js/crypto/pay.js'),
+    ]);
+
     const { ref, onMounted, createApp } = Vue;
     const token = ref(localStorage.getItem("clientToken") || null);
     const user = ref({
-      id: "",
-      secret: "",
-      name: "",
-      redirect_uri: "",
+        id: "",
+        secret: "",
+        name: "",
+        redirect_uri: "",
     });
     const isCopied = ref("");
     const sidebarShow = ref(false);
     const stats = ref({
-      metric_type: "",
-      unit_of_measurement: "",
-      month_to_date: {
-        month: "",
-        month_to_date_usage: 0,
-        forecasted_end_of_month_usage: 0
-      },
-      last_thirty_days_statistic: {
-        total: 0,
-        average: 0,
-        details: []
-      }
+        metric_type: "",
+        unit_of_measurement: "",
+        month_to_date: {
+            month: "",
+            month_to_date_usage: 0,
+            forecasted_end_of_month_usage: 0
+        },
+        last_thirty_days_statistic: {
+            total: 0,
+            average: 0,
+            details: []
+        }
     });
     const showToast = ref(false);
     const toastMessage = ref("");
+    const modalWindowActive = ref(false);
+    const unpaidAmount = ref(0);
+    const paymentAmount = ref("");
+    const unpaidAmountETH = ref("");
+    const walletConnected = ref(false);
+
     const getUserDetails = async () => {
-      try {
-        const resp = await window.fetch(
-          "[[ .ProxyURL ]]/api/v1/client-profile",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "Application/Json",
-              Authorization: `Bearer ${token.value}`,
-            },
-          }
-        );
-        const data = await resp.json();
-        user.value = data;
-      } catch (error) {
-        console.error(error);
-      }
+        try {
+            const resp = await window.fetch(
+                    "[[ .ProxyURL ]]/api/v1/client-profile",
+                    {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "Application/Json",
+                            Authorization: `Bearer ${token.value}`,
+                        },
+                    }
+            );
+            const data = await resp.json();
+            user.value = data;
+        } catch (error) {
+            console.error(error);
+        }
     };
 
-     const getStats = async () => {
-       try {
-         const resp = await window.fetch(
-           "[[ .ProxyURL ]]/api/v1/usage-stats",
-           {
-             method: "GET",
-             headers: {
-               "Content-Type": "Application/Json",
-               Authorization: `Bearer ${token.value}`,
-             },
-           }
-         );
-         const data = await resp.json();
+    const getStats = async () => {
+        try {
+            const resp = await window.fetch(
+                    "[[ .ProxyURL ]]/api/v1/usage-stats",
+                    {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "Application/Json",
+                            Authorization: `Bearer ${token.value}`,
+                        },
+                    }
+            );
+            const data = await resp.json();
 
-         return data.data
-       } catch (error) {
-         console.error(error);
-       }
-     };
+            return data.data
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const cancelModel = async () => {
+        modalWindowActive.value = false;
+    }
+
+    const payTraffic = async () => {
+        const unpaidAmountResponse = await window.fetch("[[ .ProxyURL ]]/api/v1/client-unpaid-amount", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                client_id: user.value.id,
+            }),
+        });
+
+        console.log(unpaidAmountResponse);
+
+        const unpaidAmountBody = await unpaidAmountResponse.json();
+
+        unpaidAmount.value = unpaidAmountBody.data.unpaid_amount;
+
+        unpaidAmountETH.value = formatEther(unpaidAmount.value);
+
+        modalWindowActive.value = true;
+    }
+
+    const payWithCrypto = async () => {
+        try {
+            const currentAmount = parseEther(paymentAmount.value);
+
+            if (currentAmount < unpaidAmount.value) {
+                alert("too small payment amount, at least " + unpaidAmount.value + " must be paid");
+                return;
+            }
+
+            const transactionHash = await payBill("[[ .SmartContractAddress ]]", user.value.id, currentAmount);
+
+            console.log(transactionHash);
+
+            modalWindowActive.value = false;
+
+            alert("Invoice was paid successfully! You can track your transaction at https://polygonscan.com/tx/" + transactionHash);
+
+            // if (payClientTrafficBody.is_success === true) {
+            //     // TODO: check for transaction confirmation
+            // } else {
+            //     alert(payClientTrafficBody.message);
+            // }
+        } catch (error) {
+            alert("Payment failed, error: " + error);
+        }
+    }
+
+    const checkWalletConnections = async () => {
+        watchConnections(WAGMI_CONFIG, {
+            onChange(data) {
+                console.log(data);
+
+                walletConnected.value = data.length !== 0;
+
+                console.log(walletConnected.value);
+            }
+        });
+    }
 
     const copyToClipboard = async (text) => {
-      try {
-        isCopied.value = text
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.setAttribute('readonly', '');
-        textarea.style.position = 'absolute';
-        textarea.style.left = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        showToastMessage("Copied to the clipboard!", "success");
-      } catch (error) {
-        console.error(error)
-      }
+        try {
+            isCopied.value = text
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'absolute';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            showToastMessage("Copied to the clipboard!", "success");
+        } catch (error) {
+            console.error(error)
+        }
     }
 
     const logoutUser = () => {
-      token.value = null;
-      localStorage.removeItem("clientToken");
-      window.location.href = "[[ .ProxyURL ]]/";
+        token.value = null;
+        localStorage.removeItem("clientToken");
+        window.location.href = "[[ .ProxyURL ]]/";
     };
 
     const showSidebar = (value) => {
-      sidebarShow.value = value
-      document.body.style.overflow = value ? "hidden" : "auto";
+        sidebarShow.value = value
+        document.body.style.overflow = value ? "hidden" : "auto";
     }
 
     const showToastMessage = (message, type) => {
-      // Current param type is not used. But will be in the future
-      toastMessage.value = message;
-      showToast.value = true;
-      setTimeout(() => {
-        showToast.value = false;
-      }, 3000);
+        // Current param type is not used. But will be in the future
+        toastMessage.value = message;
+        showToast.value = true;
+        setTimeout(() => {
+            showToast.value = false;
+        }, 3000);
     }
     const app = createApp({
-      setup() {
-        onMounted(async () => {
-          if (!token.value) {
-            window.location.href = "[[ .ProxyURL ]]/client-login-page";
-          }
-          stats.value = await getStats()
-          const ctx = document.getElementById("statisticChart")
+        setup() {
+            reconnect(WAGMI_CONFIG)
+            checkWalletConnections()
+            setupWeb3Modal()
 
-          const mappedValue = stats.value.last_thirty_days_statistic.details.map(v => {
-            v.total = (v.total * 1000000).toFixed(4)
-            return v
-          })
-
-          const lineChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-              datasets: [
-                {
-                  label: "Total Byte",
-                  borderWidth: 3,
-                  data: mappedValue,
+            onMounted(async () => {
+                if (!token.value) {
+                    window.location.href = "[[ .ProxyURL ]]/client-login-page";
                 }
-              ]
-            },
-            options: {
-              parsing: {
-                xAxisKey: 'date',
-                yAxisKey: 'total'
-              },
-              plugins: {
-                legend: false,
-              },
-            }
-          })
-          
-          getUserDetails();
-        });
+                stats.value = await getStats()
+                const ctx = document.getElementById("statisticChart")
 
-        return {
-          user,
-          stats,
-          logoutUser,
-          copyToClipboard,
-          isCopied,
-          sidebarShow,
-          showSidebar,
-          toastMessage,
-          showToast
-        };
-      },
+                const mappedValue = stats.value.last_thirty_days_statistic.details.map(v => {
+                    v.total = (v.total * 1000000).toFixed(4)
+                    return v
+                })
+
+                const lineChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [
+                            {
+                                label: "Total Byte",
+                                borderWidth: 3,
+                                data: mappedValue,
+                            }
+                        ]
+                    },
+                    options: {
+                        parsing: {
+                            xAxisKey: 'date',
+                            yAxisKey: 'total'
+                        },
+                        plugins: {
+                            legend: false,
+                        },
+                    }
+                })
+
+                getUserDetails();
+            });
+
+            return {
+                user,
+                stats,
+                logoutUser,
+                copyToClipboard,
+                isCopied,
+                sidebarShow,
+                showSidebar,
+                toastMessage,
+                showToast,
+                modalWindowActive,
+                unpaidAmount,
+                unpaidAmountETH,
+                paymentAmount,
+                walletConnected,
+                cancelModel,
+                payTraffic,
+                payWithCrypto,
+            };
+        },
     });
-    
+
+    app.config.compilerOptions.isCustomElement = tag => tag === 'w3m-button';
     app.mount("#app");
-  </script>
+</script>
 </body>
 </html>

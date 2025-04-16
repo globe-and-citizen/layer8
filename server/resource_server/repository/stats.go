@@ -83,15 +83,18 @@ func (s *StatRepository) GetTotalByDateRangeByClient(ctx context.Context, start 
 	|> range(start: %s, stop: %s)
 	|> filter(fn: (r) => r["_measurement"] == "total_byte_transferred")
 	|> filter(fn: (r) => r["client_id"] == "%s")
-	|> filter(fn: (r) => r["_field"] == "counter")
+	|> filter(fn: (r) => r["_field"] == "gauge")
 	|> group(columns: ["client_id"])
 	|> sum()`, start.Format(time.RFC3339), end.Format(time.RFC3339), clientID)
+
+	fmt.Println(query)
 
 	rawDataFromInflux, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
 		return 0, err
 	}
 
+	// TODO: assert that rawDataFromInflux contains only one record
 	var decimalValueTotal float64
 	for rawDataFromInflux.Next() {
 		rawDataPointer := rawDataFromInflux.Record()
@@ -103,4 +106,45 @@ func (s *StatRepository) GetTotalByDateRangeByClient(ctx context.Context, start 
 	}
 
 	return decimalValueTotal, err
+}
+
+func (s *StatRepository) GetTotalUsageStatisticsByDateRangeForEachClient(ctx context.Context, start time.Time, end time.Time) ([]models.ClientUsageStatisticsByRange, error) {
+	queryAPI := s.influxDBClient.QueryAPI("layer8")
+
+	query := fmt.Sprintf(`
+	from(bucket: "layer8")
+	|> range(start: %s, stop: %s)
+	|> filter(fn: (r) => r["_measurement"] == "total_byte_transferred")
+	|> filter(fn: (r) => r["_field"] == "counter")
+	|> group(columns: ["client_id"])
+	|> sum()`, start.Format(time.RFC3339), end.Format(time.RFC3339))
+
+	queryResult, err := queryAPI.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	response := make([]models.ClientUsageStatisticsByRange, 0)
+	for queryResult.Next() {
+		record := queryResult.Record()
+
+		clientId := fmt.Sprint(record.ValueByKey("client_id"))
+		rawTotalBytes := record.ValueByKey("_value")
+
+		totalBytes, err := strconv.ParseFloat(fmt.Sprint(rawTotalBytes), 64)
+		if err != nil {
+			return nil, err
+		}
+
+		if totalBytes == 0 {
+			continue
+		}
+
+		response = append(response, models.ClientUsageStatisticsByRange{
+			ClientId:   clientId,
+			TotalBytes: totalBytes,
+		})
+	}
+
+	return response, nil
 }
