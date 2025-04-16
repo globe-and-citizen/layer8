@@ -1,5 +1,5 @@
 # Build the server
-FROM golang:1.21.6-alpine3.18 AS builder
+FROM golang:1.23.8-alpine3.20 AS builder
 
 RUN mkdir /build
 
