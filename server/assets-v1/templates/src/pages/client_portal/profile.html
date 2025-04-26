@@ -53,7 +53,7 @@
                 </svg>
             </div>
             <w3m-button class="pr-4"></w3m-button>
-            <button v-if="walletConnected" class="rounded-lg text-center bg-[#4F80E1] text-white" @click="payTraffic">Pay traffic</button>
+            <button v-if="walletConnected" class="h-12 w-[128px] rounded-2xl text-center bg-[#4F80E1] text-white mr-10" @click="payTraffic">Pay traffic</button>
         </div>
         <div @click="showSidebar(false)" class="grid md:grid-cols-5 lg:grid-cols-5 gap-x-4 m-4">
             <div class="md:col-span-1 bg-white rounded-2xl px-2 md:px-5 py-3 md:py-6 hidden md:block lg:block">
@@ -199,9 +199,16 @@
             </div>
             <div class="modal__footer">
                 <button type="button" class="close-button" @click="cancelModel">Cancel</button>
+
                 <button type="button"
-                        class="bg-[#4F80E1] rounded-lg text-center text-white w-025"
-                        @click="payWithCrypto">Pay</button>
+                        class="bg-[#4F80E1] rounded-lg text-white loading-button"
+                        @click="payWithCrypto"
+                        :disabled="confirming"
+                >
+                    <span v-if="confirming" class="spinner"></span>
+                    <span v-if="confirming">Confirming...</span>
+                    <span v-else>Pay</span>
+                </button>
             </div>
         </div>
     </div>
@@ -215,18 +222,20 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script type="module">
     const [
-        { reconnect, watchConnections },
+        { watchAccount, getAccount },
         { parseEther, formatEther },
-        { WAGMI_CONFIG, setupWeb3Modal },
-        { payBill },
+        { polygon },
+        { createWeb3Modal, defaultWagmiConfig },
+        { payBill, awaitTransactionConfirmation },
     ] = await Promise.all([
         import('https://esm.sh/@wagmi/core@2.11.6'),
         import("https://esm.sh/viem@2.17.0"),
-        import('/assets-v1/templates/assets/js/crypto/web3modal.js'),
+        import("https://esm.sh/@wagmi/core@2.11.6/chains"),
+        import("https://esm.sh/@web3modal/wagmi?bundle"),
         import('/assets-v1/templates/assets/js/crypto/pay.js'),
     ]);
 
-    const { ref, onMounted, createApp } = Vue;
+    const { ref, onMounted, onUnmounted, createApp } = Vue;
     const token = ref(localStorage.getItem("clientToken") || null);
     const user = ref({
         id: "",
@@ -257,6 +266,9 @@
     const paymentAmount = ref("");
     const unpaidAmountETH = ref("");
     const walletConnected = ref(false);
+    const confirming = ref(false);
+
+    let unwatch;
 
     const getUserDetails = async () => {
         try {
@@ -312,7 +324,10 @@
             }),
         });
 
-        console.log(unpaidAmountResponse);
+        if (unpaidAmountResponse.status !== 200) {
+            alert("Failed to fetch unpaid amount, retry later")
+            return
+        }
 
         if (unpaidAmountResponse.status !== 200) {
             alert("Failed to fetch unpaid amount, retry later")
@@ -326,45 +341,6 @@
         unpaidAmountETH.value = formatEther(unpaidAmount.value);
 
         modalWindowActive.value = true;
-    }
-
-    const payWithCrypto = async () => {
-        try {
-            const currentAmount = parseEther(paymentAmount.value);
-
-            if (currentAmount < unpaidAmount.value) {
-                alert("too small payment amount, at least " + unpaidAmount.value + " must be paid");
-                return;
-            }
-
-            const transactionHash = await payBill("[[ .SmartContractAddress ]]", user.value.id, currentAmount);
-
-            console.log(transactionHash);
-
-            modalWindowActive.value = false;
-
-            alert("Invoice was paid successfully! You can track your transaction at https://polygonscan.com/tx/" + transactionHash);
-
-            // if (payClientTrafficBody.is_success === true) {
-            //     // TODO: check for transaction confirmation
-            // } else {
-            //     alert(payClientTrafficBody.message);
-            // }
-        } catch (error) {
-            alert("Payment failed, error: " + error);
-        }
-    }
-
-    const checkWalletConnections = async () => {
-        watchConnections(WAGMI_CONFIG, {
-            onChange(data) {
-                console.log(data);
-
-                walletConnected.value = data.length !== 0;
-
-                console.log(walletConnected.value);
-            }
-        });
     }
 
     const copyToClipboard = async (text) => {
@@ -403,16 +379,48 @@
             showToast.value = false;
         }, 3000);
     }
+
     const app = createApp({
         setup() {
-            reconnect(WAGMI_CONFIG)
-            checkWalletConnections()
-            setupWeb3Modal()
+            const WALLET_CONNECT_PROJECT_ID = "339b2396ae9c42ea2ffd29ab386c8a9e"
+
+            const WAGMI_CONFIG = defaultWagmiConfig({
+                autoConnect: true,
+                chains: [ polygon ],
+                projectId: WALLET_CONNECT_PROJECT_ID,
+                metadata: {
+                    name: 'Layer8',
+                    description: 'Reverse Proxy Implementing the Layer8 protocol',
+                    url: "[[ .ProxyURL ]]",
+                    icons: ['https://avatars.githubusercontent.com/u/37784886']
+                },
+            });
+
+            createWeb3Modal({
+                wagmiConfig: WAGMI_CONFIG,
+                projectId: WALLET_CONNECT_PROJECT_ID,
+                enableOnramp: true,
+            });
+
+            const checkWalletConnections = async () => {
+                unwatch = watchAccount(WAGMI_CONFIG, {
+                    onChange(account) {
+                        console.log(account);
+
+                        walletConnected.value = account.isConnected;
+
+                        console.log(walletConnected.value);
+                    }
+                });
+            }
+
+            checkWalletConnections();
 
             onMounted(async () => {
                 if (!token.value) {
                     window.location.href = "[[ .ProxyURL ]]/client-login-page";
                 }
+
                 stats.value = await getStats()
                 const ctx = document.getElementById("statisticChart")
 
@@ -446,6 +454,40 @@
                 getUserDetails();
             });
 
+            onUnmounted(() => {
+                if (unwatch) {
+                    unwatch();
+                }
+            });
+
+            const payWithCrypto = async () => {
+                try {
+                    const currentAmount = parseEther(paymentAmount.value);
+
+                    if (currentAmount < unpaidAmount.value) {
+                        alert("too small payment amount, at least " + unpaidAmount.value + " must be paid");
+                        return;
+                    }
+
+                    const transactionHash = await payBill(WAGMI_CONFIG, "[[ .SmartContractAddress ]]", user.value.id, currentAmount);
+
+                    confirming.value = true;
+
+                    const status = await awaitTransactionConfirmation(WAGMI_CONFIG, transactionHash);
+
+                    confirming.value = false;
+                    modalWindowActive.value = false;
+
+                    if (status === "success") {
+                        alert("Transaction confirmed! You can track your transaction at https://polygonscan.com/tx/" + transactionHash);
+                    } else {
+                        alert("Transaction reverted. Please retry later");
+                    }
+                } catch (error) {
+                    alert("Payment failed, error: " + error);
+                }
+            }
+
             return {
                 user,
                 stats,
@@ -461,6 +503,7 @@
                 unpaidAmountETH,
                 paymentAmount,
                 walletConnected,
+                confirming,
                 cancelModel,
                 payTraffic,
                 payWithCrypto,
