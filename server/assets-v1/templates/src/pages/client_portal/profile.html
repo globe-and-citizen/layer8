@@ -382,12 +382,12 @@
 
     const app = createApp({
         setup() {
-            const WALLET_CONNECT_PROJECT_ID = "339b2396ae9c42ea2ffd29ab386c8a9e"
+            const walletConnectID = "[[ .WalletConnectProjectID ]]";
 
             const WAGMI_CONFIG = defaultWagmiConfig({
                 autoConnect: true,
                 chains: [ polygon ],
-                projectId: WALLET_CONNECT_PROJECT_ID,
+                projectId: walletConnectID,
                 metadata: {
                     name: 'Layer8',
                     description: 'Reverse Proxy Implementing the Layer8 protocol',
@@ -398,7 +398,7 @@
 
             createWeb3Modal({
                 wagmiConfig: WAGMI_CONFIG,
-                projectId: WALLET_CONNECT_PROJECT_ID,
+                projectId: walletConnectID,
                 enableOnramp: true,
             });
 
