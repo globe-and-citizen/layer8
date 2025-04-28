@@ -955,6 +955,10 @@ video {
   margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));
 }
 
+.mr-10 {
+    margin-right: 30px;
+}
+
 .self-end {
   align-self: flex-end;
 }

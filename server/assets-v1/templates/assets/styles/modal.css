@@ -118,10 +118,36 @@
 }
 
 .close-button {
-    width: 50%;
+    width: 40%;
     margin-left: 25%;
 }
 
-.w-025 {
-    width: 25%;
+.loading-button {
+    width: 35%;
+    text-align: center;
+    cursor: pointer;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-button:disabled {
+    cursor: not-allowed;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 3px solid white;
+    border-top: 3px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
