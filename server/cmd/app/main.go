@@ -328,6 +328,9 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				handlers.InitTunnel(w, r)
 			case path == "/error":
 				handlers.TestError(w, r)
+			case path == "/health_check":
+				handlers.HealthCheck(w, r)
+
 				// TODO: For later, to be discussed more
 				// case path == "/tunnel":
 				// 	handlers.Tunnel(w, r)

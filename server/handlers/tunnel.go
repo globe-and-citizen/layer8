@@ -354,6 +354,10 @@ func wsTunnel(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			fmt.Println("----------------------------------")
+			fmt.Println("Data from client: ", string(data))
+			fmt.Println("--------------------------------")
+
 			if err = serviceProviderSoc.Write(ctx, websocket.MessageText, data); err != nil {
 				if isNormal(err) {
 					return
