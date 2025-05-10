@@ -85,21 +85,23 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error is", err.Error())
+	var data []byte
+	if resp.Header.Get("Content-Length") != "" || resp.Header.Get("Transfer-Encoding") == "chunked" {
+		if data, err = io.ReadAll(resp.Body); err != nil {
+			fmt.Println("Error is", err.Error())
 
-		health := HealthCheckResponse{
-			ForwardProxy: &Message{
-				StatusCode: http.StatusInternalServerError,
-				Message:    "failed to read response body",
-				BodyDump:   []byte(err.Error()),
-			},
+			health := HealthCheckResponse{
+				ForwardProxy: &Message{
+					StatusCode: http.StatusInternalServerError,
+					Message:    "failed to read response body",
+					BodyDump:   []byte(err.Error()),
+				},
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(health)
+			return
 		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(health)
-		return
 	}
 
 	if resp.StatusCode >= http.StatusInternalServerError {
