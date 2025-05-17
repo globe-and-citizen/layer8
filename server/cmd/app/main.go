@@ -231,6 +231,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				authorizationHandler.OAuthToken(w, r)
 			case path == "/api/user":
 				handlers.UserInfo(w, r)
+			case path == "/sp-pub-key":
+				handlers.GetSPPubKey(w, r)
 			case strings.HasPrefix(path, "/assets-v1"):
 				http.StripPrefix("/assets-v1", http.FileServer(http.Dir("./assets-v1"))).ServeHTTP(w, r)
 
