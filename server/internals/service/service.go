@@ -26,6 +26,8 @@ type ServiceInterface interface {
 	ExchangeCodeForToken(config *oauth2.Config, code string) (*oauth2.Token, error)
 	AccessResourcesWithToken(token string) (map[string]interface{}, error)
 	GetClient(id string) (*models.Client, error)
+	VerifyToken(token string) (isvalid bool, err error)
+	CheckClient(backendURL string) (*models.Client, error)
 	AddTestClient() (*models.Client, error)
 }
 
@@ -218,12 +220,36 @@ func (u *Service) AccessResourcesWithToken(token string) (map[string]interface{}
 	return resources, nil
 }
 
+func (u *Service) VerifyToken(token string) (isvalid bool, err error) {
+	// verify token
+	jwtClaims, err := utilities.VerifyStandardToken(token, os.Getenv("JWT_SECRET_KEY"))
+	if err != nil {
+		return false, err
+	}
+	// check if the token is expired
+	if jwtClaims.ExpiresAt < time.Now().Unix() {
+		return false, fmt.Errorf("token is expired")
+	}
+	return true, nil
+}
+
 func (u *Service) GetClient(id string) (*models.Client, error) {
 	client, err := u.Repo.GetClient(fmt.Sprintf("client:%s", id))
 	if err != nil {
 		return nil, err
 	}
 
+	return client, nil
+}
+
+func (u *Service) CheckClient(backendURL string) (*models.Client, error) {
+	client, err := u.Repo.GetClientByURL(backendURL)
+	if err != nil {
+		return nil, fmt.Errorf("could not get client: %v", err)
+	}
+	if client == nil {
+		return nil, fmt.Errorf("client not found")
+	}
 	return client, nil
 }
 
