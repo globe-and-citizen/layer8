@@ -31,7 +31,7 @@ func TestLoginUserPrecheck(t *testing.T) {
 	// Make a mock loginPrecheck input
 	username := "test_user"
 
-	mock.ExpectQuery("SELECT (.+) FROM \"users\" WHERE username = (.+)").WithArgs(username, 1).WillReturnRows(sqlmock.NewRows([]string{"salt"}).AddRow("test_salt"))
+	mock.ExpectQuery("SELECT (.+) FROM \"users\" WHERE username = (.+)").WithArgs(username).WillReturnRows(sqlmock.NewRows([]string{"salt"}).AddRow("test_salt"))
 
 	// Call the function and check the result
 	salt, err := repo.LoginUserPrecheck(username)
@@ -66,7 +66,7 @@ func TestGetUser(t *testing.T) {
 	// Make a mock getUser input
 	username := "test_user"
 
-	mock.ExpectQuery("SELECT (.+) FROM \"users\" WHERE username = (.+)").WithArgs(username, 1).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "username", "password", "salt", "first_name", "last_name"}).AddRow(1, "test_email", "test_user", "test_password", "test_salt", "test_first_name", "test_last_name"))
+	mock.ExpectQuery("SELECT (.+) FROM \"users\" WHERE username = (.+)").WithArgs(username).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "username", "password", "salt", "first_name", "last_name"}).AddRow(1, "test_email", "test_user", "test_password", "test_salt", "test_first_name", "test_last_name"))
 
 	// Call the function and check the result
 	user, err := repo.GetUser(username)
@@ -106,7 +106,7 @@ func TestGetUserByID(t *testing.T) {
 	// Make a mock getUserByID input
 	id := int64(1)
 
-	mock.ExpectQuery("SELECT (.+) FROM \"users\" WHERE id = (.+)").WithArgs(id, 1).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "username", "password", "salt", "first_name", "last_name"}).AddRow(1, "test_email", "test_user", "test_password", "test_salt", "test_first_name", "test_last_name"))
+	mock.ExpectQuery("SELECT (.+) FROM \"users\" WHERE id = (.+)").WithArgs(id).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "username", "password", "salt", "first_name", "last_name"}).AddRow(1, "test_email", "test_user", "test_password", "test_salt", "test_first_name", "test_last_name"))
 
 	// Call the function and check the result
 	user, err := repo.GetUserByID(id)
@@ -147,7 +147,7 @@ func TestGetUserMetadata(t *testing.T) {
 	userID := int64(1)
 	key := "test_key"
 
-	mock.ExpectQuery("SELECT (.+) FROM \"user_metadata\" WHERE user_id = (.+) AND key = (.+)").WithArgs(userID, key, 1).WillReturnRows(sqlmock.NewRows([]string{"id", "user_id", "key", "value"}).AddRow(1, 1, "test_key", "test_value"))
+	mock.ExpectQuery("SELECT (.+) FROM \"user_metadata\" WHERE user_id = (.+) AND key = (.+)").WithArgs(userID, key).WillReturnRows(sqlmock.NewRows([]string{"id", "user_id", "key", "value"}).AddRow(1, 1, "test_key", "test_value"))
 
 	// Call the function and check the result
 	userMetadata, err := repo.GetUserMetadata(userID, key)
@@ -195,7 +195,7 @@ func TestSetClient(t *testing.T) {
 	mock.ExpectQuery(
 		"SELECT (.+) FROM \"clients\" WHERE id = (.+)",
 	).WithArgs(
-		client.ID, 1,
+		client.ID,
 	).WillReturnError(
 		gorm.ErrRecordNotFound,
 	)
@@ -250,7 +250,7 @@ func TestGetClient(t *testing.T) {
 	// Make a mock getClient input
 	id := "test_id"
 
-	mock.ExpectQuery("SELECT (.+) FROM \"clients\" WHERE id = (.+)").WithArgs(id, 1).WillReturnRows(sqlmock.NewRows([]string{"id", "secret", "name", "redirect_uri"}).AddRow("test_id", "test_secret", "test_name", "test_redirect_uri"))
+	mock.ExpectQuery("SELECT (.+) FROM \"clients\" WHERE id = (.+)").WithArgs(id).WillReturnRows(sqlmock.NewRows([]string{"id", "secret", "name", "redirect_uri"}).AddRow("test_id", "test_secret", "test_name", "test_redirect_uri"))
 
 	// Call the function and check the result
 	client, err := repo.GetClient(id)

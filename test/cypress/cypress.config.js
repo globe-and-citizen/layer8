@@ -16,7 +16,7 @@ module.exports = defineConfig({
     setupNodeEvents(on, config) {
       on("task", {
         async deleteUser({ username, tableName }) {
-          const dbConn = new Client({
+          const client = new Client({
             user: String(process.env.DB_USER),
             password: String(process.env.DB_PASSWORD),
             host: String(process.env.DB_HOST),
@@ -26,28 +26,28 @@ module.exports = defineConfig({
           });
 
           try {
-            await dbConn.connect();
+            await client.connect();
+            if (tableName == 'users') {
+              // Retrieve user ID by username from tableName
+              const userResult = await client.query(`SELECT id FROM ${tableName} WHERE username = $1`, [username]);
+              if (userResult.rows.length === 0) {
+                throw new Error(`User with username ${username} not found in ${tableName}`);
+              }
+              const userId = userResult.rows[0].id;
 
-            // Retrieve user ID by username from tableName
-            const userResult = await dbConn.query(`SELECT id FROM ${tableName} WHERE username = $1`, [username]);
-            if (userResult.rows.length === 0) {
-              throw new Error(`User with username ${username} not found in ${tableName}`);
-            }
-            const userId = userResult.rows[0].id;
+              // Delete data from user_metadata table using user ID
+              await client.query(`DELETE FROM user_metadata WHERE user_id = $1`, [userId]);
+              await client.query(`DELETE FROM ${tableName} WHERE username = $1`, [username]);
 
-            if (tableName === 'users') {
-                // Delete data from user_metadata table using user ID
-                await dbConn.query(`DELETE FROM user_metadata WHERE user_id = $1`, [userId]);
-                await dbConn.query(`DELETE FROM users WHERE username = $1`, [username]);
+              await client.end();
+              return true;
             } else {
-                await dbConn.query(`DELETE FROM client_traffic_statistics WHERE client_id = $1`, [userId]);
-                await dbConn.query(`DELETE FROM clients WHERE username = $1`, [username]);
+              await client.query(`DELETE FROM ${tableName} WHERE username = $1`, [username]);
+              await client.end();
+              return true;
             }
-
-            await dbConn.end();
-            return true;
           } catch (err) {
-            await dbConn.end();
+            await client.end();
             throw new Error(`Database error: ${err.message}`);
           }
         }

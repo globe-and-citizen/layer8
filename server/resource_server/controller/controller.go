@@ -41,9 +41,8 @@ func ClientProfilePage(w http.ResponseWriter, r *http.Request) {
 	utils.ParseHTML(w, http.StatusOK,
 		"assets-v1/templates/src/pages/client_portal/profile.html",
 		map[string]interface{}{
-			"ProxyURL":               os.Getenv("PROXY_URL"),
-			"SmartContractAddress":   os.Getenv("SMART_CONTRACT_ADDRESS"),
-			"WalletConnectProjectID": os.Getenv("WALLET_CONNECT_PROJECT_ID"),
+			"ProxyURL":             os.Getenv("PROXY_URL"),
+			"SmartContractAddress": os.Getenv("SMART_CONTRACT_ADDRESS"),
 		},
 	)
 }
