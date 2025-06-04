@@ -66,21 +66,6 @@ func (mr *MockServiceInterfaceMockRecorder) AddTestClient() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTestClient", reflect.TypeOf((*MockServiceInterface)(nil).AddTestClient))
 }
 
-// CheckClient mocks base method.
-func (m *MockServiceInterface) CheckClient(backendURL string) (*models.Client, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckClient", backendURL)
-	ret0, _ := ret[0].(*models.Client)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CheckClient indicates an expected call of CheckClient.
-func (mr *MockServiceInterfaceMockRecorder) CheckClient(backendURL interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckClient", reflect.TypeOf((*MockServiceInterface)(nil).CheckClient), backendURL)
-}
-
 // ExchangeCodeForToken mocks base method.
 func (m *MockServiceInterface) ExchangeCodeForToken(config *oauth2.Config, code string) (*oauth2.Token, error) {
 	m.ctrl.T.Helper()
@@ -154,19 +139,4 @@ func (m *MockServiceInterface) LoginUser(username, password string) (map[string]
 func (mr *MockServiceInterfaceMockRecorder) LoginUser(username, password interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoginUser", reflect.TypeOf((*MockServiceInterface)(nil).LoginUser), username, password)
-}
-
-// VerifyToken mocks base method.
-func (m *MockServiceInterface) VerifyToken(token string) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VerifyToken", token)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// VerifyToken indicates an expected call of VerifyToken.
-func (mr *MockServiceInterfaceMockRecorder) VerifyToken(token interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyToken", reflect.TypeOf((*MockServiceInterface)(nil).VerifyToken), token)
 }
