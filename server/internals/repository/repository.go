@@ -87,6 +87,22 @@ func (r *PostgresRepository) GetClient(id string) (*models.Client, error) {
 	return &client, nil
 }
 
+func (r *PostgresRepository) GetClientByURL(url string) (*models.Client, error) {
+	var client models.Client
+	err := r.db.Where("backend_uri = ?", url).First(&client).Error
+	if err != nil {
+		return &models.Client{}, err
+	}
+	return &client, nil
+}
+
+func (r *PostgresRepository) SaveX509Certificate(clientID string, certificate string) error {
+	return r.db.Model(&models.Client{}).
+		Where("id = ?", clientID).
+		Update("x509_certificate_bytes", certificate).
+		Error
+}
+
 // SetTTL sets the key to hold the value for a limited time
 func (r *PostgresRepository) SetTTL(key string, value []byte, ttl time.Duration) error {
 	r.storage[key] = value

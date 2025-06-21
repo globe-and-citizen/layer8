@@ -235,9 +235,9 @@ func (r *Repository) ProfileUser(userID uint) (models.User, []models.UserMetadat
 	return user, userMetadata, nil
 }
 
-func (r *Repository) ProfileClient(userID string) (models.Client, error) {
+func (r *Repository) ProfileClient(username string) (models.Client, error) {
 	var client models.Client
-	if err := r.connection.Where("username = ?", userID).First(&client).Error; err != nil {
+	if err := r.connection.Where("username = ?", username).First(&client).Error; err != nil {
 		return models.Client{}, err
 	}
 	return client, nil

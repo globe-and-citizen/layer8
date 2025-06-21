@@ -35,11 +35,12 @@ type ProfileResponseOutput struct {
 }
 
 type ClientResponseOutput struct {
-	ID          string `json:"id"`
-	Secret      string `json:"secret"`
-	Name        string `json:"name"`
-	RedirectURI string `json:"redirect_uri"`
-	BackendURI  string `json:"backend_uri"`
+	ID              string `json:"id"`
+	Secret          string `json:"secret"`
+	Name            string `json:"name"`
+	RedirectURI     string `json:"redirect_uri"`
+	BackendURI      string `json:"backend_uri"`
+	X509Certificate string `json:"x509_certificate"`
 }
 
 type RegisterUserPrecheckResponseOutput struct {
