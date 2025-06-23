@@ -1,43 +1,43 @@
-name: Deploy Network to Development Environment
+# name: Deploy Network to Development Environment
 
-on:
-  workflow_dispatch:
+# on:
+#   workflow_dispatch:
 
-jobs:
-    deploy-network:
-      runs-on: ubuntu-latest
-      environment: "production"
-      defaults:
-        run:
-          working-directory: ./infra/development/base
-      steps:
-        - uses: actions/checkout@v4
-        - uses: hashicorp/setup-terraform@v3
-          with:
-            cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}  
+# jobs:
+#     deploy-network:
+#       runs-on: ubuntu-latest
+#       environment: "production"
+#       defaults:
+#         run:
+#           working-directory: ./infra/development/base
+#       steps:
+#         - uses: actions/checkout@v4
+#         - uses: hashicorp/setup-terraform@v3
+#           with:
+#             cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}  
             
-        - name: Add Terraform Environment Variables
-          id: addtfenv
-          run: |
-            echo -e "$TFVARS_STRING" >> terraform.tfvars
-          env:
-            TFVARS_STRING: |
-              iam_profile_arn = "${{ vars.IAM_PROFILE_ARN }}"
-              task_role_arn = "${{ secrets.ECS_TASK_ROLE_ARN }}"
-              task_execution_role_arn = "${{ secrets.ECS_TASK_EXECUTION_ROLE_ARN }}"
+#         - name: Add Terraform Environment Variables
+#           id: addtfenv
+#           run: |
+#             echo -e "$TFVARS_STRING" >> terraform.tfvars
+#           env:
+#             TFVARS_STRING: |
+#               iam_profile_arn = "${{ vars.IAM_PROFILE_ARN }}"
+#               task_role_arn = "${{ secrets.ECS_TASK_ROLE_ARN }}"
+#               task_execution_role_arn = "${{ secrets.ECS_TASK_EXECUTION_ROLE_ARN }}"
 
-        - name: Terraform Init
-          id: init
-          run: terraform init
+#         - name: Terraform Init
+#           id: init
+#           run: terraform init
 
-        - name: Terraform Validate
-          id: validate
-          run: terraform validate
+#         - name: Terraform Validate
+#           id: validate
+#           run: terraform validate
 
-        - name: Terraform Plan
-          id: plan
-          run: terraform plan
+#         - name: Terraform Plan
+#           id: plan
+#           run: terraform plan
 
-        - name: Terraform Apply
-          id: apply
-          run: terraform apply
+#         - name: Terraform Apply
+#           id: apply
+#           run: terraform apply
