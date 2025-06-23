@@ -450,6 +450,7 @@ func (r *Repository) CreateClientTrafficStatisticsEntry(clientId string, rate in
 }
 
 func (r *Repository) GetClientTrafficStatistics(clientId string) (*models.ClientTrafficStatistics, error) {
+	// TODO: is isolation level higher then the default needed?
 	var clientStatistics models.ClientTrafficStatistics
 
 	err := r.connection.Model(&models.ClientTrafficStatistics{}).

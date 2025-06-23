@@ -12,7 +12,6 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/service"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 	"globe-and-citizen/layer8/server/resource_server/utils/mocks"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -268,26 +267,6 @@ func (m *mockRepository) UpdateUserPasswordV2(username string, storedKey string,
 	return m.updateUserPasswordV2(username, storedKey, serverKey)
 }
 
-func (m *mockRepository) CreateClientTrafficStatisticsEntry(clientId string, rate int) error {
-	return nil
-}
-
-func (m *mockRepository) AddClientTrafficUsage(clientId string, consumedBytes int, now time.Time) error {
-	return nil
-}
-
-func (m *mockRepository) GetClientTrafficStatistics(clientId string) (*models.ClientTrafficStatistics, error) {
-	return &models.ClientTrafficStatistics{}, nil
-}
-
-func (m *mockRepository) PayClientTrafficUsage(clientId string, amountPaid int) error {
-	return nil
-}
-
-func (m *mockRepository) GetAllClientStatistics() ([]models.ClientTrafficStatistics, error) {
-	return make([]models.ClientTrafficStatistics, 0), nil
-}
-
 func TestRegisterUser_RepositoryFailedToStoreUserData(t *testing.T) {
 	mockRepo := &mockRepository{
 		registerUser: func(req dto.RegisterUserDTO, hashedPassword string, salt string) error {
@@ -371,11 +350,6 @@ func TestRegisterClient_RepositoryFailedToStoreClientData(t *testing.T) {
 }
 
 func TestRegisterClient_Success(t *testing.T) {
-	err := os.Setenv("CLIENT_TRAFFIC_RATE_PER_BYTE", "5")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	mockRepo := &mockRepository{
 		registerClient: func(client models.Client) error {
 			assert.Equal(t, firstName, client.Name)
@@ -388,7 +362,7 @@ func TestRegisterClient_Success(t *testing.T) {
 	}
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
-	err = currService.RegisterClient(
+	err := currService.RegisterClient(
 		dto.RegisterClientDTO{
 			Name:        firstName,
 			RedirectURI: redirectUri,
