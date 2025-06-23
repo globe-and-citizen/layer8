@@ -1,96 +1,96 @@
-name: Deploy Layer8 Server to Development Environment
+# name: Deploy Layer8 Server to Development Environment
 
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - development
+# on:
+#   workflow_dispatch:
+#   push:
+#     branches:
+#       - development
 
-jobs:
-  build-layer8:
-    name: Build Layer8 Server
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: kciter/aws-ecr-action@v3
-        with:
-          access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          repo: layer8
-          region: ${{ vars.AWS_REGION }}
-          tags: latest,${{ github.sha }}
-          create_repo: true
-  database-migration:
-    name: Database Migration
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+# jobs:
+#   build-layer8:
+#     name: Build Layer8 Server
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: kciter/aws-ecr-action@v3
+#         with:
+#           access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+#           repo: layer8
+#           region: ${{ vars.AWS_REGION }}
+#           tags: latest,${{ github.sha }}
+#           create_repo: true
+#   database-migration:
+#     name: Database Migration
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.21"
+#       - name: Setup Go
+#         uses: actions/setup-go@v5
+#         with:
+#           go-version: "1.21"
 
-      - name: Install Database Migration CLI
-        run: |
-          go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+#       - name: Install Database Migration CLI
+#         run: |
+#           go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
-      - name: Run Database Migration
-        run: |
-          migrate -path migrations -database "${{ secrets.DEVELOPMENT_POSTGRESQL_URL }}" up
-  deploy-layer8-server-development:
-    name: "Deploy Layer 8 to Development"
-    environment: "development"
-    needs: [build-layer8]
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: infra/development/layer8
-    steps:
-      - uses: actions/checkout@v4
+#       - name: Run Database Migration
+#         run: |
+#           migrate -path migrations -database "${{ secrets.DEVELOPMENT_POSTGRESQL_URL }}" up
+#   deploy-layer8-server-development:
+#     name: "Deploy Layer 8 to Development"
+#     environment: "development"
+#     needs: [build-layer8]
+#     runs-on: ubuntu-latest
+#     defaults:
+#       run:
+#         working-directory: infra/development/layer8
+#     steps:
+#       - uses: actions/checkout@v4
 
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+#       - uses: hashicorp/setup-terraform@v3
+#         with:
+#           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      - name: Install AWS CLI
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y awscli
-      - name: Populate Application Environment Variables to S3
-        id: populateappenv
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-        run: |
-          echo -e "${{ vars.DEVELOPMENT_APP_ENV }}" >> app.env
-          aws s3 cp ./app.env s3://${{ vars.DEVELOPMENT_S3_APP_ENV_LOCATION }}
+#       - name: Install AWS CLI
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y awscli
+#       - name: Populate Application Environment Variables to S3
+#         id: populateappenv
+#         env:
+#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+#         run: |
+#           echo -e "${{ vars.DEVELOPMENT_APP_ENV }}" >> app.env
+#           aws s3 cp ./app.env s3://${{ vars.DEVELOPMENT_S3_APP_ENV_LOCATION }}
       
-      - name: Add Terraform Environment Variables
-        id: addtfenv
-        run: |
-          echo -e "$TFVARS_STRING" >> terraform.tfvars
-        env:
-          TFVARS_STRING: |
-            ecr_image_tag = "${{ github.sha }}"
-            s3_arn_env_file = "arn:aws:s3:::${{ vars.DEVELOPMENT_S3_APP_ENV_LOCATION }}"
-            ecr_repository_url = "${{ vars.ECR_REPOSITORY_URL }}"
-            influxdb_url = "${{ vars.DEVELOPMENT_INFLUXDB_URL }}"
-            influxdb_token = "${{ secrets.DEVELOPMENT_INFLUXDB_TOKEN }}"
-            task_role_arn = "${{ secrets.ECS_TASK_ROLE_ARN }}"
-            task_execution_role_arn = "${{ secrets.ECS_TASK_EXECUTION_ROLE_ARN }}"
-            cloudflare_tunnel_token = "${{ secrets.DEVELOPMENT_LAYER8_CLOUDFLARE_TUNNEL_TOKEN }}"
+#       - name: Add Terraform Environment Variables
+#         id: addtfenv
+#         run: |
+#           echo -e "$TFVARS_STRING" >> terraform.tfvars
+#         env:
+#           TFVARS_STRING: |
+#             ecr_image_tag = "${{ github.sha }}"
+#             s3_arn_env_file = "arn:aws:s3:::${{ vars.DEVELOPMENT_S3_APP_ENV_LOCATION }}"
+#             ecr_repository_url = "${{ vars.ECR_REPOSITORY_URL }}"
+#             influxdb_url = "${{ vars.DEVELOPMENT_INFLUXDB_URL }}"
+#             influxdb_token = "${{ secrets.DEVELOPMENT_INFLUXDB_TOKEN }}"
+#             task_role_arn = "${{ secrets.ECS_TASK_ROLE_ARN }}"
+#             task_execution_role_arn = "${{ secrets.ECS_TASK_EXECUTION_ROLE_ARN }}"
+#             cloudflare_tunnel_token = "${{ secrets.DEVELOPMENT_LAYER8_CLOUDFLARE_TUNNEL_TOKEN }}"
       
-      - name: Terraform Init
-        id: init
-        run: terraform init
+#       - name: Terraform Init
+#         id: init
+#         run: terraform init
 
-      - name: Terraform Plan
-        id: plan
-        run: terraform plan
+#       - name: Terraform Plan
+#         id: plan
+#         run: terraform plan
 
-      - name: Terraform Apply
-        id: apply
-        run: terraform apply
+#       - name: Terraform Apply
+#         id: apply
+#         run: terraform apply
