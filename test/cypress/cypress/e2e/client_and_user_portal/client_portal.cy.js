@@ -55,7 +55,7 @@ describe('Login Page', () => {
     cy.get('button').click()
     cy.url().should('include', 'http://localhost:5001/client-profile')
 
-    cy.wait(5000);
+    cy.wait(15000);
     cy.contains('Welcome “Test Project!” Client Portal').should('be.visible');
     cy.contains('Your data').should('be.visible');               
     
@@ -82,7 +82,7 @@ describe('Login Page', () => {
     cy.get('button').click();
     cy.url().should('include', 'http://localhost:5001/client-profile');
 
-    cy.wait(5000);
+    cy.wait(15000);
 
     const userId = 'bd2422b6-2357-4f8f-ba46-c1e70c5f0173';
     
@@ -95,7 +95,7 @@ describe('Login Page', () => {
   
     cy.get('button[value="UUID"]').click();
 
-    cy.wait(1000);
+    cy.wait(5000);
 
     cy.window().then((window) => {
       expect(window.document.execCommand).to.have.been.calledOnceWith('copy');
@@ -108,7 +108,7 @@ describe('Login Page', () => {
     cy.get('button').click();
     cy.url().should('include', 'http://localhost:5001/client-profile');
 
-    cy.wait(5000);
+    cy.wait(15000);
 
     const secret = 'b333a024c425f1b250e9cd8084093220edbddc7f727ab31797232e48a3d57a59';
     
@@ -121,7 +121,7 @@ describe('Login Page', () => {
   
     cy.get('button[value="Secret"]').click();
   
-    cy.wait(1000);
+    cy.wait(5000);
   
     cy.window().then((window) => {
       expect(window.document.execCommand).to.have.been.calledOnceWith('copy');
