@@ -291,13 +291,11 @@ func TestGetClientData_ClientDoesNotExist(t *testing.T) {
 	defer mockDB.Close()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "clients" WHERE name = $1 ORDER BY "clients"."id" LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "clients" WHERE name = $1 ORDER BY "clients"."id" LIMIT $2`),
 	).WithArgs(
-		clientName,
+		clientName, 1,
 	).WillReturnRows(
-		sqlmock.NewRows(
-			[]string{"id", "secret", "name", "redirect_uri"},
-		),
+		sqlmock.NewRows([]string{"id", "secret", "name", "redirect_uri"}),
 	)
 
 	_, err := repository.GetClientData(clientName)
@@ -314,9 +312,9 @@ func TestGetClientData_Success(t *testing.T) {
 	defer mockDB.Close()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "clients" WHERE name = $1 ORDER BY "clients"."id" LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "clients" WHERE name = $1 ORDER BY "clients"."id" LIMIT $2`),
 	).WithArgs(
-		clientName,
+		clientName, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "secret", "name", "redirect_uri", "username", "salt", "password"},
@@ -347,9 +345,9 @@ func TestLoginPreCheckUser_UserDoesNotExist(t *testing.T) {
 	defer mockDB.Close()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT $2`),
 	).WithArgs(
-		username,
+		username, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "username", "first_name", "last_name", "password", "salt"},
@@ -374,9 +372,9 @@ func TestLoginPreCheckUser_Success(t *testing.T) {
 	defer mockDB.Close()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT $2`),
 	).WithArgs(
-		username,
+		username, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "username", "first_name", "last_name", "password", "salt"},
@@ -405,9 +403,9 @@ func TestProfileUser_UserIsNotFoundInTheUsersTable(t *testing.T) {
 	defer mockDB.Close()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "users" WHERE id = $1 ORDER BY "users"."id" LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "users" WHERE id = $1 ORDER BY "users"."id" LIMIT $2`),
 	).WithArgs(
-		userId,
+		userId, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "username", "first_name", "last_name", "password", "salt"},
@@ -428,9 +426,9 @@ func TestProfileUser_Success(t *testing.T) {
 	defer mockDB.Close()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "users" WHERE id = $1 ORDER BY "users"."id" LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "users" WHERE id = $1 ORDER BY "users"."id" LIMIT $2`),
 	).WithArgs(
-		userId,
+		userId, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "username", "first_name", "last_name", "password", "salt"},
@@ -539,9 +537,9 @@ func TestLoginClient_ClientNotFound(t *testing.T) {
 	defer mockDB.Close()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "clients" WHERE username = $1 ORDER BY "clients"."id" LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "clients" WHERE username = $1 ORDER BY "clients"."id" LIMIT $2`),
 	).WithArgs(
-		clientUsername,
+		clientUsername, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "secret", "username", "password"},
@@ -567,9 +565,9 @@ func TestLoginClient_Success(t *testing.T) {
 	defer mockDB.Close()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "clients" WHERE username = $1 ORDER BY "clients"."id" LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "clients" WHERE username = $1 ORDER BY "clients"."id" LIMIT $2`),
 	).WithArgs(
-		clientUsername,
+		clientUsername, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "secret", "username", "password"},
@@ -602,9 +600,9 @@ func TestProfileClient_ClientNotFound(t *testing.T) {
 	defer mockDB.Close()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "clients" WHERE username = $1 ORDER BY "clients"."id" LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "clients" WHERE username = $1 ORDER BY "clients"."id" LIMIT $2`),
 	).WithArgs(
-		clientUsername,
+		clientUsername, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "secret", "name", "redirect_uri", "username"},
@@ -625,9 +623,9 @@ func TestProfileClient_Success(t *testing.T) {
 	defer mockDB.Close()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "clients" WHERE username = $1 ORDER BY "clients"."id" LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "clients" WHERE username = $1 ORDER BY "clients"."id" LIMIT $2`),
 	).WithArgs(
-		clientUsername,
+		clientUsername, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "secret", "name", "redirect_uri", "username"},
@@ -656,9 +654,9 @@ func TestFindUser_UserDoesNotExist(t *testing.T) {
 	defer mockDB.Close()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "users" WHERE id = $1 ORDER BY "users"."id" LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "users" WHERE id = $1 ORDER BY "users"."id" LIMIT $2`),
 	).WithArgs(
-		userId,
+		userId, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "username", "password", "first_name",
@@ -680,9 +678,9 @@ func TestFindUser_Success(t *testing.T) {
 	defer mockDB.Close()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "users" WHERE id = $1 ORDER BY "users"."id" LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "users" WHERE id = $1 ORDER BY "users"."id" LIMIT $2`),
 	).WithArgs(
-		userId,
+		userId, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "username", "password", "first_name",
@@ -712,10 +710,10 @@ func TestGetEmailVerificationData_VerificationDataForTheGivenUserDoesNotExist(t 
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`SELECT * FROM "email_verification_data" WHERE user_id = $1 ORDER BY "email_verification_data"."id" LIMIT 1`,
+			`SELECT * FROM "email_verification_data" WHERE user_id = $1 ORDER BY "email_verification_data"."id" LIMIT $2`,
 		),
 	).WithArgs(
-		userId,
+		userId, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "user_id", "verification_code", "expires_at"},
@@ -737,10 +735,10 @@ func TestGetEmailVerificationData_Success(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`SELECT * FROM "email_verification_data" WHERE user_id = $1 ORDER BY "email_verification_data"."id" LIMIT 1`,
+			`SELECT * FROM "email_verification_data" WHERE user_id = $1 ORDER BY "email_verification_data"."id" LIMIT $2`,
 		),
 	).WithArgs(
-		userId,
+		userId, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "user_id", "verification_code", "expires_at"},
@@ -770,9 +768,9 @@ func TestSaveEmailVerificationData_RowWithUserIdDoesNotExist(t *testing.T) {
 	mock.ExpectBegin()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "email_verification_data" WHERE "email_verification_data"."user_id" = $1 ORDER BY "email_verification_data"."id" LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "email_verification_data" WHERE "email_verification_data"."user_id" = $1 ORDER BY "email_verification_data"."id" LIMIT $2`),
 	).WithArgs(
-		userId,
+		userId, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "user_id", "verification_code", "expires_at"},
@@ -819,10 +817,10 @@ func TestSaveEmailVerificationData_RowWithUserIdExists(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`SELECT * FROM "email_verification_data" WHERE "email_verification_data"."user_id" = $1 ORDER BY "email_verification_data"."id" LIMIT 1`,
+			`SELECT * FROM "email_verification_data" WHERE "email_verification_data"."user_id" = $1 ORDER BY "email_verification_data"."id" LIMIT $2`,
 		),
 	).WithArgs(
-		userId,
+		userId, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "user_id", "verification_code", "expires_at"},
@@ -1074,7 +1072,8 @@ func TestGetZkSnarksKeys_FailedToGetNewestZkSnarksKeys(t *testing.T) {
 	defer mockDB.Close()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "zk_snarks_key_pairs" ORDER BY "zk_snarks_key_pairs"."id" DESC LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "zk_snarks_key_pairs" ORDER BY "zk_snarks_key_pairs"."id" DESC LIMIT $1`),
+	).WithArgs(1,
 	).WillReturnError(
 		fmt.Errorf(""),
 	)
@@ -1089,7 +1088,8 @@ func TestGetZkSnarksKeys_Success(t *testing.T) {
 	defer mockDB.Close()
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "zk_snarks_key_pairs" ORDER BY "zk_snarks_key_pairs"."id" DESC LIMIT 1`),
+		regexp.QuoteMeta(`SELECT * FROM "zk_snarks_key_pairs" ORDER BY "zk_snarks_key_pairs"."id" DESC LIMIT $1`),
+	).WithArgs(1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "proving_key", "verifying_key"},
@@ -1111,10 +1111,10 @@ func TestGetUserForUsername_UserNotFound(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT 1`,
+			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT $2`,
 		),
 	).WithArgs(
-		username,
+		username, 1,
 	).WillReturnError(
 		fmt.Errorf("user not found"),
 	)
@@ -1134,10 +1134,10 @@ func TestGetUserForUsername_Success(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT 1`,
+			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT $2`,
 		),
 	).WithArgs(
-		username,
+		username, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{"id", "username", "password", "first_name", "last_name", "salt"},
@@ -1299,10 +1299,10 @@ func TestRegisterUserv2_FailToGetUserRecord(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT 1`,
+			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT $2`,
 		),
 	).WithArgs(
-		username,
+		username, 1,
 	).WillReturnError(
 		fmt.Errorf("could not get user record"),
 	)
@@ -1333,10 +1333,10 @@ func TestRegisterUserv2_FailToUpdateUserRecord(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT 1 `,
+			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT $2`,
 		),
 	).WithArgs(
-		username,
+		username, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{
@@ -1383,10 +1383,10 @@ func TestRegisterUserv2_FailToInsertANewUserMetadataRecord(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT 1 `,
+			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT $2`,
 		),
 	).WithArgs(
-		username,
+		username, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{
@@ -1443,10 +1443,10 @@ func TestRegisterUserv2_Success(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT 1 `,
+			`SELECT * FROM "users" WHERE username = $1 ORDER BY "users"."id" LIMIT $2`,
 		),
 	).WithArgs(
-		username,
+		username, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{
