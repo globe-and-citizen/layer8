@@ -92,11 +92,12 @@ func (s *service) GetClientData(clientName string) (models.ClientResponseOutput,
 		return models.ClientResponseOutput{}, err
 	}
 	clientModel := models.ClientResponseOutput{
-		ID:          clientData.ID,
-		Secret:      clientData.Secret,
-		Name:        clientData.Name,
-		RedirectURI: clientData.RedirectURI,
-		BackendURI:  clientData.BackendURI,
+		ID:              clientData.ID,
+		Secret:          clientData.Secret,
+		Name:            clientData.Name,
+		RedirectURI:     clientData.RedirectURI,
+		BackendURI:      clientData.BackendURI,
+		X509Certificate: clientData.X509Certificate,
 	}
 	return clientModel, nil
 }
@@ -107,11 +108,12 @@ func (s *service) GetClientDataByBackendURL(backendURL string) (models.ClientRes
 		return models.ClientResponseOutput{}, err
 	}
 	clientModel := models.ClientResponseOutput{
-		ID:          clientData.ID,
-		Secret:      clientData.Secret,
-		Name:        clientData.Name,
-		RedirectURI: clientData.RedirectURI,
-		BackendURI:  clientData.BackendURI,
+		ID:              clientData.ID,
+		Secret:          clientData.Secret,
+		Name:            clientData.Name,
+		RedirectURI:     clientData.RedirectURI,
+		BackendURI:      clientData.BackendURI,
+		X509Certificate: clientData.X509Certificate,
 	}
 	return clientModel, nil
 }
@@ -328,17 +330,18 @@ func (s *service) ProfileUser(userID uint) (models.ProfileResponseOutput, error)
 	return profileResp, nil
 }
 
-func (s *service) ProfileClient(userName string) (models.ClientResponseOutput, error) {
-	clientData, err := s.repository.ProfileClient(userName)
+func (s *service) ProfileClient(username string) (models.ClientResponseOutput, error) {
+	clientData, err := s.repository.ProfileClient(username)
 	if err != nil {
 		return models.ClientResponseOutput{}, err
 	}
 	clientModel := models.ClientResponseOutput{
-		ID:          clientData.ID,
-		Secret:      clientData.Secret,
-		Name:        clientData.Name,
-		RedirectURI: clientData.RedirectURI,
-		BackendURI:  clientData.BackendURI,
+		ID:              clientData.ID,
+		Secret:          clientData.Secret,
+		Name:            clientData.Name,
+		RedirectURI:     clientData.RedirectURI,
+		BackendURI:      clientData.BackendURI,
+		X509Certificate: clientData.X509Certificate,
 	}
 	return clientModel, nil
 }
