@@ -6,13 +6,13 @@ import (
 	"globe-and-citizen/layer8/server/handlers"
 	"globe-and-citizen/layer8/server/models"
 	"globe-and-citizen/layer8/server/utils/mocks"
+	"go.uber.org/mock/gomock"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 

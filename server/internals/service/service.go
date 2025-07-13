@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"globe-and-citizen/layer8/server/config"
 	"globe-and-citizen/layer8/server/constants"
 	"globe-and-citizen/layer8/server/entities"
@@ -29,6 +30,11 @@ type ServiceInterface interface {
 	VerifyToken(token string) (isvalid bool, err error)
 	CheckClient(backendURL string) (*models.Client, error)
 	SaveX509Certificate(clientID string, certificate string) error
+	VerifyAuthorizationCode(code string) error
+	AuthenticateClient(uuid string, secret string) error
+	GenerateAccessToken(clientID string, clientSecret string) (string, error)
+	ValidateAccessToken(clientSecret string, accessToken string) (*entities.ClientClaims, error)
+	GetZkUserMetadata(scopesStr string, userID int64) (*entities.ZkMetadataResponse, error)
 	AddTestClient() (*models.Client, error)
 }
 
@@ -256,6 +262,116 @@ func (u *Service) CheckClient(backendURL string) (*models.Client, error) {
 
 func (u *Service) SaveX509Certificate(clientID string, certificate string) error {
 	return u.Repo.SaveX509Certificate(clientID, certificate)
+}
+
+func (u *Service) VerifyAuthorizationCode(code string) error {
+	// TODO: change this to verify the authorization code
+	return nil
+}
+
+func (u *Service) AuthenticateClient(uuid string, secret string) error {
+	client, err := u.Repo.GetClient(uuid)
+	if err != nil {
+		return fmt.Errorf("failed to authenticate client: %e", err)
+	}
+
+	if client.Secret != secret {
+		return fmt.Errorf("failed to authenticate client: provided secret value is invalid")
+	}
+
+	return nil
+}
+
+func (u *Service) GenerateAccessToken(clientID string, clientSecret string) (string, error) {
+	claims := entities.ClientClaims{
+		StandardClaims: jwt.StandardClaims{
+			Issuer:    "Globe and Citizen",
+			IssuedAt:  time.Now().UTC().Unix(),
+			Subject:   clientID,
+			ExpiresAt: time.Now().Add(constants.AccessTokenValidityMinutes * time.Minute).UTC().Unix(),
+		},
+		// TODO: get Scopes and UserID from authorization code, mocked for now
+		Scopes: "country,email_verified,display_name,color",
+		UserID: 1,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	signedToken, err := token.SignedString([]byte(clientSecret))
+	if err != nil {
+		return "", err
+	}
+
+	return signedToken, nil
+}
+
+func (u *Service) ValidateAccessToken(clientSecret string, accessToken string) (*entities.ClientClaims, error) {
+	token, err := jwt.ParseWithClaims(
+		accessToken,
+		&entities.ClientClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(clientSecret), nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, fmt.Errorf("jwt token is invalid")
+	}
+
+	claims, ok := token.Claims.(*entities.ClientClaims)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse client claims")
+	}
+
+	if claims.ExpiresAt < time.Now().UTC().Unix() {
+		return nil, fmt.Errorf("access token is expired")
+	}
+
+	return claims, nil
+}
+
+func (u *Service) GetZkUserMetadata(scopesStr string, userID int64) (*entities.ZkMetadataResponse, error) {
+	if scopesStr == "" {
+		return &entities.ZkMetadataResponse{}, fmt.Errorf("no access scopes granted")
+	}
+
+	scopes := strings.Split(scopesStr, ",")
+
+	var zkMetadata entities.ZkMetadataResponse
+
+	for _, scope := range scopes {
+		switch scope {
+		case "country":
+			countryMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_COUNTRY_METADATA_KEY)
+			if err != nil {
+				return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get country metadata: %e", err)
+			}
+
+			zkMetadata.Country = countryMetadata.Value
+		case "email_verified":
+			emailMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_EMAIL_VERIFIED_METADATA_KEY)
+			if err != nil {
+				return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get email metadata: %e", err)
+			}
+
+			zkMetadata.IsEmailVerified = emailMetadata.Value == "true"
+		case "display_name":
+			displayNameMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_DISPLAY_NAME_METADATA_KEY)
+			if err != nil {
+				return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get display name metadata: %e", err)
+			}
+
+			zkMetadata.DisplayName = displayNameMetadata.Value
+		case "color":
+			// TODO: implement
+			zkMetadata.Color = "red"
+		}
+	}
+
+	return &zkMetadata, nil
 }
 
 // this is only be used for testing purposes

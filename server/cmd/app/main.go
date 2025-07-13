@@ -233,6 +233,10 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				handlers.GetSPPubKey(w, r)
 			case path == "/api/upload-certificate":
 				handlers.UploadSPCertificate(w, r)
+			case path == "/api/token":
+				handlers.TokenHandler(w, r)
+			case path == "/api/zk-metadata":
+				handlers.ZkMetadataHandler(w, r)
 			case strings.HasPrefix(path, "/assets-v1"):
 				http.StripPrefix("/assets-v1", http.FileServer(http.Dir("./assets-v1"))).ServeHTTP(w, r)
 
