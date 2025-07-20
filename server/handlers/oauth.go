@@ -29,13 +29,13 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = service.VerifyAuthorizationCode(req.AuthorizationCode)
+	userId, err := service.VerifyAuthorizationCode(req.ClientSecret, req.AuthorizationCode)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "the authorization code is invalid", err)
 		return
 	}
 
-	accessToken, err := service.GenerateAccessToken(req.ClientUUID, req.ClientSecret)
+	accessToken, err := service.GenerateAccessToken(userId, req.ClientUUID, req.ClientSecret)
 	if err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "internal error when generating the access token", err)
 		return
@@ -69,6 +69,7 @@ func ZkMetadataHandler(w http.ResponseWriter, r *http.Request) {
 
 	authHeader := r.Header.Get("Authorization")
 	if !strings.HasPrefix(authHeader, constants.TokenTypeBearer) {
+		fmt.Println("***authHeader", authHeader)
 		errorMsg := "invalid authorization header"
 		utils.HandleError(w, http.StatusUnauthorized, errorMsg, fmt.Errorf(errorMsg))
 		return

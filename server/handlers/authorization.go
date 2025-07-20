@@ -121,23 +121,23 @@ func (a *authorizationHandlerImpl) postAuthorizeHandler(w http.ResponseWriter, r
 		returnResult, _ = strconv.ParseBool(r.URL.Query().Get("return_result"))
 	)
 
-	decision := r.FormValue("decision")
-	if decision != "allow" {
-		log.Println("User denied access")
-		utils.MapResponse(
-			returnResult, w,
-			&utils.JSONResponseInput{
-				StatusCode: http.StatusOK,
-				Data:       `{"redr": "/error?opt=access_denied"}`,
-			},
-			&utils.RedirectResponseInput{
-				StatusCode: http.StatusSeeOther,
-				Location:   "/error?opt=access_denied",
-			},
-		)
+	// decision := r.FormValue("decision")
+	// if decision != "allow" {
+	// 	log.Println("User denied access")
+	// 	utils.MapResponse(
+	// 		returnResult, w,
+	// 		&utils.JSONResponseInput{
+	// 			StatusCode: http.StatusOK,
+	// 			Data:       `{"redr": "/error?opt=access_denied"}`,
+	// 		},
+	// 		&utils.RedirectResponseInput{
+	// 			StatusCode: http.StatusSeeOther,
+	// 			Location:   "/error?opt=access_denied",
+	// 		},
+	// 	)
 
-		return
-	}
+	// 	return
+	// }
 
 	// get the client
 	client, err := a.service.GetClient(clientID)
@@ -193,29 +193,15 @@ func (a *authorizationHandlerImpl) postAuthorizeHandler(w http.ResponseWriter, r
 		scopes = constants.READ_USER_SCOPE
 	}
 
-	if r.FormValue("share_display_name") == "true" {
-		scopes += "," + constants.READ_USER_DISPLAY_NAME_SCOPE
-	}
-	if r.FormValue("share_country") == "true" {
-		scopes += "," + constants.READ_USER_COUNTRY_SCOPE
+	if r.FormValue("share_details_with_SPA") == "true" {
+		scopes += "," + constants.SHARE_DETAILS_WITH_SPA
 	}
 
-	if r.FormValue("share_top_five_metadata") == "true" {
-		scopes += "," + constants.READ_USER_TOP_FIVE_METADATA
-	}
-
-	var headerMap = make(map[string]string)
-	headerMap["Sec-Ch-Ua-Platform"] = r.Header.Get("Sec-Ch-Ua-Platform")
-	headerMap["Sec-Fetch-Site"] = r.Header.Get("Sec-Fetch-Site")
-	headerMap["Referer"] = r.Header.Get("Referer")
-	headerMap["Sec-Ch-Ua"] = r.Header.Get("Sec-Ch-Ua")
-	headerMap["User-Agent"] = r.Header.Get("User-Agent")
-
-	authURL, err := a.service.GenerateAuthorizationURL(&oauth2.Config{
+	redirectURL, err := a.service.GenerateAuthorizationURL(&oauth2.Config{
 		ClientID:    client.ID,
 		RedirectURL: client.RedirectURI,
 		Scopes:      strings.Split(scopes, ","),
-	}, int64(user.ID), headerMap)
+	}, int64(user.ID))
 	if err != nil {
 		utils.MapResponse(
 			returnResult, w,
@@ -232,15 +218,38 @@ func (a *authorizationHandlerImpl) postAuthorizeHandler(w http.ResponseWriter, r
 		return
 	}
 
+	code, err := a.service.GenerateAuthJwtCode(&oauth2.Config{
+		ClientID:    client.ID,
+		RedirectURL: client.RedirectURI,
+		Scopes:      strings.Split(scopes, ","),
+	}, int64(user.ID))
+	if err != nil {
+		utils.MapResponse(
+			returnResult, w,
+			&utils.JSONResponseInput{
+				StatusCode: http.StatusOK,
+				Data:       `{"redr": "/error?opt=server_error"}`,
+			},
+			&utils.RedirectResponseInput{
+				StatusCode: http.StatusSeeOther,
+				Location:   "/error?opt=server_error",
+			},
+		)
+		return
+	}
+
 	utils.MapResponse(
 		returnResult, w,
 		&utils.JSONResponseInput{
 			StatusCode: http.StatusOK,
-			Data:       `{"redr": "` + authURL.String() + `"}`,
+			// Data:       `{"redr": "` + redirectURL.String() + `"}`,
+			Data: `{"redr": "` + redirectURL.String() + `", "code": "` + code + `"}`,
+
 		},
 		&utils.RedirectResponseInput{
 			StatusCode: http.StatusSeeOther,
-			Location:   authURL.String(),
+			Location:   redirectURL.String(),
+			// Cookie:     &http.Cookie{Name: "code", Value: code, Path: "/", MaxAge: 60 * 10, HttpOnly: true},
 		},
 	)
 }
