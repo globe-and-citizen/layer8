@@ -12,7 +12,8 @@ import (
 	"os"
 	"testing"
 
-	"go.uber.org/mock/gomock"
+	// "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
 )
