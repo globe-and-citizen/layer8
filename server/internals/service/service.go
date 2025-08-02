@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
+
 	utilities "github.com/globe-and-citizen/layer8-utils"
 	"golang.org/x/oauth2"
 
@@ -22,13 +24,19 @@ import (
 type ServiceInterface interface {
 	GetUserByToken(token string) (*models.User, error)
 	LoginUser(username, password string) (map[string]interface{}, error)
-	GenerateAuthorizationURL(config *oauth2.Config, userID int64, headerMap map[string]string) (*entities.AuthURL, error)
+	GenerateAuthorizationURL(config *oauth2.Config, userID int64) (*entities.AuthURL, error)
+	GenerateAuthJwtCode(config *oauth2.Config, userID int64) (string, error)
 	ExchangeCodeForToken(config *oauth2.Config, code string) (*oauth2.Token, error)
 	AccessResourcesWithToken(token string) (map[string]interface{}, error)
 	GetClient(id string) (*models.Client, error)
 	VerifyToken(token string) (isvalid bool, err error)
 	CheckClient(backendURL string) (*models.Client, error)
 	SaveX509Certificate(clientID string, certificate string) error
+	VerifyAuthorizationCode(secret string, code string) (int64, error)
+	AuthenticateClient(uuid string, secret string) error
+	GenerateAccessToken(userId int64, clientID string, clientSecret string) (string, error)
+	ValidateAccessToken(clientSecret string, accessToken string) (*entities.ClientClaims, error)
+	GetZkUserMetadata(scopesStr string, userID int64) (*entities.ZkMetadataResponse, error)
 	AddTestClient() (*models.Client, error)
 }
 
@@ -88,7 +96,7 @@ func (u *Service) LoginUser(username, password string) (map[string]interface{}, 
 
 // GenerateAuthorizationURL generates an authorization URL for the user to visit
 // and authorize the application to access their account.
-func (u *Service) GenerateAuthorizationURL(config *oauth2.Config, userID int64, headerMap map[string]string) (*entities.AuthURL, error) {
+func (u *Service) GenerateAuthorizationURL(config *oauth2.Config, userID int64) (*entities.AuthURL, error) {
 	// first, check that both client and user exist
 	client, err := u.GetClient(config.ClientID)
 	if err != nil {
@@ -115,7 +123,6 @@ func (u *Service) GenerateAuthorizationURL(config *oauth2.Config, userID int64, 
 		RedirectURI: config.RedirectURL,
 		Scopes:      scopes,
 		ExpiresAt:   time.Now().Add(time.Minute * 5).Unix(),
-		HeaderMap:   headerMap,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("could not generate auth code: %v", err)
@@ -129,6 +136,36 @@ func (u *Service) GenerateAuthorizationURL(config *oauth2.Config, userID int64, 
 		Code:  code,
 		State: state,
 	}, nil
+}
+
+func (u *Service) GenerateAuthJwtCode(config *oauth2.Config, userID int64) (string, error) {
+	// first, check that both client and user exist
+	client, err := u.GetClient(config.ClientID)
+	if err != nil {
+		return "", fmt.Errorf("could not get client: %v", err)
+	}
+	user, err := u.Repo.GetUserByID(userID)
+	if err != nil {
+		return "", fmt.Errorf("could not get user: %v", err)
+	}
+
+	// generate the auth code
+	scopes := ""
+	for _, scope := range config.Scopes {
+		scopes += scope + ","
+	}
+	code, err := utilities.GenerateAuthCode(client.Secret, &utilities.AuthCodeClaims{
+		ClientID:    config.ClientID,
+		UserID:      int64(user.ID),
+		RedirectURI: config.RedirectURL,
+		Scopes:      scopes,
+		ExpiresAt:   time.Now().Add(time.Minute * 5).Unix(),
+	})
+	if err != nil {
+		return "", fmt.Errorf("could not generate auth code: %v", err)
+	}
+
+	return code, nil
 }
 
 // ExchangeCodeForToken generates an access token from an authorization code.
@@ -256,6 +293,121 @@ func (u *Service) CheckClient(backendURL string) (*models.Client, error) {
 
 func (u *Service) SaveX509Certificate(clientID string, certificate string) error {
 	return u.Repo.SaveX509Certificate(clientID, certificate)
+}
+
+func (u *Service) VerifyAuthorizationCode(secret string, code string) (userId int64, err error) {
+	// Decode the auth code
+	// verify the code
+	claims, err := utilities.DecodeAuthCode(secret, code)
+	if err != nil {
+		return 0, fmt.Errorf("failed to decode auth code: %v", err)
+	}
+	return claims.UserID, nil
+}
+
+func (u *Service) AuthenticateClient(uuid string, secret string) error {
+	client, err := u.Repo.GetClient(uuid)
+	if err != nil {
+		return fmt.Errorf("failed to authenticate client: %e", err)
+	}
+
+	if client.Secret != secret {
+		return fmt.Errorf("failed to authenticate client: provided secret value is invalid")
+	}
+
+	return nil
+}
+
+func (u *Service) GenerateAccessToken(userId int64, clientID string, clientSecret string) (string, error) {
+	claims := entities.ClientClaims{
+		StandardClaims: jwt.StandardClaims{
+			Issuer:    "Globe and Citizen",
+			IssuedAt:  time.Now().UTC().Unix(),
+			Subject:   clientID,
+			ExpiresAt: time.Now().Add(constants.AccessTokenValidityMinutes * time.Minute).UTC().Unix(),
+		},
+		// TODO: get Scopes and UserID from authorization code, mocked for now
+		Scopes: "country,email_verified,display_name,color",
+		UserID: userId,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	signedToken, err := token.SignedString([]byte(clientSecret))
+	if err != nil {
+		return "", err
+	}
+
+	return signedToken, nil
+}
+
+func (u *Service) ValidateAccessToken(clientSecret string, accessToken string) (*entities.ClientClaims, error) {
+	token, err := jwt.ParseWithClaims(
+		accessToken,
+		&entities.ClientClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(clientSecret), nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, fmt.Errorf("jwt token is invalid")
+	}
+
+	claims, ok := token.Claims.(*entities.ClientClaims)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse client claims")
+	}
+
+	if claims.ExpiresAt < time.Now().UTC().Unix() {
+		return nil, fmt.Errorf("access token is expired")
+	}
+
+	return claims, nil
+}
+
+func (u *Service) GetZkUserMetadata(scopesStr string, userID int64) (*entities.ZkMetadataResponse, error) {
+	if scopesStr == "" {
+		return &entities.ZkMetadataResponse{}, fmt.Errorf("no access scopes granted")
+	}
+
+	scopes := strings.Split(scopesStr, ",")
+
+	var zkMetadata entities.ZkMetadataResponse
+
+	for _, scope := range scopes {
+		switch scope {
+		case "country":
+			countryMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_COUNTRY_METADATA_KEY)
+			if err != nil {
+				return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get country metadata: %e", err)
+			}
+
+			zkMetadata.Country = countryMetadata.Value
+		case "email_verified":
+			emailMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_EMAIL_VERIFIED_METADATA_KEY)
+			if err != nil {
+				return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get email metadata: %e", err)
+			}
+
+			zkMetadata.IsEmailVerified = emailMetadata.Value == "true"
+		case "display_name":
+			displayNameMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_DISPLAY_NAME_METADATA_KEY)
+			if err != nil {
+				return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get display name metadata: %e", err)
+			}
+
+			zkMetadata.DisplayName = displayNameMetadata.Value
+		case "color":
+			// TODO: implement
+			zkMetadata.Color = "red"
+		}
+	}
+
+	return &zkMetadata, nil
 }
 
 // this is only be used for testing purposes

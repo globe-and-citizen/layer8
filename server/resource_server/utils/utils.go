@@ -20,7 +20,7 @@ import (
 )
 
 const SaltSize = 32
-const SecretSize = 32
+const SecretSize = 16
 
 var WorkingDirectory string
 

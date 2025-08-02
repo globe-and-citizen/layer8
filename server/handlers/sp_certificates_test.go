@@ -5,14 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	utilities "github.com/globe-and-citizen/layer8-utils"
-	"github.com/golang-jwt/jwt/v4"
 	"globe-and-citizen/layer8/server/entities"
 	"globe-and-citizen/layer8/server/internals/repository"
 	svc "globe-and-citizen/layer8/server/internals/service"
 	"globe-and-citizen/layer8/server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
-	"golang.org/x/oauth2"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -20,10 +17,15 @@ import (
 	"testing"
 	"time"
 
+	utilities "github.com/globe-and-citizen/layer8-utils"
+	"github.com/golang-jwt/jwt/v4"
+	"golang.org/x/oauth2"
+
 	Ctl "globe-and-citizen/layer8/server/handlers"
 
-	"github.com/stretchr/testify/assert"
 	resourceModels "globe-and-citizen/layer8/server/resource_server/models"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var mockService = &svc.Service{
@@ -33,14 +35,20 @@ var mockService = &svc.Service{
 type MockService struct {
 	getUserByToken           func(token string) (*models.User, error)
 	loginUser                func(username, password string) (map[string]interface{}, error)
-	generateAuthorizationURL func(config *oauth2.Config, userID int64, headerMap map[string]string) (*entities.AuthURL, error)
+	generateAuthorizationURL func(config *oauth2.Config, userID int64) (*entities.AuthURL, error)
 	exchangeCodeForToken     func(config *oauth2.Config, code string) (*oauth2.Token, error)
 	accessResourcesWithToken func(token string) (map[string]interface{}, error)
 	getClient                func(id string) (*models.Client, error)
 	verifyToken              func(token string) (isvalid bool, err error)
 	checkClient              func(backendURL string) (*models.Client, error)
 	saveX509Certificate      func(clientID string, certificate string) error
+	verifyAuthorizationCode  func(secret string, code string) (int64, error)
+	authenticateClient       func(uuid string, secret string) error
+	generateAccessToken      func(clientID string, clientSecret string) (string, error)
+	validateAccessToken      func(clientSecret string, accessToken string) (*entities.ClientClaims, error)
+	getZkUserMetadata        func(scopesStr string, userID int64) (*entities.ZkMetadataResponse, error)
 	addTestClient            func() (*models.Client, error)
+	generateAuthJwtCode      func(config *oauth2.Config, userID int64) (string, error)
 }
 
 func (m MockService) GetUserByToken(token string) (*models.User, error) {
@@ -51,8 +59,8 @@ func (m MockService) LoginUser(username, password string) (map[string]interface{
 	return m.loginUser(username, password)
 }
 
-func (m MockService) GenerateAuthorizationURL(config *oauth2.Config, userID int64, headerMap map[string]string) (*entities.AuthURL, error) {
-	return m.generateAuthorizationURL(config, userID, headerMap)
+func (m MockService) GenerateAuthorizationURL(config *oauth2.Config, userID int64) (*entities.AuthURL, error) {
+	return m.generateAuthorizationURL(config, userID)
 }
 
 func (m MockService) ExchangeCodeForToken(config *oauth2.Config, code string) (*oauth2.Token, error) {
@@ -77,6 +85,30 @@ func (m MockService) CheckClient(backendURL string) (*models.Client, error) {
 
 func (m MockService) SaveX509Certificate(clientID string, certificate string) error {
 	return m.saveX509Certificate(clientID, certificate)
+}
+
+func (m MockService) VerifyAuthorizationCode(secret string, code string) (int64, error) {
+	return m.verifyAuthorizationCode(secret, code)
+}
+
+func (m MockService) AuthenticateClient(uuid string, secret string) error {
+	return m.authenticateClient(uuid, secret)
+}
+
+func (m MockService) GenerateAccessToken(userId int64, clientID string, clientSecret string) (string, error) {
+	return m.generateAccessToken(clientID, clientSecret)
+}
+
+func (m MockService) GenerateAuthJwtCode(config *oauth2.Config, userID int64) (string, error) {
+	return m.generateAuthJwtCode(config, userID)
+}
+
+func (m MockService) ValidateAccessToken(clientSecret string, accessToken string) (*entities.ClientClaims, error) {
+	return m.validateAccessToken(clientSecret, accessToken)
+}
+
+func (m MockService) GetZkUserMetadata(scopesStr string, userID int64) (*entities.ZkMetadataResponse, error) {
+	return m.getZkUserMetadata(scopesStr, userID)
 }
 
 func (m MockService) AddTestClient() (*models.Client, error) {
