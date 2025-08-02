@@ -1,12 +1,10 @@
-/// <reference types="cypress" />
-
 const images = Array.from({ length: 6 }, (_, i) => `image${i + 1}.jpg`)
 
 describe('upload and display images', () => {
     beforeEach(() => {
         cy.visit('http://localhost:5173')
         // wait for the tunnel to initialize
-        cy.wait(500)
+        cy.wait(10000)
     })
 
     it('uploads images', () => {

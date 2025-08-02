@@ -43,11 +43,13 @@ func WriteJSONResponse(
 type JSONResponseInput struct {
 	StatusCode int
 	Data       interface{}
+	Token      string
 }
 
 type RedirectResponseInput struct {
 	StatusCode int
 	Location   string
+	Cookie     *http.Cookie
 }
 
 func MapResponse(

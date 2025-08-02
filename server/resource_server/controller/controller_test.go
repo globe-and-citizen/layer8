@@ -236,6 +236,10 @@ func (m *MockService) RegisterUserv2(req dto.RegisterUserDTOv2) error {
 	return m.registerUserv2(req)
 }
 
+func (m *MockService) GetClientUnpaidAmount(clientId string) (int, error) {
+	return 0, nil
+}
+
 func TestRegisterUserHandler_InvalidHttpRequestMethod(t *testing.T) {
 	requestBody := []byte(`{
 		"email": "test@gcitizen.com",

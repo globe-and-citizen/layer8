@@ -66,6 +66,35 @@ func (mr *MockServiceInterfaceMockRecorder) AddTestClient() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTestClient", reflect.TypeOf((*MockServiceInterface)(nil).AddTestClient))
 }
 
+// AuthenticateClient mocks base method.
+func (m *MockServiceInterface) AuthenticateClient(uuid, secret string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AuthenticateClient", uuid, secret)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AuthenticateClient indicates an expected call of AuthenticateClient.
+func (mr *MockServiceInterfaceMockRecorder) AuthenticateClient(uuid, secret interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuthenticateClient", reflect.TypeOf((*MockServiceInterface)(nil).AuthenticateClient), uuid, secret)
+}
+
+// CheckClient mocks base method.
+func (m *MockServiceInterface) CheckClient(backendURL string) (*models.Client, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckClient", backendURL)
+	ret0, _ := ret[0].(*models.Client)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckClient indicates an expected call of CheckClient.
+func (mr *MockServiceInterfaceMockRecorder) CheckClient(backendURL interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckClient", reflect.TypeOf((*MockServiceInterface)(nil).CheckClient), backendURL)
+}
+
 // ExchangeCodeForToken mocks base method.
 func (m *MockServiceInterface) ExchangeCodeForToken(config *oauth2.Config, code string) (*oauth2.Token, error) {
 	m.ctrl.T.Helper()
@@ -81,19 +110,49 @@ func (mr *MockServiceInterfaceMockRecorder) ExchangeCodeForToken(config, code in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExchangeCodeForToken", reflect.TypeOf((*MockServiceInterface)(nil).ExchangeCodeForToken), config, code)
 }
 
-// GenerateAuthorizationURL mocks base method.
-func (m *MockServiceInterface) GenerateAuthorizationURL(config *oauth2.Config, userID int64, headerMap map[string]string) (*entities.AuthURL, error) {
+// GenerateAccessToken mocks base method.
+func (m *MockServiceInterface) GenerateAccessToken(userId int64, clientID, clientSecret string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GenerateAuthorizationURL", config, userID, headerMap)
+	ret := m.ctrl.Call(m, "GenerateAccessToken", userId, clientID, clientSecret)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GenerateAccessToken indicates an expected call of GenerateAccessToken.
+func (mr *MockServiceInterfaceMockRecorder) GenerateAccessToken(userId, clientID, clientSecret interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateAccessToken", reflect.TypeOf((*MockServiceInterface)(nil).GenerateAccessToken), userId, clientID, clientSecret)
+}
+
+// GenerateAuthJwtCode mocks base method.
+func (m *MockServiceInterface) GenerateAuthJwtCode(config *oauth2.Config, userID int64) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GenerateAuthJwtCode", config, userID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GenerateAuthJwtCode indicates an expected call of GenerateAuthJwtCode.
+func (mr *MockServiceInterfaceMockRecorder) GenerateAuthJwtCode(config, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateAuthJwtCode", reflect.TypeOf((*MockServiceInterface)(nil).GenerateAuthJwtCode), config, userID)
+}
+
+// GenerateAuthorizationURL mocks base method.
+func (m *MockServiceInterface) GenerateAuthorizationURL(config *oauth2.Config, userID int64) (*entities.AuthURL, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GenerateAuthorizationURL", config, userID)
 	ret0, _ := ret[0].(*entities.AuthURL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GenerateAuthorizationURL indicates an expected call of GenerateAuthorizationURL.
-func (mr *MockServiceInterfaceMockRecorder) GenerateAuthorizationURL(config, userID, headerMap interface{}) *gomock.Call {
+func (mr *MockServiceInterfaceMockRecorder) GenerateAuthorizationURL(config, userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateAuthorizationURL", reflect.TypeOf((*MockServiceInterface)(nil).GenerateAuthorizationURL), config, userID, headerMap)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateAuthorizationURL", reflect.TypeOf((*MockServiceInterface)(nil).GenerateAuthorizationURL), config, userID)
 }
 
 // GetClient mocks base method.
@@ -126,6 +185,21 @@ func (mr *MockServiceInterfaceMockRecorder) GetUserByToken(token interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByToken", reflect.TypeOf((*MockServiceInterface)(nil).GetUserByToken), token)
 }
 
+// GetZkUserMetadata mocks base method.
+func (m *MockServiceInterface) GetZkUserMetadata(scopesStr string, userID int64) (*entities.ZkMetadataResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetZkUserMetadata", scopesStr, userID)
+	ret0, _ := ret[0].(*entities.ZkMetadataResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetZkUserMetadata indicates an expected call of GetZkUserMetadata.
+func (mr *MockServiceInterfaceMockRecorder) GetZkUserMetadata(scopesStr, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetZkUserMetadata", reflect.TypeOf((*MockServiceInterface)(nil).GetZkUserMetadata), scopesStr, userID)
+}
+
 // LoginUser mocks base method.
 func (m *MockServiceInterface) LoginUser(username, password string) (map[string]interface{}, error) {
 	m.ctrl.T.Helper()
@@ -139,4 +213,63 @@ func (m *MockServiceInterface) LoginUser(username, password string) (map[string]
 func (mr *MockServiceInterfaceMockRecorder) LoginUser(username, password interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoginUser", reflect.TypeOf((*MockServiceInterface)(nil).LoginUser), username, password)
+}
+
+// SaveX509Certificate mocks base method.
+func (m *MockServiceInterface) SaveX509Certificate(clientID, certificate string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveX509Certificate", clientID, certificate)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SaveX509Certificate indicates an expected call of SaveX509Certificate.
+func (mr *MockServiceInterfaceMockRecorder) SaveX509Certificate(clientID, certificate interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveX509Certificate", reflect.TypeOf((*MockServiceInterface)(nil).SaveX509Certificate), clientID, certificate)
+}
+
+// ValidateAccessToken mocks base method.
+func (m *MockServiceInterface) ValidateAccessToken(clientSecret, accessToken string) (*entities.ClientClaims, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateAccessToken", clientSecret, accessToken)
+	ret0, _ := ret[0].(*entities.ClientClaims)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ValidateAccessToken indicates an expected call of ValidateAccessToken.
+func (mr *MockServiceInterfaceMockRecorder) ValidateAccessToken(clientSecret, accessToken interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateAccessToken", reflect.TypeOf((*MockServiceInterface)(nil).ValidateAccessToken), clientSecret, accessToken)
+}
+
+// VerifyAuthorizationCode mocks base method.
+func (m *MockServiceInterface) VerifyAuthorizationCode(secret, code string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VerifyAuthorizationCode", secret, code)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// VerifyAuthorizationCode indicates an expected call of VerifyAuthorizationCode.
+func (mr *MockServiceInterfaceMockRecorder) VerifyAuthorizationCode(secret, code interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyAuthorizationCode", reflect.TypeOf((*MockServiceInterface)(nil).VerifyAuthorizationCode), secret, code)
+}
+
+// VerifyToken mocks base method.
+func (m *MockServiceInterface) VerifyToken(token string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VerifyToken", token)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// VerifyToken indicates an expected call of VerifyToken.
+func (mr *MockServiceInterfaceMockRecorder) VerifyToken(token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyToken", reflect.TypeOf((*MockServiceInterface)(nil).VerifyToken), token)
 }

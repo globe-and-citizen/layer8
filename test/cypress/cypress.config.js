@@ -42,6 +42,13 @@ module.exports = defineConfig({
               await client.end();
               return true;
             } else {
+              const clientResult = await client.query(`SELECT id FROM ${tableName} WHERE username = $1`, [username]);
+              if (clientResult.rows.length === 0) {
+                throw new Error(`User with username ${username} not found in ${tableName}`);
+              }
+              const clientId = clientResult.rows[0].id;
+
+              await client.query(`DELETE FROM client_traffic_statistics WHERE client_id = $1`, [clientId]);
               await client.query(`DELETE FROM ${tableName} WHERE username = $1`, [username]);
               await client.end();
               return true;

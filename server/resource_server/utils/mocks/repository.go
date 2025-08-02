@@ -204,3 +204,23 @@ func (m *MockRepository) RegisterClientv2(req dto.RegisterClientDTOv2, id string
 func (m *MockRepository) RegisterPrecheckClient(req dto.RegisterClientPrecheckDTO, salt string, iterCount int) error {
 	return nil
 }
+
+func (m *MockRepository) AddClientTrafficUsage(string, int, time.Time) error {
+	return nil
+}
+
+func (m *MockRepository) CreateClientTrafficStatisticsEntry(string, int) error {
+	return nil
+}
+
+func (m *MockRepository) GetAllClientStatistics() ([]models.ClientTrafficStatistics, error) {
+	return nil, nil
+}
+
+func (m *MockRepository) GetClientTrafficStatistics(string) (*models.ClientTrafficStatistics, error) {
+	return &models.ClientTrafficStatistics{}, nil
+}
+
+func (m *MockRepository) PayClientTrafficUsage(string, int) error {
+	return nil
+}

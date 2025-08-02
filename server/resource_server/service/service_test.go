@@ -12,6 +12,7 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/service"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 	"globe-and-citizen/layer8/server/resource_server/utils/mocks"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -267,6 +268,26 @@ func (m *mockRepository) UpdateUserPasswordV2(username string, storedKey string,
 	return m.updateUserPasswordV2(username, storedKey, serverKey)
 }
 
+func (m *mockRepository) AddClientTrafficUsage(string, int, time.Time) error {
+	return nil
+}
+
+func (m *mockRepository) CreateClientTrafficStatisticsEntry(string, int) error {
+	return nil
+}
+
+func (m *mockRepository) GetAllClientStatistics() ([]models.ClientTrafficStatistics, error) {
+	return nil, nil
+}
+
+func (m *mockRepository) GetClientTrafficStatistics(string) (*models.ClientTrafficStatistics, error) {
+	return &models.ClientTrafficStatistics{}, nil
+}
+
+func (m *mockRepository) PayClientTrafficUsage(string, int) error {
+	return nil
+}
+
 func TestRegisterUser_RepositoryFailedToStoreUserData(t *testing.T) {
 	mockRepo := &mockRepository{
 		registerUser: func(req dto.RegisterUserDTO, hashedPassword string, salt string) error {
@@ -362,6 +383,7 @@ func TestRegisterClient_Success(t *testing.T) {
 	}
 	currService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
+	os.Setenv("CLIENT_TRAFFIC_RATE_PER_BYTE", "5")
 	err := currService.RegisterClient(
 		dto.RegisterClientDTO{
 			Name:        firstName,

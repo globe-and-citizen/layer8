@@ -6,6 +6,7 @@ const (
 	READ_USER_DISPLAY_NAME_SCOPE = "read:user:display_name"
 	READ_USER_COUNTRY_SCOPE      = "read:user:country"
 	READ_USER_TOP_FIVE_METADATA  = "read:user:top_five_metadata"
+	SHARE_DETAILS_WITH_SPA       = "read:user:details"
 )
 
 const (

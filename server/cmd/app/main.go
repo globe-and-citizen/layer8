@@ -156,8 +156,6 @@ func main() {
 		ticker := time.NewTicker(updateInterval)
 
 		for currTime := range ticker.C {
-			//ctx, cancel := context.WithTimeout(context.Background(), updateInterval)
-
 			err := statisticsUpdater.Update(context.Background(), currTime)
 			if err != nil {
 				log.Println(err)
@@ -231,6 +229,14 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				authorizationHandler.OAuthToken(w, r)
 			case path == "/api/user":
 				handlers.UserInfo(w, r)
+			case path == "/sp-pub-key":
+				handlers.GetSPPubKey(w, r)
+			case path == "/api/upload-certificate":
+				handlers.UploadSPCertificate(w, r)
+			case path == "/api/token":
+				handlers.TokenHandler(w, r)
+			case path == "/api/zk-metadata":
+				handlers.ZkMetadataHandler(w, r)
 			case strings.HasPrefix(path, "/assets-v1"):
 				http.StripPrefix("/assets-v1", http.FileServer(http.Dir("./assets-v1"))).ServeHTTP(w, r)
 

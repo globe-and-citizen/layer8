@@ -1,6 +1,8 @@
 package repository_test
 
 import (
+	"database/sql"
+	"fmt"
 	"globe-and-citizen/layer8/server/internals/repository"
 	"globe-and-citizen/layer8/server/models"
 	"regexp"
@@ -12,13 +14,15 @@ import (
 	"gorm.io/gorm"
 )
 
-func TestLoginUserPrecheck(t *testing.T) {
+func setUp(t *testing.T) {
+	var mockDB *sql.DB
+	var err error
+
 	// Create a new mock DB and a GORM database connection
-	mockDB, mock, err := sqlmock.New()
+	mockDB, mock, err = sqlmock.New()
 	if err != nil {
 		t.Fatal("Failed to create mock DB:", err)
 	}
-	defer mockDB.Close()
 
 	db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{})
 	if err != nil {
@@ -26,12 +30,22 @@ func TestLoginUserPrecheck(t *testing.T) {
 	}
 
 	// Create the user repository with the mock database connection
-	repo := repository.NewOauthRepository(db)
+	repo = repository.NewOauthRepository(db)
+}
+
+var mock sqlmock.Sqlmock
+var repo *repository.PostgresRepository
+
+const clientID = "clientID"
+const certificate = "certificate"
+
+func TestLoginUserPrecheck(t *testing.T) {
+	setUp(t)
 
 	// Make a mock loginPrecheck input
 	username := "test_user"
 
-	mock.ExpectQuery("SELECT (.+) FROM \"users\" WHERE username = (.+)").WithArgs(username).WillReturnRows(sqlmock.NewRows([]string{"salt"}).AddRow("test_salt"))
+	mock.ExpectQuery("SELECT (.+) FROM \"users\" WHERE username = (.+)").WithArgs(username, 1).WillReturnRows(sqlmock.NewRows([]string{"salt"}).AddRow("test_salt"))
 
 	// Call the function and check the result
 	salt, err := repo.LoginUserPrecheck(username)
@@ -48,25 +62,12 @@ func TestLoginUserPrecheck(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	// Create a new mock DB and a GORM database connection
-	mockDB, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatal("Failed to create mock DB:", err)
-	}
-	defer mockDB.Close()
-
-	db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{})
-	if err != nil {
-		t.Fatal("Failed to connect to mock DB:", err)
-	}
-
-	// Create the user repository with the mock database connection
-	repo := repository.NewOauthRepository(db)
+	setUp(t)
 
 	// Make a mock getUser input
 	username := "test_user"
 
-	mock.ExpectQuery("SELECT (.+) FROM \"users\" WHERE username = (.+)").WithArgs(username).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "username", "password", "salt", "first_name", "last_name"}).AddRow(1, "test_email", "test_user", "test_password", "test_salt", "test_first_name", "test_last_name"))
+	mock.ExpectQuery("SELECT (.+) FROM \"users\" WHERE username = (.+)").WithArgs(username, 1).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "username", "password", "salt", "first_name", "last_name"}).AddRow(1, "test_email", "test_user", "test_password", "test_salt", "test_first_name", "test_last_name"))
 
 	// Call the function and check the result
 	user, err := repo.GetUser(username)
@@ -88,25 +89,12 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestGetUserByID(t *testing.T) {
-	// Create a new mock DB and a GORM database connection
-	mockDB, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatal("Failed to create mock DB:", err)
-	}
-	defer mockDB.Close()
-
-	db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{})
-	if err != nil {
-		t.Fatal("Failed to connect to mock DB:", err)
-	}
-
-	// Create the user repository with the mock database connection
-	repo := repository.NewOauthRepository(db)
+	setUp(t)
 
 	// Make a mock getUserByID input
 	id := int64(1)
 
-	mock.ExpectQuery("SELECT (.+) FROM \"users\" WHERE id = (.+)").WithArgs(id).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "username", "password", "salt", "first_name", "last_name"}).AddRow(1, "test_email", "test_user", "test_password", "test_salt", "test_first_name", "test_last_name"))
+	mock.ExpectQuery("SELECT (.+) FROM \"users\" WHERE id = (.+)").WithArgs(id, 1).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "username", "password", "salt", "first_name", "last_name"}).AddRow(1, "test_email", "test_user", "test_password", "test_salt", "test_first_name", "test_last_name"))
 
 	// Call the function and check the result
 	user, err := repo.GetUserByID(id)
@@ -128,26 +116,13 @@ func TestGetUserByID(t *testing.T) {
 }
 
 func TestGetUserMetadata(t *testing.T) {
-	// Create a new mock DB and a GORM database connection
-	mockDB, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatal("Failed to create mock DB:", err)
-	}
-	defer mockDB.Close()
-
-	db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{})
-	if err != nil {
-		t.Fatal("Failed to connect to mock DB:", err)
-	}
-
-	// Create the user repository with the mock database connection
-	repo := repository.NewOauthRepository(db)
+	setUp(t)
 
 	// Make a mock getUserMetadata input
 	userID := int64(1)
 	key := "test_key"
 
-	mock.ExpectQuery("SELECT (.+) FROM \"user_metadata\" WHERE user_id = (.+) AND key = (.+)").WithArgs(userID, key).WillReturnRows(sqlmock.NewRows([]string{"id", "user_id", "key", "value"}).AddRow(1, 1, "test_key", "test_value"))
+	mock.ExpectQuery("SELECT (.+) FROM \"user_metadata\" WHERE user_id = (.+) AND key = (.+)").WithArgs(userID, key, 1).WillReturnRows(sqlmock.NewRows([]string{"id", "user_id", "key", "value"}).AddRow(1, 1, "test_key", "test_value"))
 
 	// Call the function and check the result
 	userMetadata, err := repo.GetUserMetadata(userID, key)
@@ -165,37 +140,25 @@ func TestGetUserMetadata(t *testing.T) {
 }
 
 func TestSetClient(t *testing.T) {
-	// Create a new mock DB and a GORM database connection
-	mockDB, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatal("Failed to create mock DB:", err)
-	}
-	defer mockDB.Close()
-
-	db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{})
-	if err != nil {
-		t.Fatal("Failed to connect to mock DB:", err)
-	}
-
-	// Create the user repository with the mock database connection
-	repo := repository.NewOauthRepository(db)
+	setUp(t)
 
 	// Make a mock setClient input
 	client := &models.Client{
-		ID:          "test_id",
-		Secret:      "test_secret",
-		Name:        "test_name",
-		RedirectURI: "test_redirect_uri",
-		BackendURI:  "test_backend_uri",
-		Username:    "test_username",
-		Password:    "test_password",
-		Salt:        "test_salt",
+		ID:                   "test_id",
+		Secret:               "test_secret",
+		Name:                 "test_name",
+		RedirectURI:          "test_redirect_uri",
+		BackendURI:           "test_backend_uri",
+		Username:             "test_username",
+		Password:             "test_password",
+		Salt:                 "test_salt",
+		X509CertificateBytes: []byte{},
 	}
 
 	mock.ExpectQuery(
 		"SELECT (.+) FROM \"clients\" WHERE id = (.+)",
 	).WithArgs(
-		client.ID,
+		client.ID, 1,
 	).WillReturnError(
 		gorm.ErrRecordNotFound,
 	)
@@ -213,6 +176,7 @@ func TestSetClient(t *testing.T) {
 		client.Username,
 		client.Password,
 		client.Salt,
+		client.X509CertificateBytes,
 	).WillReturnResult(
 		sqlmock.NewResult(1, 1),
 	)
@@ -220,7 +184,7 @@ func TestSetClient(t *testing.T) {
 	mock.ExpectCommit()
 
 	// Call the function and check the result
-	err = repo.SetClient(client)
+	err := repo.SetClient(client)
 	if err != nil {
 		t.Fatal("Failed to call SetClient:", err)
 	}
@@ -232,25 +196,12 @@ func TestSetClient(t *testing.T) {
 }
 
 func TestGetClient(t *testing.T) {
-	// Create a new mock DB and a GORM database connection
-	mockDB, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatal("Failed to create mock DB:", err)
-	}
-	defer mockDB.Close()
-
-	db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{})
-	if err != nil {
-		t.Fatal("Failed to connect to mock DB:", err)
-	}
-
-	// Create the user repository with the mock database connection
-	repo := repository.NewOauthRepository(db)
+	setUp(t)
 
 	// Make a mock getClient input
 	id := "test_id"
 
-	mock.ExpectQuery("SELECT (.+) FROM \"clients\" WHERE id = (.+)").WithArgs(id).WillReturnRows(sqlmock.NewRows([]string{"id", "secret", "name", "redirect_uri"}).AddRow("test_id", "test_secret", "test_name", "test_redirect_uri"))
+	mock.ExpectQuery("SELECT (.+) FROM \"clients\" WHERE id = (.+)").WithArgs(id, 1).WillReturnRows(sqlmock.NewRows([]string{"id", "secret", "name", "redirect_uri"}).AddRow("test_id", "test_secret", "test_name", "test_redirect_uri"))
 
 	// Call the function and check the result
 	client, err := repo.GetClient(id)
@@ -270,47 +221,104 @@ func TestGetClient(t *testing.T) {
 }
 
 func TestSetTTL(t *testing.T) {
-	// Create a new mock DB and a GORM database connection
-	mockDB, _, err := sqlmock.New()
-	if err != nil {
-		t.Fatal("Failed to create mock DB:", err)
-	}
-	defer mockDB.Close()
-
-	db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{})
-	if err != nil {
-		t.Fatal("Failed to connect to mock DB:", err)
-	}
-
-	// Create the user repository with the mock database connection
-	repo := repository.NewOauthRepository(db)
+	setUp(t)
 
 	// Call the function and check the result
-	err = repo.SetTTL("test_key", []byte("test_value"), 1)
+	err := repo.SetTTL("test_key", []byte("test_value"), 1)
 	if err != nil {
 		t.Fatal("Failed to call SetTTL:", err)
 	}
 }
 
 func TestGetTTL(t *testing.T) {
-	// Create a new mock DB and a GORM database connection
-	mockDB, _, err := sqlmock.New()
-	if err != nil {
-		t.Fatal("Failed to create mock DB:", err)
-	}
-	defer mockDB.Close()
-
-	db, err := gorm.Open(postgres.New(postgres.Config{Conn: mockDB}), &gorm.Config{})
-	if err != nil {
-		t.Fatal("Failed to connect to mock DB:", err)
-	}
-
-	// Create the user repository with the mock database connection
-	repo := repository.NewOauthRepository(db)
+	setUp(t)
 
 	// Call the function and check the result
-	_, err = repo.GetTTL("test_key")
+	_, err := repo.GetTTL("test_key")
 	if err != nil {
 		t.Fatal("Failed to call GetTTL:", err)
+	}
+}
+
+func TestGetClientByURL(t *testing.T) {
+	setUp(t)
+
+	// Make a mock getClientByURL input
+	url := "test_backend_uri"
+
+	mock.ExpectQuery("SELECT (.+) FROM \"clients\" WHERE backend_uri = (.+)").WithArgs(url, 1).WillReturnRows(
+		sqlmock.NewRows([]string{"id", "secret", "name", "redirect_uri", "backend_uri", "username", "password", "salt"}).
+			AddRow("test_id", "test_secret", "test_name", "test_redirect_uri", "test_backend_uri", "test_username", "test_password", "test_salt"))
+
+	// Call the function and check the result
+	client, err := repo.GetClientByURL(url)
+	if err != nil {
+		t.Fatal("Failed to call GetClientByURL:", err)
+	}
+
+	assert.Equal(t, "test_id", client.ID)
+	assert.Equal(t, "test_secret", client.Secret)
+	assert.Equal(t, "test_name", client.Name)
+	assert.Equal(t, "test_redirect_uri", client.RedirectURI)
+	assert.Equal(t, "test_backend_uri", client.BackendURI)
+	assert.Equal(t, "test_username", client.Username)
+	assert.Equal(t, "test_password", client.Password)
+	assert.Equal(t, "test_salt", client.Salt)
+
+	// Check if all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal("Unmet expectations:", err)
+	}
+}
+
+func TestSaveX509Certificate_FailedToSaveCertificate(t *testing.T) {
+	setUp(t)
+
+	mock.ExpectBegin()
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(
+			`UPDATE "clients" SET "x509_certificate_bytes"=$1 WHERE id = $2`,
+		),
+	).WithArgs(
+		certificate, clientID,
+	).WillReturnError(
+		fmt.Errorf("failed to save certificate"),
+	)
+
+	mock.ExpectRollback()
+
+	err := repo.SaveX509Certificate(clientID, certificate)
+
+	assert.NotNil(t, err)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal("Unmet expectations:", err)
+	}
+}
+
+func TestSaveX509Certificate_Success(t *testing.T) {
+	setUp(t)
+
+	mock.ExpectBegin()
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(
+			`UPDATE "clients" SET "x509_certificate_bytes"=$1 WHERE id = $2`,
+		),
+	).WithArgs(
+		certificate, clientID,
+	).WillReturnResult(
+		sqlmock.NewResult(1, 1),
+	)
+
+	mock.ExpectCommit()
+
+	err := repo.SaveX509Certificate(clientID, certificate)
+
+	assert.Nil(t, err)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal("Unmet expectations:", err)
 	}
 }

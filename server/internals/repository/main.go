@@ -26,6 +26,11 @@ type Repository interface {
 	// Get a client by ID.
 	GetClient(id string) (*models.Client, error)
 
+	GetClientByURL(url string) (*models.Client, error)
+
+	// SaveX509Certificate saves the x509 certificate per client
+	SaveX509Certificate(clientID string, certificate string) error
+
 	// SetTTL sets the value for the given key with a short TTL.
 	SetTTL(key string, value []byte, ttl time.Duration) error
 
