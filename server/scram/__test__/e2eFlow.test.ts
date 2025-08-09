@@ -38,7 +38,7 @@ const registerUser = async () => {
     try {
         const keyPair = mnemonic.getPrivateAndPublicKeys();
 
-        const responseOne = await fetch('[[ .ProxyURL ]]/api/v2/register-user-precheck', {
+        const responseOne = await fetch('[[ .ProxyURL ]]/api/v1/register-user-precheck', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -67,7 +67,7 @@ const registerUser = async () => {
             clientKey: data.clientKey
         };
 
-        const resp = await fetch('[[ .ProxyURL ]]/api/v2/register-user', {
+        const resp = await fetch('[[ .ProxyURL ]]/api/v1/register-user', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ const loginUser = async (loginUsername: string, loginPassword: string, cNonce: s
     const showToastMessage = jest.fn();
 
     try {
-        const responseOne = await fetch('[[ .ProxyURL ]]/api/v2/login-user-precheck', {
+        const responseOne = await fetch('[[ .ProxyURL ]]/api/v1/login-user-precheck', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -153,7 +153,7 @@ const loginUser = async (loginUsername: string, loginPassword: string, cNonce: s
         const clientProof = bytesToHexString(clientProofBytes);
 
         const loginUserResponse = await fetch(
-            "[[ .ProxyURL ]]/api/v2/login-user",
+            "[[ .ProxyURL ]]/api/v1/login-user",
             {
                 method: "POST",
                 headers: {
@@ -195,7 +195,7 @@ const resetPassword = async () => {
 
     try {
         const responseOne = await fetch(
-            "[[ .ProxyURL ]]/api/v2/reset-password-precheck",
+            "[[ .ProxyURL ]]/api/v1/reset-password-precheck",
             {
                 method: "POST",
                 headers: {
@@ -227,7 +227,7 @@ const resetPassword = async () => {
             clientKey: data.clientKey
         }
 
-        const responseTwo = await fetch("[[ .ProxyURL ]]/api/v2/reset-password", {
+        const responseTwo = await fetch("[[ .ProxyURL ]]/api/v1/reset-password", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

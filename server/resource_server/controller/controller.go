@@ -23,15 +23,10 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 func LoginUserPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/login.html")
 }
-func LoginUserPagev2(w http.ResponseWriter, r *http.Request) {
-	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/login_v2.html")
-}
 func RegisterUserPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/register.html")
 }
-func RegisterUserPageV2(w http.ResponseWriter, r *http.Request) {
-	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/register_v2.html")
-}
+
 func ClientProfilePage(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -52,15 +47,9 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 func ClientHandler(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/register.html")
 }
-func ClientHandlerv2(w http.ResponseWriter, r *http.Request) {
-	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/register_v2.html")
-}
+
 func LoginClientPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/login.html")
-}
-
-func LoginClientPagev2(w http.ResponseWriter, r *http.Request) {
-	ServeFileHandler(w, r, "assets-v1/templates/src/pages/client_portal/login_v2.html")
 }
 
 func InputYourEmailPage(w http.ResponseWriter, r *http.Request) {
@@ -73,10 +62,6 @@ func InputVerificationCodePage(w http.ResponseWriter, r *http.Request) {
 
 func ResetPasswordPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/password_reset/reset-password-page.html")
-}
-
-func ResetPasswordPageV2(w http.ResponseWriter, r *http.Request) {
-	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/password_reset/reset-password-page_v2.html")
 }
 
 func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
@@ -103,35 +88,7 @@ func LoginClientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenResp, err := newService.LoginClient(request)
-	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return
-	}
-
-	if err := json.NewEncoder(w).Encode(tokenResp); err != nil {
-		utils.HandleError(
-			w,
-			http.StatusInternalServerError,
-			"Internal error: could not encode response into json",
-			err,
-		)
-	}
-}
-
-func LoginClientHandlerv2(w http.ResponseWriter, r *http.Request) {
-	if !validateHttpMethod(w, r.Method, http.MethodPost) {
-		return
-	}
-
-	newService := r.Context().Value("service").(interfaces.IService)
-
-	request, err := utils.DecodeJsonFromRequest[dto.LoginClientDTOv2](w, r.Body)
-	if err != nil {
-		return
-	}
-
-	serverSignatureResp, err := newService.LoginClientv2(request)
+	serverSignatureResp, err := newService.LoginClient(request)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to perform login", err)
 		return
@@ -193,19 +150,19 @@ func RegisterClientPrecheckHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func LoginClientPrecheckHandlerv2(w http.ResponseWriter, r *http.Request) {
+func LoginClientPrecheckHandler(w http.ResponseWriter, r *http.Request) {
 	if !validateHttpMethod(w, r.Method, http.MethodPost) {
 		return
 	}
 
 	newService := r.Context().Value("service").(interfaces.IService)
 
-	request, err := utils.DecodeJsonFromRequest[dto.LoginPrecheckDTOv2](w, r.Body)
+	request, err := utils.DecodeJsonFromRequest[dto.LoginPrecheckDTO](w, r.Body)
 	if err != nil {
 		return
 	}
 
-	loginPrecheckResp, err := newService.LoginPrecheckClientv2(request)
+	loginPrecheckResp, err := newService.LoginPrecheckClient(request)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to perform precheck, service error", err)
 		return
@@ -253,35 +210,6 @@ func ClientProfileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
-	if !validateHttpMethod(w, r.Method, http.MethodPost) {
-		return
-	}
-
-	newService := r.Context().Value("service").(interfaces.IService)
-
-	request, err := utils.DecodeJsonFromRequest[dto.RegisterUserDTO](w, r.Body)
-	if err != nil {
-		return
-	}
-
-	err = newService.RegisterUser(request)
-	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
-		return
-	}
-
-	res := utils.BuildResponseWithNoBody(w, http.StatusCreated, "User registered successfully")
-	if err := json.NewEncoder(w).Encode(res); err != nil {
-		utils.HandleError(
-			w,
-			http.StatusInternalServerError,
-			"Internal error: could not encode response into json",
-			err,
-		)
-	}
-}
-
 func RegisterClientHandler(w http.ResponseWriter, r *http.Request) {
 	if !validateHttpMethod(w, r.Method, http.MethodPost) {
 		return
@@ -311,36 +239,6 @@ func RegisterClientHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func RegisterClientHandlerv2(w http.ResponseWriter, r *http.Request) {
-	if !validateHttpMethod(w, r.Method, http.MethodPost) {
-		return
-	}
-
-	newService := r.Context().Value("service").(interfaces.IService)
-
-	request, err := utils.DecodeJsonFromRequest[dto.RegisterClientDTOv2](w, r.Body)
-	if err != nil {
-		return
-	}
-
-	err = newService.RegisterClientv2(request)
-	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to register client", err)
-		return
-	}
-
-	res := utils.BuildResponseWithNoBody(w, http.StatusCreated, "Client registered successfully")
-	if err := json.NewEncoder(w).Encode(res); err != nil {
-		utils.HandleError(
-			w,
-			http.StatusInternalServerError,
-			"Internal error: could not encode response into json",
-			err,
-		)
-	}
-}
-
-// LoginPrecheckHandler handles login precheck requests and get the salt of the user from the database using the username from the request URL
 func LoginPrecheckHandler(w http.ResponseWriter, r *http.Request) {
 	if !validateHttpMethod(w, r.Method, http.MethodPost) {
 		return
@@ -353,35 +251,7 @@ func LoginPrecheckHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	loginPrecheckResp, err := newService.LoginPreCheckUser(request)
-	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return
-	}
-
-	if err := json.NewEncoder(w).Encode(loginPrecheckResp); err != nil {
-		utils.HandleError(
-			w,
-			http.StatusInternalServerError,
-			"Internal error: could not encode response into json",
-			err,
-		)
-	}
-}
-
-func LoginPrecheckHandlerv2(w http.ResponseWriter, r *http.Request) {
-	if !validateHttpMethod(w, r.Method, http.MethodPost) {
-		return
-	}
-
-	newService := r.Context().Value("service").(interfaces.IService)
-
-	request, err := utils.DecodeJsonFromRequest[dto.LoginPrecheckDTOv2](w, r.Body)
-	if err != nil {
-		return
-	}
-
-	loginPrecheckResp, err := newService.LoginPrecheckUserv2(request)
+	loginPrecheckResp, err := newService.LoginPrecheckUser(request)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to perform precheck, service error", err)
 		return
@@ -411,35 +281,7 @@ func LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenResp, err := newService.LoginUser(request)
-	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to get client profile", err)
-		return
-	}
-
-	if err := json.NewEncoder(w).Encode(tokenResp); err != nil {
-		utils.HandleError(
-			w,
-			http.StatusInternalServerError,
-			"Internal error: could not encode response into json",
-			err,
-		)
-	}
-}
-
-func LoginUserHandlerv2(w http.ResponseWriter, r *http.Request) {
-	if !validateHttpMethod(w, r.Method, http.MethodPost) {
-		return
-	}
-
-	newService := r.Context().Value("service").(interfaces.IService)
-
-	request, err := utils.DecodeJsonFromRequest[dto.LoginUserDTOv2](w, r.Body)
-	if err != nil {
-		return
-	}
-
-	serverSignatureResp, err := newService.LoginUserv2(request)
+	serverSignatureResp, err := newService.LoginUser(request)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to perform login", err)
 		return
@@ -722,46 +564,6 @@ func CheckBackendURI(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
-	if !validateHttpMethod(w, r.Method, http.MethodPost) {
-		// validateHttpMethod will automatically send an error response
-		return
-	}
-
-	newService := r.Context().Value("service").(interfaces.IService)
-
-	request, err := utils.DecodeJsonFromRequest[dto.ResetPasswordDTO](w, r.Body)
-	if err != nil {
-		// utils.DecodeJsonFromRequest sends an Http error message automatically
-		return
-	}
-
-	user, err := newService.GetUserForUsername(request.Username)
-	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "user does not exist", err)
-		return
-	}
-
-	err = newService.ValidateSignature("Sign-in with Layer8", request.Signature, user.PublicKey)
-	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "signature is invalid", err)
-		return
-	}
-
-	err = newService.UpdateUserPassword(user.Username, request.NewPassword, user.Salt)
-	if err != nil {
-		utils.HandleError(w, http.StatusInternalServerError, "Internal error: failed to update password", err)
-		return
-	}
-
-	response := utils.BuildResponseWithNoBody(
-		w, http.StatusCreated, "Your password was updated successfully!",
-	)
-	if err := json.NewEncoder(w).Encode(&response); err != nil {
-		utils.HandleError(w, http.StatusInternalServerError, "Failed to encode the response", err)
-	}
-}
-
 func validateHttpMethod(w http.ResponseWriter, actualMethod string, expectedMethod string) bool {
 	if actualMethod != expectedMethod {
 		errorMessage := fmt.Sprintf("Invalid http method. Expected %s", expectedMethod)
@@ -821,19 +623,19 @@ func RegisterUserPrecheck(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func RegisterUserHandlerv2(w http.ResponseWriter, r *http.Request) {
+func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 	if !validateHttpMethod(w, r.Method, http.MethodPost) {
 		return
 	}
 
 	newService := r.Context().Value("service").(interfaces.IService)
 
-	request, err := utils.DecodeJsonFromRequest[dto.RegisterUserDTOv2](w, r.Body)
+	request, err := utils.DecodeJsonFromRequest[dto.RegisterUserDTO](w, r.Body)
 	if err != nil {
 		return
 	}
 
-	err = newService.RegisterUserv2(request)
+	err = newService.RegisterUser(request)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "Failed to register user", err)
 		return
@@ -884,14 +686,14 @@ func ResetPasswordPrecheckHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ResetPasswordHandlerV2(w http.ResponseWriter, r *http.Request) {
+func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	if !validateHttpMethod(w, r.Method, http.MethodPost) {
 		return
 	}
 
 	newService := r.Context().Value("service").(interfaces.IService)
 
-	request, err := utils.DecodeJsonFromRequest[dto.ResetPasswordDTOV2](w, r.Body)
+	request, err := utils.DecodeJsonFromRequest[dto.ResetPasswordDTO](w, r.Body)
 	if err != nil {
 		return
 	}
@@ -908,7 +710,7 @@ func ResetPasswordHandlerV2(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = newService.UpdateUserPasswordV2(user.Username, request.StoredKey, request.ServerKey)
+	err = newService.UpdateUserPassword(user.Username, request.StoredKey, request.ServerKey)
 	if err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Internal error: failed to update user", err)
 		return

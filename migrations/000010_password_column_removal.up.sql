@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS users DROP COLUMN password;
+ALTER TABLE IF EXISTS clients DROP COLUMN password;

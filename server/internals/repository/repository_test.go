@@ -77,7 +77,6 @@ func TestGetUser(t *testing.T) {
 
 	assert.Equal(t, "test_user", user.Username)
 	assert.Equal(t, "test_email", user.Email)
-	assert.Equal(t, "test_password", user.Password)
 	assert.Equal(t, "test_salt", user.Salt)
 	assert.Equal(t, "test_first_name", user.FirstName)
 	assert.Equal(t, "test_last_name", user.LastName)
@@ -104,7 +103,6 @@ func TestGetUserByID(t *testing.T) {
 
 	assert.Equal(t, "test_user", user.Username)
 	assert.Equal(t, "test_email", user.Email)
-	assert.Equal(t, "test_password", user.Password)
 	assert.Equal(t, "test_salt", user.Salt)
 	assert.Equal(t, "test_first_name", user.FirstName)
 	assert.Equal(t, "test_last_name", user.LastName)
@@ -150,7 +148,6 @@ func TestSetClient(t *testing.T) {
 		RedirectURI:          "test_redirect_uri",
 		BackendURI:           "test_backend_uri",
 		Username:             "test_username",
-		Password:             "test_password",
 		Salt:                 "test_salt",
 		X509CertificateBytes: []byte{},
 	}
@@ -174,7 +171,6 @@ func TestSetClient(t *testing.T) {
 		client.RedirectURI,
 		client.BackendURI,
 		client.Username,
-		client.Password,
 		client.Salt,
 		client.X509CertificateBytes,
 	).WillReturnResult(
@@ -262,7 +258,6 @@ func TestGetClientByURL(t *testing.T) {
 	assert.Equal(t, "test_redirect_uri", client.RedirectURI)
 	assert.Equal(t, "test_backend_uri", client.BackendURI)
 	assert.Equal(t, "test_username", client.Username)
-	assert.Equal(t, "test_password", client.Password)
 	assert.Equal(t, "test_salt", client.Salt)
 
 	// Check if all expectations were met

@@ -108,7 +108,8 @@ func prepareInitTunnelRequest(clientBackendUrl string, mockRepo *mocks.MockRepos
 		RedirectURI: redirectUri,
 		BackendURI:  resourceUtils.RemoveProtocolFromURL(clientBackendUrl),
 		Username:    username,
-		Password:    password,
+		StoredKey:   "storedKey",
+		ServerKey:   "serverKey",
 	})
 
 	reqToInitTunnel := httptest.NewRequest("GET", "/init-tunnel", nil)

@@ -12,8 +12,6 @@ import (
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 	"log"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -38,52 +36,12 @@ func NewService(
 	}
 }
 
-func (s *service) RegisterUser(req dto.RegisterUserDTO) error {
-	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
-	hashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
-
-	return s.repository.RegisterUser(req, hashedAndSaltedPass, rmSalt)
-}
-
 func (s *service) RegisterClient(req dto.RegisterClientDTO) error {
 	clientUUID := utils.GenerateUUID()
 	clientSecret := utils.GenerateSecret(utils.SecretSize)
-
-	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
-	hashedAndSaltedPass := utils.SaltAndHashPassword(req.Password, rmSalt)
-
 	req.BackendURI = utils.RemoveProtocolFromURL(req.BackendURI)
 
-	client := models.Client{
-		ID:          clientUUID,
-		Secret:      clientSecret,
-		Name:        req.Name,
-		RedirectURI: req.RedirectURI,
-		BackendURI:  req.BackendURI,
-		Username:    req.Username,
-		Password:    hashedAndSaltedPass,
-		Salt:        rmSalt,
-	}
-
-	rate, err := strconv.ParseInt(os.Getenv("CLIENT_TRAFFIC_RATE_PER_BYTE"), 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse client traffic rate from .env: %e", err)
-	}
-
-	err = s.repository.RegisterClient(client)
-	if err != nil {
-		return err
-	}
-
-	return s.repository.CreateClientTrafficStatisticsEntry(clientUUID, int(rate))
-}
-
-func (s *service) RegisterClientv2(req dto.RegisterClientDTOv2) error {
-	clientUUID := utils.GenerateUUID()
-	clientSecret := utils.GenerateSecret(utils.SecretSize)
-	req.BackendURI = utils.RemoveProtocolFromURL(req.BackendURI)
-
-	return s.repository.RegisterClientv2(req, clientUUID, clientSecret)
+	return s.repository.RegisterClient(req, clientUUID, clientSecret)
 }
 
 func (s *service) GetClientData(clientName string) (models.ClientResponseOutput, error) {
@@ -118,26 +76,14 @@ func (s *service) GetClientDataByBackendURL(backendURL string) (models.ClientRes
 	return clientModel, nil
 }
 
-func (s *service) LoginPreCheckUser(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error) {
-	username, salt, err := s.repository.LoginPreCheckUser(req)
-	if err != nil {
-		return models.LoginPrecheckResponseOutput{}, err
-	}
-	loginPrecheckResp := models.LoginPrecheckResponseOutput{
-		Username: username,
-		Salt:     salt,
-	}
-	return loginPrecheckResp, nil
-}
-
-func (s *service) LoginPrecheckUserv2(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
+func (s *service) LoginPrecheckUser(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error) {
 	sNonce := utils.GenerateRandomSalt(utils.SaltSize)
 
 	user, err := s.repository.GetUserForUsername(req.Username)
 	if err != nil {
-		return models.LoginPrecheckResponseOutputv2{}, err
+		return models.LoginPrecheckResponseOutput{}, err
 	}
-	loginPrecheckResp := models.LoginPrecheckResponseOutputv2{
+	loginPrecheckResp := models.LoginPrecheckResponseOutput{
 		Salt:      user.Salt,
 		IterCount: user.IterationCount,
 		Nonce:     req.CNonce + sNonce,
@@ -145,26 +91,14 @@ func (s *service) LoginPrecheckUserv2(req dto.LoginPrecheckDTOv2) (models.LoginP
 	return loginPrecheckResp, nil
 }
 
-func (s *service) LoginPreCheckClient(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error) {
-	username, salt, err := s.repository.LoginPreCheckClient(req)
-	if err != nil {
-		return models.LoginPrecheckResponseOutput{}, err
-	}
-	loginPrecheckResp := models.LoginPrecheckResponseOutput{
-		Username: username,
-		Salt:     salt,
-	}
-	return loginPrecheckResp, nil
-}
-
-func (s *service) LoginPrecheckClientv2(req dto.LoginPrecheckDTOv2) (models.LoginPrecheckResponseOutputv2, error) {
+func (s *service) LoginPrecheckClient(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error) {
 	sNonce := utils.GenerateRandomSalt(utils.SaltSize)
 
 	client, err := s.repository.ProfileClient(req.Username)
 	if err != nil {
-		return models.LoginPrecheckResponseOutputv2{}, err
+		return models.LoginPrecheckResponseOutput{}, err
 	}
-	loginPrecheckResp := models.LoginPrecheckResponseOutputv2{
+	loginPrecheckResp := models.LoginPrecheckResponseOutput{
 		Salt:      client.Salt,
 		IterCount: client.IterationCount,
 		Nonce:     req.CNonce + sNonce,
@@ -173,26 +107,14 @@ func (s *service) LoginPrecheckClientv2(req dto.LoginPrecheckDTOv2) (models.Logi
 }
 
 func (s *service) LoginUser(req dto.LoginUserDTO) (models.LoginUserResponseOutput, error) {
-	user, err := s.repository.LoginUser(req)
-	if err != nil {
-		return models.LoginUserResponseOutput{}, err
-	}
-	tokenResp, err := utils.CompleteLogin(req, user)
-	if err != nil {
-		return models.LoginUserResponseOutput{}, err
-	}
-	return tokenResp, nil
-}
-
-func (s *service) LoginUserv2(req dto.LoginUserDTOv2) (models.LoginUserResponseOutputv2, error) {
 	user, err := s.repository.GetUserForUsername(req.Username)
 	if err != nil {
-		return models.LoginUserResponseOutputv2{}, err
+		return models.LoginUserResponseOutput{}, err
 	}
 
 	storedKeyBytes, err := hex.DecodeString(user.StoredKey)
 	if err != nil {
-		return models.LoginUserResponseOutputv2{}, fmt.Errorf("error decoding stored key: %v", err)
+		return models.LoginUserResponseOutput{}, fmt.Errorf("error decoding stored key: %v", err)
 	}
 
 	authMessage := fmt.Sprintf("[n=%s,r=%s,s=%s,i=%d,r=%s]", req.Username, req.CNonce, user.Salt, user.IterationCount, req.Nonce)
@@ -204,24 +126,24 @@ func (s *service) LoginUserv2(req dto.LoginUserDTOv2) (models.LoginUserResponseO
 
 	clientProofBytes, err := hex.DecodeString(req.ClientProof)
 	if err != nil {
-		return models.LoginUserResponseOutputv2{}, fmt.Errorf("error decoding client proof: %v", err)
+		return models.LoginUserResponseOutput{}, fmt.Errorf("error decoding client proof: %v", err)
 	}
 
 	clientKeyBytes, err := utils.XorBytes(clientSignature, clientProofBytes)
 	if err != nil {
-		return models.LoginUserResponseOutputv2{}, fmt.Errorf("error performing XOR operation: %v", err)
+		return models.LoginUserResponseOutput{}, fmt.Errorf("error performing XOR operation: %v", err)
 	}
 
 	clientKeyHash := sha256.Sum256(clientKeyBytes)
 
 	clientKeyHashStr := hex.EncodeToString(clientKeyHash[:])
 	if clientKeyHashStr != user.StoredKey {
-		return models.LoginUserResponseOutputv2{}, fmt.Errorf("server failed to authenticate the user")
+		return models.LoginUserResponseOutput{}, fmt.Errorf("server failed to authenticate the user")
 	}
 
 	serverKeyBytes, err := hex.DecodeString(user.ServerKey)
 	if err != nil {
-		return models.LoginUserResponseOutputv2{}, fmt.Errorf("error decoding server key: %v", err)
+		return models.LoginUserResponseOutput{}, fmt.Errorf("error decoding server key: %v", err)
 	}
 
 	serverSignatureHMAC := hmac.New(sha256.New, serverKeyBytes)
@@ -230,37 +152,24 @@ func (s *service) LoginUserv2(req dto.LoginUserDTOv2) (models.LoginUserResponseO
 
 	tokenString, err := utils.GenerateToken(user)
 	if err != nil {
-		return models.LoginUserResponseOutputv2{}, fmt.Errorf("error generating token: %v", err)
+		return models.LoginUserResponseOutput{}, fmt.Errorf("error generating token: %v", err)
 	}
 
-	return models.LoginUserResponseOutputv2{
+	return models.LoginUserResponseOutput{
 		ServerSignature: serverSignatureHex,
 		Token:           tokenString,
 	}, nil
 }
 
-func (s *service) LoginClient(req dto.LoginClientDTO) (models.LoginUserResponseOutput, error) {
-	client, err := s.repository.LoginClient(req)
-	if err != nil {
-		return models.LoginUserResponseOutput{}, err
-	}
-
-	tokenResp, err := utils.CompleteClientLogin(req, client)
-	if err != nil {
-		return models.LoginUserResponseOutput{}, err
-	}
-	return tokenResp, nil
-}
-
-func (s *service) LoginClientv2(req dto.LoginClientDTOv2) (models.LoginClientResponseOutputv2, error) {
+func (s *service) LoginClient(req dto.LoginClientDTO) (models.LoginClientResponseOutput, error) {
 	client, err := s.repository.ProfileClient(req.Username)
 	if err != nil {
-		return models.LoginClientResponseOutputv2{}, err
+		return models.LoginClientResponseOutput{}, err
 	}
 
 	storedKeyBytes, err := hex.DecodeString(client.StoredKey)
 	if err != nil {
-		return models.LoginClientResponseOutputv2{}, fmt.Errorf("error decoding stored key: %v", err)
+		return models.LoginClientResponseOutput{}, fmt.Errorf("error decoding stored key: %v", err)
 	}
 
 	authMessage := fmt.Sprintf("[n=%s,r=%s,s=%s,i=%d,r=%s]", req.Username, req.CNonce, client.Salt, client.IterationCount, req.Nonce)
@@ -272,24 +181,24 @@ func (s *service) LoginClientv2(req dto.LoginClientDTOv2) (models.LoginClientRes
 
 	clientProofBytes, err := hex.DecodeString(req.ClientProof)
 	if err != nil {
-		return models.LoginClientResponseOutputv2{}, fmt.Errorf("error decoding client proof: %v", err)
+		return models.LoginClientResponseOutput{}, fmt.Errorf("error decoding client proof: %v", err)
 	}
 
 	clientKeyBytes, err := utils.XorBytes(clientSignature, clientProofBytes)
 	if err != nil {
-		return models.LoginClientResponseOutputv2{}, fmt.Errorf("error performing XOR operation: %v", err)
+		return models.LoginClientResponseOutput{}, fmt.Errorf("error performing XOR operation: %v", err)
 	}
 
 	clientKeyHash := sha256.Sum256(clientKeyBytes)
 
 	clientKeyHashStr := hex.EncodeToString(clientKeyHash[:])
 	if clientKeyHashStr != client.StoredKey {
-		return models.LoginClientResponseOutputv2{}, fmt.Errorf("server failed to authenticate the user")
+		return models.LoginClientResponseOutput{}, fmt.Errorf("server failed to authenticate the user")
 	}
 
 	serverKeyBytes, err := hex.DecodeString(client.ServerKey)
 	if err != nil {
-		return models.LoginClientResponseOutputv2{}, fmt.Errorf("error decoding server key: %v", err)
+		return models.LoginClientResponseOutput{}, fmt.Errorf("error decoding server key: %v", err)
 	}
 
 	serverSignatureHMAC := hmac.New(sha256.New, serverKeyBytes)
@@ -298,10 +207,10 @@ func (s *service) LoginClientv2(req dto.LoginClientDTOv2) (models.LoginClientRes
 
 	tokenString, err := utils.CompleteClientLoginv2(client)
 	if err != nil {
-		return models.LoginClientResponseOutputv2{}, fmt.Errorf("error generating token: %v", err)
+		return models.LoginClientResponseOutput{}, fmt.Errorf("error generating token: %v", err)
 	}
 
-	return models.LoginClientResponseOutputv2{
+	return models.LoginClientResponseOutput{
 		ServerSignature: serverSignatureHex,
 		Token:           tokenString,
 	}, nil
@@ -428,11 +337,6 @@ func (s *service) ValidateSignature(message string, signature []byte, publicKey 
 	return nil
 }
 
-func (s *service) UpdateUserPassword(username string, newPassword string, salt string) error {
-	hashedPassword := utils.SaltAndHashPassword(newPassword, salt)
-	return s.repository.UpdateUserPassword(username, hashedPassword)
-}
-
 func (s *service) RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error) {
 	rmSalt := utils.GenerateRandomSalt(utils.SaltSize)
 
@@ -455,12 +359,12 @@ func (s *service) RegisterClientPrecheck(req dto.RegisterClientPrecheckDTO, iter
 	return rmSalt, nil
 }
 
-func (s *service) RegisterUserv2(req dto.RegisterUserDTOv2) error {
-	return s.repository.RegisterUserv2(req)
+func (s *service) RegisterUser(req dto.RegisterUserDTO) error {
+	return s.repository.RegisterUser(req)
 }
 
-func (s *service) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
-	return s.repository.UpdateUserPasswordV2(username, storedKey, serverKey)
+func (s *service) UpdateUserPassword(username string, storedKey string, serverKey string) error {
+	return s.repository.UpdateUserPassword(username, storedKey, serverKey)
 }
 
 func (s *service) GetClientUnpaidAmount(clientId string) (int, error) {

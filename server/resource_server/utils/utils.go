@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"log"
 	"net/http"
@@ -117,56 +116,6 @@ func GenerateSecret(secretSize int) string {
 	}
 
 	return hex.EncodeToString(randomBytes[:])
-}
-
-func CompleteLogin(req dto.LoginUserDTO, user models.User) (models.LoginUserResponseOutput, error) {
-	HashedAndSaltedPass := SaltAndHashPassword(req.Password, user.Salt)
-
-	if user.Password != HashedAndSaltedPass {
-		return models.LoginUserResponseOutput{}, fmt.Errorf("invalid password")
-	}
-
-	tokenString, err := GenerateToken(user)
-	if err != nil {
-		return models.LoginUserResponseOutput{}, err
-	}
-
-	resp := models.LoginUserResponseOutput{
-		Token: tokenString,
-	}
-	return resp, nil
-}
-
-func CompleteClientLogin(req dto.LoginClientDTO, client models.Client) (models.LoginUserResponseOutput, error) {
-	HashedAndSaltedPass := SaltAndHashPassword(req.Password, client.Salt)
-
-	if client.Password != HashedAndSaltedPass {
-		return models.LoginUserResponseOutput{}, fmt.Errorf("invalid password")
-	}
-
-	JWT_SECRET_STR := os.Getenv("JWT_SECRET_KEY")
-	JWT_SECRET_BYTE := []byte(JWT_SECRET_STR)
-
-	expirationTime := time.Now().Add(60 * time.Minute)
-	claims := &models.ClientClaims{
-		UserName: client.Username,
-		ClientID: client.ID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-			Issuer:    "GlobeAndCitizen",
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(JWT_SECRET_BYTE)
-	if err != nil {
-		return models.LoginUserResponseOutput{}, err
-	}
-
-	resp := models.LoginUserResponseOutput{
-		Token: tokenString,
-	}
-
-	return resp, nil
 }
 
 func CompleteClientLoginv2(client models.Client) (token string, err error) {
