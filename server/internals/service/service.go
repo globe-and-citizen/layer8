@@ -233,13 +233,6 @@ func (u *Service) AccessResourcesWithToken(token string) (map[string]interface{}
 				return nil, err
 			}
 			resources["country_name"] = countryMetaData
-
-		case constants.READ_USER_TOP_FIVE_METADATA:
-			resources["hm_sec_ch_ua_platform"] = claims.HeaderMap["Sec-Ch-Ua-Platform"]
-			resources["hm_sec_fetch_site"] = claims.HeaderMap["Sec-Fetch-Site"]
-			resources["hm_referer"] = claims.HeaderMap["Referer"]
-			resources["hm_sec_ch_ua"] = claims.HeaderMap["Sec-Ch-Ua"]
-			resources["hm_user_agent"] = claims.HeaderMap["User-Agent"]
 		}
 	}
 	fmt.Println("resources check:", resources)
@@ -371,32 +364,39 @@ func (u *Service) GetZkUserMetadata(scopesStr string, userID int64) (*entities.Z
 
 	for _, scope := range scopes {
 		switch scope {
-		case "country":
+		case "read:user:country":
 			countryMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_COUNTRY_METADATA_KEY)
 			if err != nil {
 				return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get country metadata: %e", err)
 			}
 
 			zkMetadata.Country = countryMetadata.Value
-		case "email_verified":
-			emailMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_EMAIL_VERIFIED_METADATA_KEY)
-			if err != nil {
-				return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get email metadata: %e", err)
-			}
+		// case "email_verified":
+		// 	emailMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_EMAIL_VERIFIED_METADATA_KEY)
+		// 	if err != nil {
+		// 		return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get email metadata: %e", err)
+		// 	}
 
-			zkMetadata.IsEmailVerified = emailMetadata.Value == "true"
-		case "display_name":
+		// 	zkMetadata.IsEmailVerified = emailMetadata.Value == "true"
+		case "read:user:display_name":
 			displayNameMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_DISPLAY_NAME_METADATA_KEY)
 			if err != nil {
 				return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get display name metadata: %e", err)
 			}
 
 			zkMetadata.DisplayName = displayNameMetadata.Value
-		case "color":
+		case "read:user:color":
 			// TODO: implement
 			zkMetadata.Color = "red"
 		}
 	}
+
+	emailMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_EMAIL_VERIFIED_METADATA_KEY)
+	if err != nil {
+		return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get email metadata: %e", err)
+	}
+
+	zkMetadata.IsEmailVerified = emailMetadata.Value == "true"
 
 	return &zkMetadata, nil
 }

@@ -193,8 +193,16 @@ func (a *authorizationHandlerImpl) postAuthorizeHandler(w http.ResponseWriter, r
 		scopes = constants.READ_USER_SCOPE
 	}
 
-	if r.FormValue("share_details_with_SPA") == "true" {
-		scopes += "," + constants.SHARE_DETAILS_WITH_SPA
+	if r.FormValue("share_display_name") == "true" {
+		scopes += "," + constants.READ_USER_DISPLAY_NAME_SCOPE
+	}
+
+	if r.FormValue("share_country") == "true" {
+		scopes += "," + constants.READ_USER_COUNTRY_SCOPE
+	}
+
+	if r.FormValue("share_color") == "true" {
+		scopes += "," + constants.READ_USER_COLOR
 	}
 
 	redirectURL, err := a.service.GenerateAuthorizationURL(&oauth2.Config{
@@ -244,7 +252,6 @@ func (a *authorizationHandlerImpl) postAuthorizeHandler(w http.ResponseWriter, r
 			StatusCode: http.StatusOK,
 			// Data:       `{"redr": "` + redirectURL.String() + `"}`,
 			Data: `{"redr": "` + redirectURL.String() + `", "code": "` + code + `"}`,
-
 		},
 		&utils.RedirectResponseInput{
 			StatusCode: http.StatusSeeOther,
