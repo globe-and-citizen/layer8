@@ -29,13 +29,13 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, err := service.VerifyAuthorizationCode(req.ClientSecret, req.AuthorizationCode)
+	authClaims, err := service.DecodeAuthorizationCode(req.ClientSecret, req.AuthorizationCode)
 	if err != nil {
 		utils.HandleError(w, http.StatusBadRequest, "the authorization code is invalid", err)
 		return
 	}
 
-	accessToken, err := service.GenerateAccessToken(userId, req.ClientUUID, req.ClientSecret)
+	accessToken, err := service.GenerateAccessToken(authClaims, req.ClientUUID, req.ClientSecret)
 	if err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "internal error when generating the access token", err)
 		return

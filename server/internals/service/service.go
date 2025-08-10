@@ -31,9 +31,9 @@ type ServiceInterface interface {
 	VerifyToken(token string) (isvalid bool, err error)
 	CheckClient(backendURL string) (*models.Client, error)
 	SaveX509Certificate(clientID string, certificate string) error
-	VerifyAuthorizationCode(secret string, code string) (int64, error)
+	DecodeAuthorizationCode(secret string, code string) (*utilities.AuthCodeClaims, error)
 	AuthenticateClient(uuid string, secret string) error
-	GenerateAccessToken(userId int64, clientID string, clientSecret string) (string, error)
+	GenerateAccessToken(authClaims *utilities.AuthCodeClaims, clientID string, clientSecret string) (string, error)
 	ValidateAccessToken(clientSecret string, accessToken string) (*entities.ClientClaims, error)
 	GetZkUserMetadata(scopesStr string, userID int64) (*entities.ZkMetadataResponse, error)
 	AddTestClient() (*models.Client, error)
@@ -283,14 +283,14 @@ func (u *Service) SaveX509Certificate(clientID string, certificate string) error
 	return u.Repo.SaveX509Certificate(clientID, certificate)
 }
 
-func (u *Service) VerifyAuthorizationCode(secret string, code string) (userId int64, err error) {
+func (u *Service) DecodeAuthorizationCode(secret string, code string) (*utilities.AuthCodeClaims, error) {
 	// Decode the auth code
 	// verify the code
 	claims, err := utilities.DecodeAuthCode(secret, code)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode auth code: %v", err)
+		return nil, fmt.Errorf("failed to decode auth code: %v", err)
 	}
-	return claims.UserID, nil
+	return claims, nil
 }
 
 func (u *Service) AuthenticateClient(uuid string, secret string) error {
@@ -306,7 +306,11 @@ func (u *Service) AuthenticateClient(uuid string, secret string) error {
 	return nil
 }
 
-func (u *Service) GenerateAccessToken(userId int64, clientID string, clientSecret string) (string, error) {
+func (u *Service) GenerateAccessToken(
+	authClaims *utilities.AuthCodeClaims,
+	clientID string,
+	clientSecret string,
+) (string, error) {
 	claims := entities.ClientClaims{
 		StandardClaims: jwt.StandardClaims{
 			Issuer:    "Globe and Citizen",
@@ -314,9 +318,8 @@ func (u *Service) GenerateAccessToken(userId int64, clientID string, clientSecre
 			Subject:   clientID,
 			ExpiresAt: time.Now().Add(constants.AccessTokenValidityMinutes * time.Minute).UTC().Unix(),
 		},
-		// TODO: get Scopes and UserID from authorization code, mocked for now
-		Scopes: "country,email_verified,display_name,color",
-		UserID: userId,
+		Scopes: authClaims.Scopes,
+		UserID: authClaims.UserID,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
