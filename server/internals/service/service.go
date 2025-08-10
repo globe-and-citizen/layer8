@@ -8,7 +8,6 @@ import (
 	"globe-and-citizen/layer8/server/entities"
 	"globe-and-citizen/layer8/server/internals/repository"
 	"globe-and-citizen/layer8/server/models"
-	"globe-and-citizen/layer8/server/utils"
 	"os"
 	"strings"
 	"time"
@@ -66,21 +65,10 @@ func (u *Service) GetUserByToken(token string) (*models.User, error) {
 }
 
 func (u *Service) LoginUser(username, password string) (map[string]interface{}, error) {
-
-	userSalt, err := u.Repo.LoginUserPrecheck(username)
-	if err != nil {
-		return nil, err
-	}
-
-	HashedAndSaltedPass := utils.SaltAndHashPassword(password, userSalt)
-
+	// TODO: use SCRAM authentication here
 	user, err := u.Repo.GetUser(username)
 	if err != nil {
 		return nil, err
-	}
-
-	if user.Password != HashedAndSaltedPass {
-		return nil, fmt.Errorf("invalid password")
 	}
 
 	token, err := utilities.GenerateUserToken(config.SECRET_KEY, int64(user.ID))
@@ -420,7 +408,6 @@ func (u *Service) AddTestClient() (*models.Client, error) {
 		RedirectURI: "http://localhost:5173/oauth2/callback",
 		BackendURI:  os.Getenv("TEST_CLIENT_BACKEND_URL"),
 		Username:    "layer8",
-		Password:    rs_utils.SaltAndHashPassword("12341234", rmSalt),
 		Salt:        rmSalt,
 		// BackendURI:  "localhost:8000",
 	}

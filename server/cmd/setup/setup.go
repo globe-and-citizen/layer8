@@ -3,12 +3,19 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/hmac"
+	"crypto/sha1"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/xdg-go/pbkdf2"
 	"io"
+	"log"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
 	migrate "github.com/golang-migrate/migrate/v4"
@@ -122,31 +129,85 @@ func SetupPG() {
 		&zk.ProofProcessor{},
 	)
 
+	iterCount, err := strconv.Atoi(os.Getenv("SCRAM_ITERATION_COUNT"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if os.Getenv("CREATE_TEST_USER") == "true" {
-		resourceService.RegisterUser(
+		salt, err := resourceService.RegisterUserPrecheck(
+			dto.RegisterUserPrecheckDTO{Username: os.Getenv("TEST_USER_USERNAME")},
+			iterCount,
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		storedKey, serverKey := computeHmacKeys(os.Getenv("TEST_USER_PASSWORD"), salt, iterCount)
+
+		err = resourceService.RegisterUser(
 			dto.RegisterUserDTO{
-				Password:    os.Getenv("TEST_USER_PASSWORD"),
 				Username:    os.Getenv("TEST_USER_USERNAME"),
 				FirstName:   os.Getenv("TEST_USER_FIRST_NAME"),
 				LastName:    os.Getenv("TEST_USER_LAST_NAME"),
 				DisplayName: os.Getenv("TEST_USER_DISPLAY_NAME"),
 				Country:     os.Getenv("TEST_USER_COUNTRY"),
 				PublicKey:   make([]byte, 33),
+				StoredKey:   storedKey,
+				ServerKey:   serverKey,
 			},
 		)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if os.Getenv("CREATE_TEST_CLIENT") == "true" {
+		salt, err := resourceService.RegisterClientPrecheck(
+			dto.RegisterClientPrecheckDTO{
+				Username: os.Getenv("TEST_CLIENT_USERNAME"),
+			},
+			iterCount,
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		storedKey, serverKey := computeHmacKeys(os.Getenv("TEST_CLIENT_PASSWORD"), salt, iterCount)
+
 		resourceService.RegisterClient(
 			dto.RegisterClientDTO{
 				Name:        os.Getenv("TEST_CLIENT_NAME"),
-				Password:    os.Getenv("TEST_CLIENT_PASSWORD"),
 				Username:    os.Getenv("TEST_CLIENT_USERNAME"),
 				RedirectURI: os.Getenv("TEST_CLIENT_REDIRECT_URI"),
 				BackendURI:  utils.RemoveProtocolFromURL(os.Getenv("TEST_CLIENT_BACKEND_URI")),
+				StoredKey:   storedKey,
+				ServerKey:   serverKey,
 			},
 		)
 	}
+}
+
+func computeHmacKeys(password string, salt string, iterCount int) (storedKey string, serverKey string) {
+	saltBytes, _ := hex.DecodeString(salt)
+
+	hashedPassword := pbkdf2.Key(
+		[]byte(password),
+		saltBytes,
+		iterCount, 20, sha1.New,
+	)
+
+	clientKey := computeHmac256(hashedPassword, "Client Key")
+	serverKeyBytes := computeHmac256(hashedPassword, "Server Key")
+	storedKeyBytes := sha256.Sum256(clientKey)
+
+	return hex.EncodeToString(storedKeyBytes[:]), hex.EncodeToString(serverKeyBytes)
+}
+
+func computeHmac256(input []byte, key string) []byte {
+	hmacInstance := hmac.New(sha256.New, []byte(key))
+	hmacInstance.Write(input)
+	return hmacInstance.Sum(make([]byte, 0))
 }
 
 func SetupInfluxDB() {

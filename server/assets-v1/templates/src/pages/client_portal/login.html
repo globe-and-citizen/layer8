@@ -7,12 +7,10 @@
       rel="stylesheet"
       href="/assets-v1/templates/assets/styles/output.css"
     />
-    <link
-      rel="stylesheet"
-      href="/assets-v1/templates/assets/styles/base.css"
-    />
+    <link rel="stylesheet" href="/assets-v1/templates/assets/styles/base.css" />
     <title>Register | Layer8</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+    <script src="../assets-v1/templates/assets/js/scram-bundled.js"></script>
   </head>
   <body>
     <div id="app">
@@ -20,10 +18,16 @@
         <div class="client-container">
           <div class="grid grid-cols-1 md:grid-cols-2 bg-white h-dvh">
             <div class="self-center">
-              <h2 class="font-bold text-3xl text-[#3751FE] md:mb-24 mb-10 animate-slideFromLeft">
+              <h2
+                class="font-bold text-3xl text-[#3751FE] md:mb-24 mb-10 animate-slideFromLeft"
+              >
                 Client Portal
               </h2>
-              <h1 class="font-bold text-4xl text-[#3751FE] mb-11 animate-slideFromLeft">Login</h1>
+              <h1
+                class="font-bold text-4xl text-[#3751FE] mb-11 animate-slideFromLeft"
+              >
+                Login
+              </h1>
               <div class="mr-0 md:mr-16 lg:mr-28 animate-slideFromLeft">
                 <div class="relative border border-[#C1BBBB]">
                   <input
@@ -34,7 +38,7 @@
                     @focus="isUsernameFocused = true"
                     @blur="isUsernameFocused = false"
                     class="w-full px-4 pt-10 pb-3 border-l-4 focus:border-blue-500 focus:outline-none text-lg text-[#3751FE]"
-                    :placeholder="isUsernameFocused ? 'Username' : ' '"
+                    placeholder=" "
                   />
                   <label
                     for="username"
@@ -80,14 +84,19 @@
             <div class="hidden"></div>
           </div>
         </div>
-        <div class="hidden md:flex lg:flex items-center absolute lg:absolute bg-[#E5E5E5] right-0 top-0 pt-40 w-1/2 lg:w-1/2 h-dvh py-auto">
+        <div
+          class="hidden md:flex lg:flex items-center absolute lg:absolute bg-[#E5E5E5] right-0 top-0 pt-40 w-1/2 lg:w-1/2 h-dvh py-auto"
+        >
           <img
             class="m-auto mt-10 animate-slideFromRight"
             src="/assets-v1/templates/assets/images/client-image.png"
           />
         </div>
       </div>
-      <div :class="showToast ? 'opacity-100' : 'opacity-0 pointer-events-none'" class="fixed top-3 right-3 bg-red-500 text-white p-2 rounded-md transition-opacity ease-in-out duration-500 z-50">
+      <div
+        :class="showToast ? 'opacity-100' : 'opacity-0 pointer-events-none'"
+        class="fixed top-3 right-3 bg-red-500 text-white p-2 rounded-md transition-opacity ease-in-out duration-500 z-50"
+      >
         {{ toastMessage }}
       </div>
     </div>
@@ -102,6 +111,7 @@
       const isPasswordFocused = ref(false);
       const showToast = ref(false);
       const toastMessage = ref("");
+      const cNonce = ref("");
 
       const loginClient = async () => {
         try {
@@ -109,32 +119,94 @@
             showToastMessage("Please enter a username and password!", "error");
             return;
           }
-          const loginResult = await window.fetch("[[ .ProxyURL ]]/api/v1/login-client",{
+
+          cNonce.value = scram.generateCnonce();
+
+          const loginPrecheckResponse = await window.fetch(
+            "[[ .ProxyURL ]]/api/v1/login-client-precheck",
+            {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
                 username: username.value,
-                password: password.value,
+                c_nonce: cNonce.value,
               }),
             }
           );
-          const loginResponseBody = await loginResult.json();
-          if (loginResponseBody.token) {
-            localStorage.setItem("clientToken", loginResponseBody.token);
-            showToastMessage("Login successful!", "success");
-            window.location.href = "[[ .ProxyURL ]]/client-profile";
-          } else if (loginResponseBody.message) {
-            showToastMessage(loginResponseBody.message, "error");
+
+          const loginPrecheckResponseBody = await loginPrecheckResponse.json();
+          if (loginPrecheckResponse.status !== 200) {
+            showToastMessage("Failed to login", "error");
+            return;
+          }
+
+          const { data } = scram.keysHMAC(
+            password.value,
+            loginPrecheckResponseBody.data.salt,
+            loginPrecheckResponseBody.data.iter_count
+          );
+
+          const clientKeyBytes = scram.hexStringToBytes(data.clientKey);
+
+          const authMessage = `[n=${username.value},r=${cNonce.value},s=${loginPrecheckResponseBody.data.salt},i=${loginPrecheckResponseBody.data.iter_count},r=${loginPrecheckResponseBody.data.nonce}]`;
+
+          // Signature HMAC
+          const clientSignature = scram.signatureHMAC(
+            authMessage,
+            data.storedKey
+          );
+
+          const clientSignatureBytes = scram.hexStringToBytes(clientSignature);
+
+          const clientProofBytes = scram.xorBytes(
+            clientKeyBytes,
+            clientSignatureBytes
+          );
+
+          const clientProof = scram.bytesToHexString(clientProofBytes);
+
+          const loginResponse = await window.fetch(
+            "[[ .ProxyURL ]]/api/v1/login-client",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                username: username.value,
+                nonce: loginPrecheckResponseBody.data.nonce,
+                c_nonce: cNonce.value,
+                client_proof: clientProof,
+              }),
+            }
+          );
+          const loginResponseJSON = await loginResponse.json();
+
+          if (loginResponseJSON.data.server_signature) {
+            const serverSignatureCheck = scram.signatureHMAC(
+              authMessage,
+              data.serverKey
+            );
+
+            if (
+              serverSignatureCheck === loginResponseJSON.data.server_signature
+            ) {
+              localStorage.setItem("clientToken", loginResponseJSON.data.token);
+              showToastMessage("Login successful!", "success");
+              window.location.href = "[[ .ProxyURL ]]/client-profile";
+            }
+          } else if (loginResponseJSON.message) {
+            showToastMessage(loginResponseJSON.message, "error");
           } else {
-            showToastMessage("Something went wrong!", "error");
+            showToastMessage("Login failed, please try again later", "error");
           }
         } catch (error) {
           console.error(error);
           showToastMessage("Login failed!", "error");
         }
-      }
+      };
 
       const showToastMessage = (message, type) => {
         // Current param type is not used. But will be in the future
@@ -143,7 +215,7 @@
         setTimeout(() => {
           showToast.value = false;
         }, 3000);
-      }
+      };
 
       const app = createApp({
         setup() {
@@ -155,7 +227,7 @@
             isPasswordFocused,
             loginClient,
             toastMessage,
-            showToast
+            showToast,
           };
         },
       });

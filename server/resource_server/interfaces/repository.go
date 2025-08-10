@@ -9,36 +9,31 @@ import (
 
 type IRepository interface {
 	// Resource Server methods
-	RegisterUser(req dto.RegisterUserDTO, hashedPassword string, salt string) error
-	RegisterUserv2(req dto.RegisterUserDTOv2) error
 	FindUser(userId uint) (models.User, error)
-	LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string, error)
-	LoginPreCheckClient(req dto.LoginPrecheckDTO) (string, string, error)
-	LoginUser(req dto.LoginUserDTO) (models.User, error)
-	LoginClient(req dto.LoginClientDTO) (models.Client, error)
 	ProfileUser(userID uint) (models.User, []models.UserMetadata, error)
 	ProfileClient(username string) (models.Client, error)
 	SaveProofOfEmailVerification(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error
 	SaveEmailVerificationData(data models.EmailVerificationData) error
 	GetEmailVerificationData(userId uint) (models.EmailVerificationData, error)
 	UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error
-	RegisterClient(client models.Client) error
-	RegisterClientv2(req dto.RegisterClientDTOv2, clientUUID string, clientSecret string) error
+	RegisterUser(req dto.RegisterUserDTO) error
+	RegisterClient(req dto.RegisterClientDTO, clientUUID string, clientSecret string) error
 	GetClientData(clientName string) (models.Client, error)
 	GetClientDataByBackendURL(backendURL string) (models.Client, error)
 	IsBackendURIExists(backendURL string) (bool, error)
 	SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (uint, error)
 	GetLatestZkSnarksKeys() (models.ZkSnarksKeyPair, error)
 	GetUserForUsername(username string) (models.User, error)
-	UpdateUserPassword(username string, password string) error
-	UpdateUserPasswordV2(username string, storedKey string, serverKey string) error
+	UpdateUserPassword(username string, storedKey string, serverKey string) error
 	CreateClientTrafficStatisticsEntry(clientId string, rate int) error
 	AddClientTrafficUsage(clientId string, consumedBytes int, now time.Time) error
 	GetClientTrafficStatistics(clientId string) (*models.ClientTrafficStatistics, error)
 	PayClientTrafficUsage(clientId string, amountPaid int) error
 	GetAllClientStatistics() ([]models.ClientTrafficStatistics, error)
+	RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error
+	RegisterPrecheckClient(req dto.RegisterClientPrecheckDTO, salt string, iterCount int) error
+
 	// Oauth2 methods
-	LoginUserPrecheck(username string) (string, error)
 	GetUser(username string) (*serverModel.User, error)
 	GetUserByID(id int64) (*serverModel.User, error)
 	GetUserMetadata(userID int64, key string) (*serverModel.UserMetadata, error)
@@ -46,6 +41,4 @@ type IRepository interface {
 	GetClient(id string) (*serverModel.Client, error)
 	SetTTL(key string, value []byte, ttl time.Duration) error
 	GetTTL(key string) ([]byte, error)
-	RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error
-	RegisterPrecheckClient(req dto.RegisterClientPrecheckDTO, salt string, iterCount int) error
 }
