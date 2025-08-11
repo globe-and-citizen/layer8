@@ -42,9 +42,9 @@ type MockService struct {
 	verifyToken              func(token string) (isvalid bool, err error)
 	checkClient              func(backendURL string) (*models.Client, error)
 	saveX509Certificate      func(clientID string, certificate string) error
-	verifyAuthorizationCode  func(secret string, code string) (int64, error)
+	decodeAuthorizationCode  func(secret string, code string) (*utilities.AuthCodeClaims, error)
 	authenticateClient       func(uuid string, secret string) error
-	generateAccessToken      func(clientID string, clientSecret string) (string, error)
+	generateAccessToken      func(authClaims *utilities.AuthCodeClaims, clientID string, clientSecret string) (string, error)
 	validateAccessToken      func(clientSecret string, accessToken string) (*entities.ClientClaims, error)
 	getZkUserMetadata        func(scopesStr string, userID int64) (*entities.ZkMetadataResponse, error)
 	addTestClient            func() (*models.Client, error)
@@ -87,16 +87,16 @@ func (m MockService) SaveX509Certificate(clientID string, certificate string) er
 	return m.saveX509Certificate(clientID, certificate)
 }
 
-func (m MockService) VerifyAuthorizationCode(secret string, code string) (int64, error) {
-	return m.verifyAuthorizationCode(secret, code)
+func (m MockService) DecodeAuthorizationCode(secret string, code string) (*utilities.AuthCodeClaims, error) {
+	return m.decodeAuthorizationCode(secret, code)
 }
 
 func (m MockService) AuthenticateClient(uuid string, secret string) error {
 	return m.authenticateClient(uuid, secret)
 }
 
-func (m MockService) GenerateAccessToken(userId int64, clientID string, clientSecret string) (string, error) {
-	return m.generateAccessToken(clientID, clientSecret)
+func (m MockService) GenerateAccessToken(authClaims *utilities.AuthCodeClaims, clientID string, clientSecret string) (string, error) {
+	return m.generateAccessToken(authClaims, clientID, clientSecret)
 }
 
 func (m MockService) GenerateAuthJwtCode(config *oauth2.Config, userID int64) (string, error) {

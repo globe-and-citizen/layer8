@@ -22,54 +22,7 @@ func NewRepository(db *gorm.DB) interfaces.IRepository {
 	}
 }
 
-func (r *Repository) RegisterUser(req dto.RegisterUserDTO, hashedPassword string, salt string) error {
-	user := models.User{
-		Username:  req.Username,
-		Password:  hashedPassword,
-		FirstName: req.FirstName,
-		LastName:  req.LastName,
-		Salt:      salt,
-		PublicKey: req.PublicKey,
-	}
-
-	tx := r.connection.Begin()
-
-	err := tx.Create(&user).Error
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("could not create user: %e", err)
-	}
-
-	userMetadata := []models.UserMetadata{
-		{
-			UserID: user.ID,
-			Key:    "email_verified",
-			Value:  "false",
-		},
-		{
-			UserID: user.ID,
-			Key:    "country",
-			Value:  req.Country,
-		},
-		{
-			UserID: user.ID,
-			Key:    "display_name",
-			Value:  req.DisplayName,
-		},
-	}
-
-	err = tx.Create(&userMetadata).Error
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("could not create user metadata entry: %e", err)
-	}
-
-	tx.Commit()
-
-	return nil
-}
-
-func (r *Repository) RegisterUserv2(req dto.RegisterUserDTOv2) error {
+func (r *Repository) RegisterUser(req dto.RegisterUserDTO) error {
 	var user models.User
 
 	tx := r.connection.Begin()
@@ -130,15 +83,7 @@ func (r *Repository) FindUser(userId uint) (models.User, error) {
 	return user, e
 }
 
-func (r *Repository) RegisterClient(client models.Client) error {
-	if err := r.connection.Create(&client).Error; err != nil {
-		return fmt.Errorf("failed to create a new client record: %e", err)
-	}
-
-	return nil
-}
-
-func (r *Repository) RegisterClientv2(req dto.RegisterClientDTOv2, clientUUID string, clientSecret string) error {
+func (r *Repository) RegisterClient(req dto.RegisterClientDTO, clientUUID string, clientSecret string) error {
 	tx := r.connection.Begin()
 
 	result := tx.Model(&models.Client{}).
@@ -178,46 +123,6 @@ func (r *Repository) GetClientData(clientName string) (models.Client, error) {
 func (r *Repository) GetClientDataByBackendURL(backendURL string) (models.Client, error) {
 	var client models.Client
 	if err := r.connection.Where("backend_uri = ?", backendURL).First(&client).Error; err != nil {
-		return models.Client{}, err
-	}
-	return client, nil
-}
-
-func (r *Repository) LoginPreCheckUser(req dto.LoginPrecheckDTO) (string, string, error) {
-	var user models.User
-	if err := r.connection.Where("username = ?", req.Username).First(&user).Error; err != nil {
-		return "", "", err
-	}
-	return user.Username, user.Salt, nil
-}
-
-func (r *Repository) LoginPreCheckClient(req dto.LoginPrecheckDTO) (string, string, error) {
-	var client models.Client
-	// RAVI
-	// if err := config.DB.Where("username = ?", req.Username).First(&client).Error; err != nil {
-	// 	return "", "", err
-	// }
-	if err := r.connection.Where("username = ?", req.Username).First(&client).Error; err != nil {
-		return "", "", err
-	}
-	return client.Username, client.Salt, nil
-}
-
-func (r *Repository) LoginUser(req dto.LoginUserDTO) (models.User, error) {
-	var user models.User
-	if err := r.connection.Where("username = ?", req.Username).First(&user).Error; err != nil {
-		return models.User{}, err
-	}
-	return user, nil
-}
-
-func (r *Repository) LoginClient(req dto.LoginClientDTO) (models.Client, error) {
-	var client models.Client
-	// RAVI HERE
-	// if err := config.DB.Where("username = ?", req.Username).First(&client).Error; err != nil {
-	// 	return models.Client{}, err
-	// }
-	if err := r.connection.Where("username = ?", req.Username).First(&client).Error; err != nil {
 		return models.Client{}, err
 	}
 	return client, nil
@@ -357,17 +262,6 @@ func (r *Repository) GetUserForUsername(username string) (models.User, error) {
 	return user, nil
 }
 
-func (r *Repository) UpdateUserPassword(username string, hashedPassword string) error {
-	return r.connection.Model(&models.User{}).
-		Where("username = ?", username).
-		Update("password", hashedPassword).
-		Error
-}
-
-func (r *Repository) LoginUserPrecheck(username string) (string, error) {
-	return "", nil
-}
-
 func (r *Repository) GetUser(username string) (*serverModels.User, error) {
 	return &serverModels.User{}, nil
 }
@@ -433,7 +327,7 @@ func (r *Repository) RegisterPrecheckClient(req dto.RegisterClientPrecheckDTO, s
 	return nil
 }
 
-func (r *Repository) UpdateUserPasswordV2(username string, storedKey string, serverKey string) error {
+func (r *Repository) UpdateUserPassword(username string, storedKey string, serverKey string) error {
 	return r.connection.Model(&models.User{}).
 		Where("username=?", username).
 		Updates(map[string]interface{}{"stored_key": storedKey, "server_key": serverKey}).Error

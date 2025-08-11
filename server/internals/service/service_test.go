@@ -270,7 +270,10 @@ func TestGenerateAccessToken_Success(t *testing.T) {
 	mockRepo := &MockRepository{}
 	service := NewService(mockRepo)
 
-	accessToken, err := service.GenerateAccessToken(userID, clientID, clientSecret)
+	accessToken, err := service.GenerateAccessToken(
+		&utilities.AuthCodeClaims{UserID: userID, ClientID: clientID},
+		clientID,
+		clientSecret)
 	assert.Nil(t, err)
 
 	claims, err := service.ValidateAccessToken(clientSecret, accessToken)
