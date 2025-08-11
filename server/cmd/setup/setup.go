@@ -10,13 +10,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/xdg-go/pbkdf2"
 	"io"
 	"log"
 	"os"
 	"os/exec"
 	"strconv"
 	"time"
+
+	"github.com/xdg-go/pbkdf2"
 
 	migrate "github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -140,7 +141,9 @@ func SetupPG() {
 			iterCount,
 		)
 		if err != nil {
-			log.Fatal(err)
+			// log.Fatal(err)
+			fmt.Println(err)
+			return
 		}
 
 		storedKey, serverKey := computeHmacKeys(os.Getenv("TEST_USER_PASSWORD"), salt, iterCount)

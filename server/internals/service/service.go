@@ -31,9 +31,9 @@ type ServiceInterface interface {
 	VerifyToken(token string) (isvalid bool, err error)
 	CheckClient(backendURL string) (*models.Client, error)
 	SaveX509Certificate(clientID string, certificate string) error
-	VerifyAuthorizationCode(secret string, code string) (int64, error)
+	DecodeAuthorizationCode(secret string, code string) (*utilities.AuthCodeClaims, error)
 	AuthenticateClient(uuid string, secret string) error
-	GenerateAccessToken(userId int64, clientID string, clientSecret string) (string, error)
+	GenerateAccessToken(authClaims *utilities.AuthCodeClaims, clientID string, clientSecret string) (string, error)
 	ValidateAccessToken(clientSecret string, accessToken string) (*entities.ClientClaims, error)
 	GetZkUserMetadata(scopesStr string, userID int64) (*entities.ZkMetadataResponse, error)
 	AddTestClient() (*models.Client, error)
@@ -233,13 +233,6 @@ func (u *Service) AccessResourcesWithToken(token string) (map[string]interface{}
 				return nil, err
 			}
 			resources["country_name"] = countryMetaData
-
-		case constants.READ_USER_TOP_FIVE_METADATA:
-			resources["hm_sec_ch_ua_platform"] = claims.HeaderMap["Sec-Ch-Ua-Platform"]
-			resources["hm_sec_fetch_site"] = claims.HeaderMap["Sec-Fetch-Site"]
-			resources["hm_referer"] = claims.HeaderMap["Referer"]
-			resources["hm_sec_ch_ua"] = claims.HeaderMap["Sec-Ch-Ua"]
-			resources["hm_user_agent"] = claims.HeaderMap["User-Agent"]
 		}
 	}
 	fmt.Println("resources check:", resources)
@@ -283,14 +276,14 @@ func (u *Service) SaveX509Certificate(clientID string, certificate string) error
 	return u.Repo.SaveX509Certificate(clientID, certificate)
 }
 
-func (u *Service) VerifyAuthorizationCode(secret string, code string) (userId int64, err error) {
+func (u *Service) DecodeAuthorizationCode(secret string, code string) (*utilities.AuthCodeClaims, error) {
 	// Decode the auth code
 	// verify the code
 	claims, err := utilities.DecodeAuthCode(secret, code)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode auth code: %v", err)
+		return nil, fmt.Errorf("failed to decode auth code: %v", err)
 	}
-	return claims.UserID, nil
+	return claims, nil
 }
 
 func (u *Service) AuthenticateClient(uuid string, secret string) error {
@@ -306,7 +299,11 @@ func (u *Service) AuthenticateClient(uuid string, secret string) error {
 	return nil
 }
 
-func (u *Service) GenerateAccessToken(userId int64, clientID string, clientSecret string) (string, error) {
+func (u *Service) GenerateAccessToken(
+	authClaims *utilities.AuthCodeClaims,
+	clientID string,
+	clientSecret string,
+) (string, error) {
 	claims := entities.ClientClaims{
 		StandardClaims: jwt.StandardClaims{
 			Issuer:    "Globe and Citizen",
@@ -314,9 +311,8 @@ func (u *Service) GenerateAccessToken(userId int64, clientID string, clientSecre
 			Subject:   clientID,
 			ExpiresAt: time.Now().Add(constants.AccessTokenValidityMinutes * time.Minute).UTC().Unix(),
 		},
-		// TODO: get Scopes and UserID from authorization code, mocked for now
-		Scopes: "country,email_verified,display_name,color",
-		UserID: userId,
+		Scopes: authClaims.Scopes,
+		UserID: authClaims.UserID,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -368,32 +364,39 @@ func (u *Service) GetZkUserMetadata(scopesStr string, userID int64) (*entities.Z
 
 	for _, scope := range scopes {
 		switch scope {
-		case "country":
+		case "read:user:country":
 			countryMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_COUNTRY_METADATA_KEY)
 			if err != nil {
 				return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get country metadata: %e", err)
 			}
 
 			zkMetadata.Country = countryMetadata.Value
-		case "email_verified":
-			emailMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_EMAIL_VERIFIED_METADATA_KEY)
-			if err != nil {
-				return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get email metadata: %e", err)
-			}
+		// case "email_verified":
+		// 	emailMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_EMAIL_VERIFIED_METADATA_KEY)
+		// 	if err != nil {
+		// 		return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get email metadata: %e", err)
+		// 	}
 
-			zkMetadata.IsEmailVerified = emailMetadata.Value == "true"
-		case "display_name":
+		// 	zkMetadata.IsEmailVerified = emailMetadata.Value == "true"
+		case "read:user:display_name":
 			displayNameMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_DISPLAY_NAME_METADATA_KEY)
 			if err != nil {
 				return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get display name metadata: %e", err)
 			}
 
 			zkMetadata.DisplayName = displayNameMetadata.Value
-		case "color":
+		case "read:user:color":
 			// TODO: implement
 			zkMetadata.Color = "red"
 		}
 	}
+
+	emailMetadata, err := u.Repo.GetUserMetadata(userID, constants.USER_EMAIL_VERIFIED_METADATA_KEY)
+	if err != nil {
+		return &entities.ZkMetadataResponse{}, fmt.Errorf("failed to get email metadata: %e", err)
+	}
+
+	zkMetadata.IsEmailVerified = emailMetadata.Value == "true"
 
 	return &zkMetadata, nil
 }

@@ -5,14 +5,14 @@ const (
 	READ_USER_SCOPE              = "read:user"
 	READ_USER_DISPLAY_NAME_SCOPE = "read:user:display_name"
 	READ_USER_COUNTRY_SCOPE      = "read:user:country"
-	READ_USER_TOP_FIVE_METADATA  = "read:user:top_five_metadata"
-	SHARE_DETAILS_WITH_SPA       = "read:user:details"
+	READ_USER_COLOR              = "read:user:color"
 )
 
 const (
 	USER_DISPLAY_NAME_METADATA_KEY   = "display_name"
 	USER_COUNTRY_METADATA_KEY        = "country"
 	USER_EMAIL_VERIFIED_METADATA_KEY = "email_verified"
+	USER_COLOR_METADATA_KEY          = "color"
 )
 
 // Scope descriptions
