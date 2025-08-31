@@ -436,7 +436,7 @@ func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
+func UpdateUserMetadataHandler(w http.ResponseWriter, r *http.Request) {
 	if !validateHttpMethod(w, r.Method, http.MethodPost) {
 		return
 	}
@@ -450,18 +450,18 @@ func UpdateDisplayNameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request, err := utils.DecodeJsonFromRequest[dto.UpdateDisplayNameDTO](w, r.Body)
+	request, err := utils.DecodeJsonFromRequest[dto.UpdateUserMetadataDTO](w, r.Body)
 	if err != nil {
 		return
 	}
 
-	err = newService.UpdateDisplayName(userID, request)
+	err = newService.UpdateUserMetadata(userID, request)
 	if err != nil {
-		utils.HandleError(w, http.StatusBadRequest, "Failed to update display name", err)
+		utils.HandleError(w, http.StatusBadRequest, "Failed to update user's metadata", err)
 		return
 	}
 
-	resp := utils.BuildResponseWithNoBody(w, http.StatusOK, "Display name updated successfully")
+	resp := utils.BuildResponseWithNoBody(w, http.StatusOK, "User's metadata updated successfully")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		utils.HandleError(
 			w,

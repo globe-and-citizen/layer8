@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	"globe-and-citizen/layer8/server/constants"
 	"globe-and-citizen/layer8/server/models"
 	"os"
 	"strings"
@@ -24,8 +23,9 @@ const clientID = "clientID"
 const certificate = "certificate"
 const clientSecret = "client_secret"
 const userID int64 = 10
-const country = "some_country"
+const color = "some_color"
 const displayName = "some_display_name"
+const bio = "some_bio"
 
 func (m *MockRepository) GetClient(key string) (*models.Client, error) {
 	args := m.Called(key)
@@ -48,8 +48,8 @@ func (m *MockRepository) GetUser(username string) (*models.User, error)         
 func (m *MockRepository) SetTTL(key string, value []byte, expiration time.Duration) error { return nil }
 func (m *MockRepository) GetTTL(key string) ([]byte, error)                               { return nil, nil }
 
-func (m *MockRepository) GetUserMetadata(userID int64, key string) (*models.UserMetadata, error) {
-	returnValues := m.Called(userID, key)
+func (m *MockRepository) GetUserMetadata(userID int64) (*models.UserMetadata, error) {
+	returnValues := m.Called(userID)
 	if returnValues.Get(0) == nil {
 		return nil, returnValues.Error(1)
 	}
@@ -292,123 +292,89 @@ func TestGetZkUserMetadata_NoScopesProvided(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestGetZkUserMetadata_FailedToGetCountryMetadata(t *testing.T) {
-	scopes := "country"
+func TestGetZkUserMetadata_RepoFailedToReturnUserMetadata(t *testing.T) {
+	scopes := "color"
 
 	mockRepo := &MockRepository{}
 	mockRepo.On(
-		"GetUserMetadata", userID, constants.USER_COUNTRY_METADATA_KEY,
+		"GetUserMetadata", userID,
 	).Return(nil, fmt.Errorf("error"))
 	service := NewService(mockRepo)
 
 	_, err := service.GetZkUserMetadata(scopes, userID)
 
 	assert.NotNil(t, err)
-	assert.True(t, strings.HasPrefix(err.Error(), "failed to get country metadata:"))
+	assert.True(t, strings.HasPrefix(err.Error(), "failed to get user metadata:"))
 }
 
-func TestGetZkUserMetadata_FailedToGetEmailZkMetadata(t *testing.T) {
-	scopes := "country,email_verified"
+func TestGetZkUserMetadata_OnlyColorMetadataReturned(t *testing.T) {
+	scopes := "read:user:color"
+
 	mockRepo := &MockRepository{}
-
 	mockRepo.On(
-		"GetUserMetadata", userID, constants.USER_COUNTRY_METADATA_KEY,
-	).Return(&models.UserMetadata{UserID: userID}, nil)
-
-	mockRepo.On(
-		"GetUserMetadata", userID, constants.USER_EMAIL_VERIFIED_METADATA_KEY,
-	).Return(nil, fmt.Errorf("error"))
+		"GetUserMetadata", userID,
+	).Return(&models.UserMetadata{
+		ID:                    uint(userID),
+		DisplayName:           displayName,
+		Color:                 color,
+		Bio:                   bio,
+		IsEmailVerified:       true,
+		IsPhoneNumberVerified: true,
+	}, nil)
 
 	service := NewService(mockRepo)
-
-	_, err := service.GetZkUserMetadata(scopes, userID)
-
-	assert.NotNil(t, err)
-	assert.True(t, strings.HasPrefix(err.Error(), "failed to get email metadata:"))
-}
-
-func TestGetZkUserMetadata_FailedToGetDisplayNameMetadata(t *testing.T) {
-	scopes := "country,email_verified,display_name"
-	mockRepo := &MockRepository{}
-
-	mockRepo.On(
-		"GetUserMetadata", userID, constants.USER_COUNTRY_METADATA_KEY,
-	).Return(
-		&models.UserMetadata{
-			UserID: userID,
-			Key:    constants.USER_COUNTRY_METADATA_KEY,
-			Value:  country,
-		},
-		nil,
-	)
-
-	mockRepo.On(
-		"GetUserMetadata", userID, constants.USER_EMAIL_VERIFIED_METADATA_KEY,
-	).Return(
-		&models.UserMetadata{
-			UserID: userID,
-			Key:    constants.USER_EMAIL_VERIFIED_METADATA_KEY,
-			Value:  "true",
-		},
-		nil,
-	)
-
-	mockRepo.On(
-		"GetUserMetadata", userID, constants.USER_DISPLAY_NAME_METADATA_KEY,
-	).Return(nil, fmt.Errorf("error"))
-
-	service := NewService(mockRepo)
-
-	_, err := service.GetZkUserMetadata(scopes, userID)
-
-	assert.NotNil(t, err)
-	assert.True(t, strings.HasPrefix(err.Error(), "failed to get display name metadata:"))
-}
-
-func TestGetZkUserMetadata_Success(t *testing.T) {
-	scopes := "country,email_verified,display_name,color"
-	mockRepo := &MockRepository{}
-
-	mockRepo.On(
-		"GetUserMetadata", userID, constants.USER_COUNTRY_METADATA_KEY,
-	).Return(
-		&models.UserMetadata{
-			UserID: userID,
-			Key:    constants.USER_COUNTRY_METADATA_KEY,
-			Value:  country,
-		},
-		nil,
-	)
-
-	mockRepo.On(
-		"GetUserMetadata", userID, constants.USER_EMAIL_VERIFIED_METADATA_KEY,
-	).Return(
-		&models.UserMetadata{
-			UserID: userID,
-			Key:    constants.USER_EMAIL_VERIFIED_METADATA_KEY,
-			Value:  "true",
-		},
-		nil,
-	)
-
-	mockRepo.On(
-		"GetUserMetadata", userID, constants.USER_DISPLAY_NAME_METADATA_KEY,
-	).Return(
-		&models.UserMetadata{
-			UserID: userID,
-			Key:    constants.USER_DISPLAY_NAME_METADATA_KEY,
-			Value:  displayName,
-		},
-		nil,
-	)
-
-	service := NewService(mockRepo)
-
 	zkMetadata, err := service.GetZkUserMetadata(scopes, userID)
 
 	assert.Nil(t, err)
-	assert.Equal(t, country, zkMetadata.Country)
+	assert.Equal(t, color, zkMetadata.Color)
+	assert.Equal(t, "", zkMetadata.DisplayName)
+	assert.False(t, zkMetadata.IsEmailVerified)
+}
+
+func TestGetZkUserMetadata_ColorAndIsEmailVerifiedMetadataReturned(t *testing.T) {
+	scopes := "read:user:color,read:user:is_email_verified"
+	mockRepo := &MockRepository{}
+
+	mockRepo.On(
+		"GetUserMetadata", userID,
+	).Return(&models.UserMetadata{
+		ID:                    uint(userID),
+		DisplayName:           displayName,
+		Color:                 color,
+		Bio:                   bio,
+		IsEmailVerified:       true,
+		IsPhoneNumberVerified: true,
+	}, nil)
+
+	service := NewService(mockRepo)
+	zkMetadata, err := service.GetZkUserMetadata(scopes, userID)
+
+	assert.Nil(t, err)
+	assert.Equal(t, color, zkMetadata.Color)
+	assert.Equal(t, true, zkMetadata.IsEmailVerified)
+	assert.Equal(t, "", zkMetadata.DisplayName)
+}
+
+func TestGetZkUserMetadata_AllMetadataReturned(t *testing.T) {
+	scopes := "read:user:color,read:user:is_email_verified,read:user:display_name"
+	mockRepo := &MockRepository{}
+
+	mockRepo.On(
+		"GetUserMetadata", userID,
+	).Return(&models.UserMetadata{
+		ID:                    uint(userID),
+		DisplayName:           displayName,
+		Color:                 color,
+		Bio:                   bio,
+		IsEmailVerified:       true,
+		IsPhoneNumberVerified: true,
+	}, nil)
+
+	service := NewService(mockRepo)
+	zkMetadata, err := service.GetZkUserMetadata(scopes, userID)
+
+	assert.Nil(t, err)
+	assert.Equal(t, color, zkMetadata.Color)
+	assert.Equal(t, true, zkMetadata.IsEmailVerified)
 	assert.Equal(t, displayName, zkMetadata.DisplayName)
-	assert.Equal(t, "red", zkMetadata.Color)
-	assert.True(t, zkMetadata.IsEmailVerified)
 }

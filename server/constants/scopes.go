@@ -2,20 +2,19 @@ package constants
 
 // Scopes
 const (
-	READ_USER_SCOPE              = "read:user"
-	READ_USER_DISPLAY_NAME_SCOPE = "read:user:display_name"
-	READ_USER_COUNTRY_SCOPE      = "read:user:country"
-	READ_USER_COLOR              = "read:user:color"
+	ReadUserScope                = "read:user"
+	ReadUserDisplayNameScope     = "read:user:display_name"
+	ReadUserColorScope           = "read:user:color"
+	ReadUserIsEmailVerifiedScope = "read:user:is_email_verified"
 )
 
 const (
-	USER_DISPLAY_NAME_METADATA_KEY   = "display_name"
-	USER_COUNTRY_METADATA_KEY        = "country"
-	USER_EMAIL_VERIFIED_METADATA_KEY = "email_verified"
-	USER_COLOR_METADATA_KEY          = "color"
+	UserDisplayNameMetadataKey   = "display_name"
+	UserEmailVerifiedMetadataKey = "email_verified"
+	UserColorMetadataKey         = "color"
 )
 
 // Scope descriptions
 var ScopeDescriptions = map[string]string{
-	READ_USER_SCOPE: "read anonymized information about your account",
+	ReadUserScope: "read anonymized information about your account",
 }

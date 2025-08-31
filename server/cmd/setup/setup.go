@@ -141,23 +141,17 @@ func SetupPG() {
 			iterCount,
 		)
 		if err != nil {
-			// log.Fatal(err)
-			fmt.Println(err)
-			return
+			log.Fatal(err)
 		}
 
 		storedKey, serverKey := computeHmacKeys(os.Getenv("TEST_USER_PASSWORD"), salt, iterCount)
 
 		err = resourceService.RegisterUser(
 			dto.RegisterUserDTO{
-				Username:    os.Getenv("TEST_USER_USERNAME"),
-				FirstName:   os.Getenv("TEST_USER_FIRST_NAME"),
-				LastName:    os.Getenv("TEST_USER_LAST_NAME"),
-				DisplayName: os.Getenv("TEST_USER_DISPLAY_NAME"),
-				Country:     os.Getenv("TEST_USER_COUNTRY"),
-				PublicKey:   make([]byte, 33),
-				StoredKey:   storedKey,
-				ServerKey:   serverKey,
+				Username:  os.Getenv("TEST_USER_USERNAME"),
+				PublicKey: make([]byte, 33),
+				StoredKey: storedKey,
+				ServerKey: serverKey,
 			},
 		)
 		if err != nil {

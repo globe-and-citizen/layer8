@@ -21,10 +21,9 @@ import (
 
 const userId = 1
 const username = "test_user"
-const firstName = "first name"
-const lastName = "last name"
 const displayName = "display name"
-const country = "country"
+const color = "color"
+const bio = "some bio"
 const verificationCode = "123467"
 const userEmail = "user@email.com"
 const userSalt = "ThisIsARandomSalt123!@#"
@@ -88,6 +87,7 @@ type MockService struct {
 	loginPrecheckClient                func(req dto.LoginPrecheckDTO) (models.LoginPrecheckResponseOutput, error)
 	loginUser                          func(req dto.LoginUserDTO) (models.LoginUserResponseOutput, error)
 	loginClient                        func(req dto.LoginClientDTO) (models.LoginClientResponseOutput, error)
+	updateUserMetadata                 func(userID uint, req dto.UpdateUserMetadataDTO) error
 }
 
 func (ms *MockService) LoginPrecheckUser(req dto.LoginPrecheckDTO) (response models.LoginPrecheckResponseOutput, err error) {
@@ -127,9 +127,8 @@ func (ms *MockService) SaveProofOfEmailVerification(
 	return ms.saveProofOfEmailVerification(userID, verificationCode, zkProof, zkKeyPairId)
 }
 
-func (ms *MockService) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
-	// Mock implementation for testing purposes.
-	return nil
+func (ms *MockService) UpdateUserMetadata(userID uint, req dto.UpdateUserMetadataDTO) error {
+	return ms.updateUserMetadata(userID, req)
 }
 
 func (ms *MockService) RegisterClient(req dto.RegisterClientDTO) error {
@@ -160,7 +159,6 @@ func (ms *MockService) GetClientDataByBackendURL(backendURL string) (models.Clie
 }
 
 func (ms *MockService) CheckBackendURI(backendURL string) (bool, error) {
-	// Mock implementation for testing purposes.
 	return true, nil
 }
 
@@ -635,10 +633,9 @@ func TestProfileHandler_Success(t *testing.T) {
 		profileUser: func(userID uint) (models.ProfileResponseOutput, error) {
 			return models.ProfileResponseOutput{
 				Username:    username,
-				FirstName:   firstName,
-				LastName:    lastName,
 				DisplayName: displayName,
-				Country:     country,
+				Color:       color,
+				Bio:         bio,
 			}, nil
 		},
 	}
@@ -656,10 +653,9 @@ func TestProfileHandler_Success(t *testing.T) {
 	}
 
 	assert.Equal(t, username, response.Username)
-	assert.Equal(t, firstName, response.FirstName)
-	assert.Equal(t, lastName, response.LastName)
 	assert.Equal(t, displayName, response.DisplayName)
-	assert.Equal(t, country, response.Country)
+	assert.Equal(t, color, response.Color)
+	assert.Equal(t, bio, response.Bio)
 }
 
 func TestGetClientData_Success(t *testing.T) {
@@ -1193,17 +1189,17 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 	assert.Equal(t, nil, response.Data)
 }
 
-func TestUpdateDisplayNameHandler_InvalidHttpRequestMethod(t *testing.T) {
+func TestUpdateUserMetadataHandler_InvalidHttpRequestMethod(t *testing.T) {
 	requestBody := []byte(`{"display_name": "test_user"}`)
 
-	req, err := http.NewRequest("PUT", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("PUT", "/api/v1/update-user-metadata", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	rr := httptest.NewRecorder()
 
-	Ctl.UpdateDisplayNameHandler(rr, req)
+	Ctl.UpdateUserMetadataHandler(rr, req)
 
 	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
 
@@ -1214,9 +1210,9 @@ func TestUpdateDisplayNameHandler_InvalidHttpRequestMethod(t *testing.T) {
 	assert.NotNil(t, response.Error)
 }
 
-func TestUpdateDisplayNameHandler_AuthenticationTokenIsInvalid(t *testing.T) {
+func TestUpdateUserMetadataHandler_AuthenticationTokenIsInvalid(t *testing.T) {
 	requestBody := []byte(`{"display_name": "test_user"}`)
-	req, err := http.NewRequest("POST", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", "/api/v1/update-user-metadata", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1228,7 +1224,7 @@ func TestUpdateDisplayNameHandler_AuthenticationTokenIsInvalid(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	Ctl.UpdateDisplayNameHandler(rr, req)
+	Ctl.UpdateUserMetadataHandler(rr, req)
 
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 
@@ -1239,9 +1235,9 @@ func TestUpdateDisplayNameHandler_AuthenticationTokenIsInvalid(t *testing.T) {
 	assert.NotNil(t, response.Error)
 }
 
-func TestUpdateDisplayNameHandler_RequestJsonIsMalformed(t *testing.T) {
+func TestUpdateUserMetadataHandler_RequestJsonIsMalformed(t *testing.T) {
 	requestBody := []byte(`{"display_name": "test_user"}something_else`)
-	req, err := http.NewRequest("POST", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", "/api/v1/update-user-metadata", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1253,7 +1249,7 @@ func TestUpdateDisplayNameHandler_RequestJsonIsMalformed(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	Ctl.UpdateDisplayNameHandler(rr, req)
+	Ctl.UpdateUserMetadataHandler(rr, req)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
@@ -1264,9 +1260,9 @@ func TestUpdateDisplayNameHandler_RequestJsonIsMalformed(t *testing.T) {
 	assert.NotNil(t, response.Error)
 }
 
-func TestUpdateDisplayNameHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
+func TestUpdateUserMetadataHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
 	requestBody := []byte(`{}`)
-	req, err := http.NewRequest("POST", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", "/api/v1/update-user-metadata", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1278,7 +1274,7 @@ func TestUpdateDisplayNameHandler_RequiredRequestJsonFieldsAreMissing(t *testing
 
 	rr := httptest.NewRecorder()
 
-	Ctl.UpdateDisplayNameHandler(rr, req)
+	Ctl.UpdateUserMetadataHandler(rr, req)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
@@ -1289,29 +1285,88 @@ func TestUpdateDisplayNameHandler_RequiredRequestJsonFieldsAreMissing(t *testing
 	assert.NotNil(t, response.Error)
 }
 
-func TestUpdateDisplayNameHandler_Success(t *testing.T) {
-	requestBody := []byte(`{"display_name": "test_user"}`)
-	req, err := http.NewRequest("POST", "/api/v1/update-display-name", bytes.NewBuffer(requestBody))
+func TestUpdateUserMetadataHandler_ServiceFailedToUpdateUserMetadata(t *testing.T) {
+	requestBody := []byte(`{
+		"display_name": "display name", 
+		"color": "color",
+		"bio": "some bio"
+	}`)
+	req, err := http.NewRequest("POST", "/api/v1/update-user-metadata", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+authenticationToken)
 
-	mockService := &MockService{}
+	mockService := &MockService{
+		updateUserMetadata: func(userID uint, req dto.UpdateUserMetadataDTO) error {
+			if req.Bio != bio {
+				t.Fatalf("bio mismatch, expected %s, not %s", bio, req.Bio)
+			}
+			if req.Color != color {
+				t.Fatalf("color mismatch, expected %s, not %s", color, req.Color)
+			}
+			if req.DisplayName != displayName {
+				t.Fatalf("display name mismatch, expected %s, not %s", displayName, req.DisplayName)
+			}
+			return fmt.Errorf("failed to update user's metadata")
+		},
+	}
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
 
 	rr := httptest.NewRecorder()
 
-	Ctl.UpdateDisplayNameHandler(rr, req)
+	Ctl.UpdateUserMetadataHandler(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	response := decodeResponseBodyForErrorResponse(t, rr)
+
+	assert.False(t, response.IsSuccess)
+	assert.Equal(t, "Failed to update user's metadata", response.Message)
+	assert.NotNil(t, response.Error)
+}
+
+func TestUpdateUserMetadataHandler_Success(t *testing.T) {
+	requestBody := []byte(`{
+		"display_name": "display name", 
+		"color": "color",
+		"bio": "some bio"
+	}`)
+	req, err := http.NewRequest("POST", "/api/v1/update-user-metadata", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+authenticationToken)
+
+	mockService := &MockService{
+		updateUserMetadata: func(userID uint, req dto.UpdateUserMetadataDTO) error {
+			if req.Bio != bio {
+				t.Fatalf("bio mismatch, expected %s, not %s", bio, req.Bio)
+			}
+			if req.Color != color {
+				t.Fatalf("color mismatch, expected %s, not %s", color, req.Color)
+			}
+			if req.DisplayName != displayName {
+				t.Fatalf("display name mismatch, expected %s, not %s", displayName, req.DisplayName)
+			}
+
+			return nil
+		},
+	}
+	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
+
+	rr := httptest.NewRecorder()
+
+	Ctl.UpdateUserMetadataHandler(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
 	var response = decodeResponseBodyForErrorResponse(t, rr)
 
 	assert.True(t, response.IsSuccess)
-	assert.Equal(t, "Display name updated successfully", response.Message)
-	assert.Equal(t, nil, response.Data)
+	assert.Equal(t, "User's metadata updated successfully", response.Message)
 	assert.Nil(t, response.Error)
 }
 
@@ -1552,10 +1607,6 @@ func TestRegisterUserPrecheck_ServiceError(t *testing.T) {
 func TestRegisterUserHandler_InvalidHttpRequestMethod(t *testing.T) {
 	requestBody := []byte(`{
 		"username": "test_user",
-		"first_name": "Test",
-		"last_name": "User",
-		"display_name": "user",
-		"country": "Unknown",
 		"public_key": "0xaaaaaa",
 		"server_key": "0xbbbbbb",
 		"stored_key": "0xcccccc"
@@ -1583,10 +1634,6 @@ func TestRegisterUserHandler_InvalidHttpRequestMethod(t *testing.T) {
 func TestRegisterUserHandler_RequestJsonIsMalformed(t *testing.T) {
 	requestBody := []byte(`{
 		"username": "test_user",
-		"first_name": "Test",
-		"last_name": "User",
-		"display_name": "user",
-		"country": "Unknown",
 		"public_key": "0xaaaaaa",
 		"server_key": "0xbbbbbb",
 		"stored_key": "0xcccccc"
@@ -1599,7 +1646,6 @@ func TestRegisterUserHandler_RequestJsonIsMalformed(t *testing.T) {
 
 	mockService := &MockService{}
 	req = req.WithContext(context.WithValue(req.Context(), "service", mockService))
-	// setMockServiceInContext(req)
 
 	rr := httptest.NewRecorder()
 
@@ -1616,10 +1662,6 @@ func TestRegisterUserHandler_RequestJsonIsMalformed(t *testing.T) {
 
 func TestRegisterUserHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
 	requestBody := []byte(`{
-		"first_name": "Test",
-		"last_name": "User",
-		"display_name": "user",
-		"country": "Unknown",
 		"public_key": "0xaaaaaa",
 		"server_key": "0xbbbbbb",
 		"stored_key": "0xcccccc"
@@ -1647,13 +1689,8 @@ func TestRegisterUserHandler_RequiredRequestJsonFieldsAreMissing(t *testing.T) {
 }
 
 func TestRegisterUserHandler_ServiceError(t *testing.T) {
-	// Mock request body
 	requestBody := []byte(`{
 		"username": "test_user",
-		"first_name": "Test",
-		"last_name": "User",
-		"display_name": "user",
-		"country": "Unknown",
 		"public_key": "0xaaaaaa",
 		"server_key": "0xbbbbbb",
 		"stored_key": "0xcccccc"
@@ -1693,13 +1730,8 @@ func TestRegisterUserHandler_ServiceError(t *testing.T) {
 }
 
 func TestRegisterUserHandler_Success(t *testing.T) {
-	// Mock request body
 	requestBody := []byte(`{
 		"username": "test_user",
-		"first_name": "Test",
-		"last_name": "User",
-		"display_name": "user",
-		"country": "Unknown",
 		"public_key": "0xaaaaaa",
 		"server_key": "0xbbbbbb",
 		"stored_key": "0xcccccc"

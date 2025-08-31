@@ -26,7 +26,6 @@ type ZkMetadataRequest struct {
 }
 
 type ZkMetadataResponse struct {
-	Country         string `json:"country"`
 	IsEmailVerified bool   `json:"is_email_verified"`
 	DisplayName     string `json:"display_name"`
 	Color           string `json:"color"`
