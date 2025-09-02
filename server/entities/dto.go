@@ -29,4 +29,5 @@ type ZkMetadataResponse struct {
 	IsEmailVerified bool   `json:"is_email_verified"`
 	DisplayName     string `json:"display_name"`
 	Color           string `json:"color"`
+	Bio             string `json:"bio"`
 }

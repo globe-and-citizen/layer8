@@ -318,6 +318,8 @@ func (u *Service) GetZkUserMetadata(scopesStr string, userID int64) (*entities.Z
 
 	for _, scope := range scopes {
 		switch scope {
+		case constants.ReadUserBioScope:
+			zkMetadata.Bio = userMetadata.Bio
 		case constants.ReadUserColorScope:
 			zkMetadata.Color = userMetadata.Color
 		case constants.ReadUserDisplayNameScope:
@@ -325,7 +327,7 @@ func (u *Service) GetZkUserMetadata(scopesStr string, userID int64) (*entities.Z
 		case constants.ReadUserIsEmailVerifiedScope:
 			zkMetadata.IsEmailVerified = userMetadata.IsEmailVerified
 		default:
-			return &entities.ZkMetadataResponse{}, fmt.Errorf("invalid scopes provided")
+			continue
 		}
 	}
 

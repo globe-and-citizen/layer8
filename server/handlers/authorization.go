@@ -205,6 +205,10 @@ func (a *authorizationHandlerImpl) postAuthorizeHandler(w http.ResponseWriter, r
 		scopes += "," + constants.ReadUserIsEmailVerifiedScope
 	}
 
+	if r.FormValue("share_bio") == "true" {
+		scopes += "," + constants.ReadUserBioScope
+	}
+
 	redirectURL, err := a.service.GenerateAuthorizationURL(&oauth2.Config{
 		ClientID:    client.ID,
 		RedirectURL: client.RedirectURI,

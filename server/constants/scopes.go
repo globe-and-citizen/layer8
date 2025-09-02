@@ -5,6 +5,7 @@ const (
 	ReadUserScope                = "read:user"
 	ReadUserDisplayNameScope     = "read:user:display_name"
 	ReadUserColorScope           = "read:user:color"
+	ReadUserBioScope             = "read:user:bio"
 	ReadUserIsEmailVerifiedScope = "read:user:is_email_verified"
 )
 
@@ -12,6 +13,7 @@ const (
 	UserDisplayNameMetadataKey   = "display_name"
 	UserEmailVerifiedMetadataKey = "email_verified"
 	UserColorMetadataKey         = "color"
+	UserBioMetadataKey           = "bio"
 )
 
 // Scope descriptions

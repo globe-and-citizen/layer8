@@ -44,7 +44,7 @@ run_server: # Port 5001
 
 # Build and Push Docker Images
 build_server_image:
-	docker build --tag layer8-server-new --file Dockerfile .
+	docker build --tag layer8-server --file Dockerfile .
 
 build_sp_mocks_frontend_image:
 	cd sp_mocks/wgp/frontend && docker build --tag sp_mocks_frontend --file Dockerfile .
