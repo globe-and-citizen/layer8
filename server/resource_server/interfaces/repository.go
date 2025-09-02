@@ -10,12 +10,12 @@ import (
 type IRepository interface {
 	// Resource Server methods
 	FindUser(userId uint) (models.User, error)
-	ProfileUser(userID uint) (models.User, []models.UserMetadata, error)
+	ProfileUser(userID uint) (models.User, models.UserMetadata, error)
 	ProfileClient(username string) (models.Client, error)
 	SaveProofOfEmailVerification(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error
 	SaveEmailVerificationData(data models.EmailVerificationData) error
 	GetEmailVerificationData(userId uint) (models.EmailVerificationData, error)
-	UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error
+	UpdateUserMetadata(userID uint, req dto.UpdateUserMetadataDTO) error
 	RegisterUser(req dto.RegisterUserDTO) error
 	RegisterClient(req dto.RegisterClientDTO, clientUUID string, clientSecret string) error
 	GetClientData(clientName string) (models.Client, error)

@@ -18,7 +18,7 @@ type Repository interface {
 	GetUserByID(id int64) (*models.User, error)
 
 	// GetUserMetadata gets a user metadata by key.
-	GetUserMetadata(userID int64, key string) (*models.UserMetadata, error)
+	GetUserMetadata(userID int64) (*models.UserMetadata, error)
 
 	// Set a client for testing purposes
 	SetClient(client *models.Client) error

@@ -81,15 +81,13 @@
             </div>
             <div class="flex space-x-4 items-center">
               <div>
-                <div class="font-bold text-sm text-black text-end block">
-                  {{ user.first_name }} {{ user.last_name }}
-                </div>
-                <div class="font-bold text-xs text-[#8F8F8F] text-end">
+                <div class="font-bold text-sm text-[#8F8F8F] text-end">
                   {{ user.username }}
                 </div>
               </div>
               <img
-                src="/assets-v1/templates/assets/images/user_image.png"
+                class="w-12 h-12"
+                src="/assets-v1/templates/assets/images/user_avatar.png"
               />
             </div>
           </div>
@@ -106,7 +104,7 @@
                 </div>
                 <div class="flex space-x-5">
                   <button
-                    @click="changeDisplayName"
+                    @click="updateUserMetadata"
                     class="w-[128px] bg-white border-2 border-[#4F80E1] rounded-lg py-1 md:py-2 lg:py-3 font-medium text-[#4F80E1] hover:text-white hover:bg-[#4F80E1] hover:border-none"
                   >
                     Save change
@@ -131,39 +129,51 @@
               <div class="flex space-x-2 md:space-x-5 items-center mb-4 md:mb-8">
                 <img
                   class="w-12 md:w-16 h-12 md:h-16"
-                  src="/assets-v1/templates/assets/images/user_image.svg"
+                  src="/assets-v1/templates/assets/images/user_avatar.svg"
                 />
                 <div>
-                  <div class="font-bold text-sm text-black text-start block">
-                    {{ user.first_name }} {{ user.last_name }}
-                  </div>
-                  <div class="font-bold text-[10px] text-[#8F8F8F] text-start">
+                  <div class="font-bold text-sm text-[#8F8F8F] text-start">
                     {{ user.username }}
                   </div>
                 </div>
               </div>
-              <div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 md:gap-x-8 lg:gap-x-12 gap-y-3 md:gap-y-6 mb-6">
-                <div>
-                  <label class="font-normal text-black text-sm text-start mb-2 block">Username</label>
-                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" placeholder="Username" readonly :value="user.username" />
+              <div style="display: flex; flex-direction: row; gap: 2rem; margin-bottom: 1.5rem;">
+                <!-- Left side - User inputs -->
+                <div style="flex: none; width: 40%; display: flex; flex-direction: column; gap: 1rem;">
+                  <div>
+                    <label class="font-normal text-black text-sm text-start mb-2 block">Username</label>
+                    <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" placeholder="Username" readonly :value="user.username" />
+                  </div>
+                  <div>
+                    <label class="font-normal text-black text-sm text-start mb-2 block">Display Name</label>
+                    <input class="border border-[#BDC3CA] rounded-lg px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" type="text" v-model="newDisplayName" placeholder="Display Name" />
+                  </div>
+                  <div>
+                    <label class="font-normal text-black text-sm text-start mb-2 block">Favourite Color</label>
+                    <input class="border border-[#BDC3CA] rounded-lg px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" type="text" v-model="newColor" placeholder="Favourite Color" />
+                  </div>
                 </div>
-                <div>
-                  <label class="font-normal text-black text-sm text-start mb-2 block">First Name</label>
-                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" placeholder="First Name" readonly :value="user.first_name" />
+                
+                <!-- Right side - Bio section -->
+                <div style="flex: none; width: 60%;">
+                  <div>
+                    <label class="font-normal text-black text-sm text-start mb-2 block">Bio</label>
+                    <textarea class="border border-[#BDC3CA] rounded-lg px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full resize-none" rows="4" v-model="newBio" placeholder="Bio"></textarea>
+                  </div>
                 </div>
-                <div>
-                  <label class="font-normal text-black text-sm text-start mb-2 block">Last Name</label>
-                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" placeholder="Last Name" readonly :value="user.last_name" />
-                </div>
-                <div>
-                  <label class="font-normal text-black text-sm text-start mb-2 block">Country</label>
-                  <input class="border border-[#BDC3CA] rounded-lg bg-[#ECF4FD] px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" placeholder="Country" readonly :value="user.country" />
-                </div>
-                <div>
-                  <label class="font-normal text-black text-sm text-start mb-2 block">Display Name</label>
-                  <input class="border border-[#BDC3CA] rounded-lg px-2 md:px-3 lg:px-5 py-2 md:py-3 lg:py-4 text-start text-base text-[#8F8F8F] focus:outline-none w-full" type="text" v-model="newDisplayName" placeholder="Display Name" />
-                </div>
-                <div class="md:col-span-2 self-center text-base md:text-xl">Email is <span v-if="!user.email_verified">not</span> verified.</div>
+              </div>
+              
+              <!-- Verification section -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
+                <div class="self-center text-base md:text-xl">Phone number is <span v-if="!user.phone_number_verified">not</span> verified.</div>
+                <button
+                  v-if="!user.phone_number_verified"
+                  @click="verifyPhoneNumber"
+                  class="w-full bg-white border-2 border-[#4F80E1] rounded-lg py-2 md:py-3 lg:py-4 font-medium text-[#4F80E1] hover:text-white hover:bg-[#4F80E1] hover:border-none"
+                >
+                  Verify Phone Number
+                </button>
+                <div class="self-center text-base md:text-xl">Email is <span v-if="!user.email_verified">not</span> verified.</div>
                 <button
                   v-if="!user.email_verified"
                   @click="verifyEmail"
@@ -175,7 +185,7 @@
               <div class="block md:hidden lg:hidden">
                 <div class="flex justify-between items-center">
                   <button
-                    @click="changeDisplayName"
+                    @click="updateUserMetadata"
                     class="w-full bg-white border-2 border-[#4F80E1] rounded-lg py-2 font-medium text-[#4F80E1] hover:text-white hover:bg-[#4F80E1] hover:border-none"
                   >
                     Save change
@@ -194,14 +204,16 @@
       const token = ref(localStorage.getItem("token") || null);
       const user = ref({
         username: "",
-        first_name: "",
-        last_name: "",
         display_name: "",
-        country: "",
+        color: "",
+        bio: "",
         email_verified: false,
+        phone_number_verified: false
       });
-      const newDisplayName = ref("")
-      const isUserPortalSidebar = ref(false)
+      const newDisplayName = ref("");
+      const newColor = ref("");
+      const newBio = ref("");
+      const isUserPortalSidebar = ref(false);
 
       const getUserDetails = async () => {
         try {
@@ -215,9 +227,12 @@
               },
             }
           );
-          const data = await resp.json();
-          user.value = data;
-          newDisplayName.value = data.display_name
+
+          user.value = await resp.json();
+
+          newDisplayName.value = user.value.display_name;
+          newColor.value = user.value.color;
+          newBio.value = user.value.bio;
         } catch (error) {
           console.error(error);
         }
@@ -233,10 +248,14 @@
           window.location.href = "[[ .ProxyURL ]]/input-your-email-page";
       };
 
-      const changeDisplayName = async () => {
+      const verifyPhoneNumber = async () => {
+          // TODO: implement
+      }
+
+      const updateUserMetadata = async () => {
         try {
           const resp = await window.fetch(
-            "[[ .ProxyURL ]]/api/v1/change-display-name",
+            "[[ .ProxyURL ]]/api/v1/update-user-metadata",
             {
               method: "POST",
               headers: {
@@ -245,15 +264,18 @@
               },
               body: JSON.stringify({
                 display_name: newDisplayName.value,
+                color: newColor.value,
+                bio: newBio.value,
               }),
             }
           );
-          const data = await resp.json();
+
+          await resp.json();
+
           if (resp.status === 200) {
-            alert("Display name changed!");
-            user.value.display_name = newDisplayName.value;
+            alert("Data updated successfully!");
           } else {
-            alert("Display name change failed!");
+            alert("Failed to update your data, please try again later!");
           }
         } catch (error) {
           console.error(error);
@@ -273,11 +295,14 @@
 
           return {
             user,
-            changeDisplayName,
+            updateUserMetadata,
             verifyEmail,
+            verifyPhoneNumber,
             logoutUser,
-            newDisplayName,
             showSidebar,
+            newDisplayName,
+            newColor,
+            newBio,
             isUserPortalSidebar
           };
         },

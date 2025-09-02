@@ -36,8 +36,12 @@ func setUp(t *testing.T) {
 var mock sqlmock.Sqlmock
 var repo *repository.PostgresRepository
 
+const userID = 1
 const clientID = "clientID"
 const certificate = "certificate"
+const displayName = "display_name"
+const color = "color"
+const bio = "some bio"
 
 func TestLoginUserPrecheck(t *testing.T) {
 	setUp(t)
@@ -116,20 +120,27 @@ func TestGetUserByID(t *testing.T) {
 func TestGetUserMetadata(t *testing.T) {
 	setUp(t)
 
-	// Make a mock getUserMetadata input
-	userID := int64(1)
-	key := "test_key"
-
-	mock.ExpectQuery("SELECT (.+) FROM \"user_metadata\" WHERE user_id = (.+) AND key = (.+)").WithArgs(userID, key, 1).WillReturnRows(sqlmock.NewRows([]string{"id", "user_id", "key", "value"}).AddRow(1, 1, "test_key", "test_value"))
+	mock.ExpectQuery(
+		regexp.QuoteMeta(
+			`SELECT * FROM "user_metadata" WHERE id = $1 ORDER BY "user_metadata"."id" LIMIT $2`,
+		),
+	).WithArgs(
+		userID, 1,
+	).WillReturnRows(
+		sqlmock.NewRows(
+			[]string{"id", "display_name", "color", "bio", "is_email_verified", "is_phone_number_verified"},
+		).AddRow(userID, displayName, color, bio, false, false),
+	)
 
 	// Call the function and check the result
-	userMetadata, err := repo.GetUserMetadata(userID, key)
+	userMetadata, err := repo.GetUserMetadata(userID)
 	if err != nil {
 		t.Fatal("Failed to call GetUserMetadata:", err)
 	}
 
-	assert.Equal(t, "test_key", userMetadata.Key)
-	assert.Equal(t, "test_value", userMetadata.Value)
+	assert.Equal(t, displayName, userMetadata.DisplayName)
+	assert.Equal(t, color, userMetadata.Color)
+	assert.Equal(t, bio, userMetadata.Bio)
 
 	// Check if all expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {

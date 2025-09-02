@@ -49,9 +49,9 @@ func (r *PostgresRepository) GetUserByID(id int64) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *PostgresRepository) GetUserMetadata(userID int64, key string) (*models.UserMetadata, error) {
+func (r *PostgresRepository) GetUserMetadata(userID int64) (*models.UserMetadata, error) {
 	var userMetadata models.UserMetadata
-	err := r.db.Where("user_id = ? AND key = ?", userID, key).First(&userMetadata).Error
+	err := r.db.Where("id = ?", userID).First(&userMetadata).Error
 	if err != nil {
 		return &models.UserMetadata{}, err
 	}

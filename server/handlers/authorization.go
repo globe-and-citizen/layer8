@@ -56,7 +56,7 @@ func (a *authorizationHandlerImpl) getAuthorizeHandler(w http.ResponseWriter, r 
 
 	// use the default scope if none is provided
 	if scopes == "" {
-		scopes = constants.READ_USER_SCOPE
+		scopes = constants.ReadUserScope
 	}
 
 	// add the scope descriptions
@@ -190,19 +190,23 @@ func (a *authorizationHandlerImpl) postAuthorizeHandler(w http.ResponseWriter, r
 	}
 
 	if scopes == "" {
-		scopes = constants.READ_USER_SCOPE
+		scopes = constants.ReadUserScope
 	}
 
 	if r.FormValue("share_display_name") == "true" {
-		scopes += "," + constants.READ_USER_DISPLAY_NAME_SCOPE
-	}
-
-	if r.FormValue("share_country") == "true" {
-		scopes += "," + constants.READ_USER_COUNTRY_SCOPE
+		scopes += "," + constants.ReadUserDisplayNameScope
 	}
 
 	if r.FormValue("share_color") == "true" {
-		scopes += "," + constants.READ_USER_COLOR
+		scopes += "," + constants.ReadUserColorScope
+	}
+
+	if r.FormValue("share_is_email_verified") == "true" {
+		scopes += "," + constants.ReadUserIsEmailVerifiedScope
+	}
+
+	if r.FormValue("share_bio") == "true" {
+		scopes += "," + constants.ReadUserBioScope
 	}
 
 	redirectURL, err := a.service.GenerateAuthorizationURL(&oauth2.Config{

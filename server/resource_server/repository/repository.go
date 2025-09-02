@@ -32,8 +32,6 @@ func (r *Repository) RegisterUser(req dto.RegisterUserDTO) error {
 	}
 
 	err := tx.Model(&user).Updates(map[string]interface{}{
-		"first_name": req.FirstName,
-		"last_name":  req.LastName,
 		"public_key": req.PublicKey,
 		"stored_key": req.StoredKey,
 		"server_key": req.ServerKey,
@@ -43,22 +41,11 @@ func (r *Repository) RegisterUser(req dto.RegisterUserDTO) error {
 		return fmt.Errorf("could not update user: %e", err)
 	}
 
-	userMetadata := []models.UserMetadata{
-		{
-			UserID: user.ID,
-			Key:    "email_verified",
-			Value:  "false",
-		},
-		{
-			UserID: user.ID,
-			Key:    "country",
-			Value:  req.Country,
-		},
-		{
-			UserID: user.ID,
-			Key:    "display_name",
-			Value:  req.DisplayName,
-		},
+	userMetadata := models.UserMetadata{
+		ID:              user.ID,
+		IsEmailVerified: false,
+		DisplayName:     "",
+		Color:           "",
 	}
 
 	err = tx.Create(&userMetadata).Error
@@ -128,14 +115,14 @@ func (r *Repository) GetClientDataByBackendURL(backendURL string) (models.Client
 	return client, nil
 }
 
-func (r *Repository) ProfileUser(userID uint) (models.User, []models.UserMetadata, error) {
+func (r *Repository) ProfileUser(userID uint) (models.User, models.UserMetadata, error) {
 	var user models.User
 	if err := r.connection.Where("id = ?", userID).First(&user).Error; err != nil {
-		return models.User{}, []models.UserMetadata{}, err
+		return models.User{}, models.UserMetadata{}, err
 	}
-	var userMetadata []models.UserMetadata
-	if err := r.connection.Where("user_id = ?", userID).Find(&userMetadata).Error; err != nil {
-		return models.User{}, []models.UserMetadata{}, err
+	var userMetadata models.UserMetadata
+	if err := r.connection.Where("id = ?", userID).Find(&userMetadata).Error; err != nil {
+		return models.User{}, models.UserMetadata{}, err
 	}
 	return user, userMetadata, nil
 }
@@ -182,10 +169,8 @@ func (r *Repository) SaveProofOfEmailVerification(
 	err = tx.Model(
 		&models.UserMetadata{},
 	).Where(
-		"user_id = ? AND key = ?",
-		userId,
-		"email_verified",
-	).Update("value", "true").Error
+		"id = ?", userId,
+	).Update("is_email_verified", true).Error
 
 	if err != nil {
 		tx.Rollback()
@@ -222,8 +207,14 @@ func (r *Repository) GetEmailVerificationData(userId uint) (models.EmailVerifica
 	return data, nil
 }
 
-func (r *Repository) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
-	return r.connection.Model(&models.UserMetadata{}).Where("user_id = ? AND key = ?", userID, "display_name").Update("value", req.DisplayName).Error
+func (r *Repository) UpdateUserMetadata(userID uint, req dto.UpdateUserMetadataDTO) error {
+	return r.connection.Model(&models.UserMetadata{}).
+		Where("id = ?", userID).
+		Updates(models.UserMetadata{
+			DisplayName: req.DisplayName,
+			Color:       req.Color,
+			Bio:         req.Bio,
+		}).Error
 }
 
 func (r *Repository) SaveZkSnarksKeyPair(keyPair models.ZkSnarksKeyPair) (uint, error) {

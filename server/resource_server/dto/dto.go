@@ -1,14 +1,10 @@
 package dto
 
 type RegisterUserDTO struct {
-	Username    string `json:"username" validate:"required,min=3,max=50"`
-	FirstName   string `json:"first_name" validate:"required"`
-	LastName    string `json:"last_name"`
-	DisplayName string `json:"display_name"`
-	Country     string `json:"country"`
-	PublicKey   []byte `json:"public_key" validate:"required"`
-	StoredKey   string `json:"stored_key" validate:"required"`
-	ServerKey   string `json:"server_key" validate:"required"`
+	Username  string `json:"username" validate:"required,min=3,max=50"`
+	PublicKey []byte `json:"public_key" validate:"required"`
+	StoredKey string `json:"stored_key" validate:"required"`
+	ServerKey string `json:"server_key" validate:"required"`
 }
 
 type LoginUserDTO struct {
@@ -30,8 +26,10 @@ type LoginPrecheckDTO struct {
 	CNonce   string `json:"c_nonce" validate:"required"`
 }
 
-type UpdateDisplayNameDTO struct {
+type UpdateUserMetadataDTO struct {
 	DisplayName string `json:"display_name" validate:"required"`
+	Color       string `json:"color" validate:"required"`
+	Bio         string `json:"bio" validate:"required"`
 }
 
 type RegisterClientPrecheckDTO struct {

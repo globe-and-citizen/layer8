@@ -227,8 +227,6 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				authorizationHandler.Error(w, r)
 			case path == "/api/oauth":
 				authorizationHandler.OAuthToken(w, r)
-			case path == "/api/user":
-				handlers.UserInfo(w, r)
 			case path == "/sp-pub-key":
 				handlers.GetSPPubKey(w, r)
 			case path == "/api/upload-certificate":
@@ -283,8 +281,8 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.VerifyEmailHandler(w, r)
 			case path == "/api/v1/check-email-verification-code":
 				Ctl.CheckEmailVerificationCode(w, r)
-			case path == "/api/v1/change-display-name":
-				Ctl.UpdateDisplayNameHandler(w, r)
+			case path == "/api/v1/update-user-metadata":
+				Ctl.UpdateUserMetadataHandler(w, r)
 			case path == "/api/v1/usage-stats":
 				Ctl.GetUsageStats(w, r)
 			case path == "/api/v1/check-backend-uri":

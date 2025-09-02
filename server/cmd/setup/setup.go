@@ -36,22 +36,24 @@ import (
 )
 
 func main() {
-	ValidateDockerUpAndRunning()
+	if !(len(os.Args) > 1 && os.Args[1] == "docker") {
+		ValidateDockerUpAndRunning()
 
-	if err := CopyFile(".env.dev", ".env"); err != nil {
-		logrus.Fatal("failed to copy .dev.env file :", err)
-	}
+		if err := CopyFile(".env.dev", ".env"); err != nil {
+			logrus.Fatal("failed to copy .dev.env file :", err)
+		}
 
-	if err := AppendFileContent(".env.secret", ".env"); err != nil {
-		logrus.Fatal("failed to append .secret.env file :", err)
-	}
+		if err := AppendFileContent(".env.secret", ".env"); err != nil {
+			logrus.Fatal("failed to append .secret.env file :", err)
+		}
 
-	if err := godotenv.Load(); err != nil {
-		logrus.Fatal("failed to read configuration: ", err)
-	}
+		if err := godotenv.Load(); err != nil {
+			logrus.Fatal("failed to read configuration: ", err)
+		}
 
-	if err := RunDockerCompose(); err != nil {
-		logrus.Fatal("failed to run all necessary docker containers", err)
+		if err := RunDockerCompose(); err != nil {
+			logrus.Fatal("failed to run all necessary docker containers", err)
+		}
 	}
 
 	SetupPG()
@@ -76,7 +78,8 @@ func ValidateDockerUpAndRunning() {
 }
 
 func SetupPG() {
-	dsn := fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable", os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
+	logrus.Println("SetupPG pg dsn: ", dsn)
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		logrus.Fatal("failed to create postgresql connection instance")
@@ -97,8 +100,9 @@ func SetupPG() {
 		break
 	}
 
+	logrus.Println("migration path: ", fmt.Sprintf("file://%s", os.Getenv("DB_SETUP_MIGRATION_PATH")))
 	migration, err := migrate.New(
-		"file://../migrations",
+		fmt.Sprintf("file://%s", os.Getenv("DB_SETUP_MIGRATION_PATH")),
 		dsn,
 	)
 
@@ -141,23 +145,17 @@ func SetupPG() {
 			iterCount,
 		)
 		if err != nil {
-			// log.Fatal(err)
-			fmt.Println(err)
-			return
+			log.Fatal(err)
 		}
 
 		storedKey, serverKey := computeHmacKeys(os.Getenv("TEST_USER_PASSWORD"), salt, iterCount)
 
 		err = resourceService.RegisterUser(
 			dto.RegisterUserDTO{
-				Username:    os.Getenv("TEST_USER_USERNAME"),
-				FirstName:   os.Getenv("TEST_USER_FIRST_NAME"),
-				LastName:    os.Getenv("TEST_USER_LAST_NAME"),
-				DisplayName: os.Getenv("TEST_USER_DISPLAY_NAME"),
-				Country:     os.Getenv("TEST_USER_COUNTRY"),
-				PublicKey:   make([]byte, 33),
-				StoredKey:   storedKey,
-				ServerKey:   serverKey,
+				Username:  os.Getenv("TEST_USER_USERNAME"),
+				PublicKey: make([]byte, 33),
+				StoredKey: storedKey,
+				ServerKey: serverKey,
 			},
 		)
 		if err != nil {

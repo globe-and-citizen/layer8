@@ -60,35 +60,11 @@ func (m *MockRepository) UpdateUserPassword(username string, storedKey string, s
 	return m.UpdateUserPasswordMock(username, storedKey, serverKey)
 }
 
-func (m *MockRepository) ProfileUser(userID uint) (models.User, []models.UserMetadata, error) {
-	if userID == 1 {
-		return models.User{
-				Username:  "test_user",
-				FirstName: "Test",
-				LastName:  "User",
-				Salt:      "312c4a2c46405ba4f70f7be070f4d4f7cdede09d4b218bf77c01f9706d7505c9",
-			}, []models.UserMetadata{
-				{
-					UserID: 1,
-					Key:    "email_verified",
-					Value:  "true",
-				},
-				{
-					UserID: 1,
-					Key:    "display_name",
-					Value:  "user",
-				},
-				{
-					UserID: 1,
-					Key:    "country",
-					Value:  "Unknown",
-				},
-			}, nil
-	}
-	return models.User{}, []models.UserMetadata{}, fmt.Errorf("User not found")
+func (m *MockRepository) ProfileUser(userID uint) (models.User, models.UserMetadata, error) {
+	return models.User{}, models.UserMetadata{}, nil
 }
 
-func (m *MockRepository) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
+func (m *MockRepository) UpdateUserMetadata(userID uint, req dto.UpdateUserMetadataDTO) error {
 	return nil
 }
 

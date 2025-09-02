@@ -50,42 +50,6 @@
               />
             </div>
             <div class="mb-3">
-              <label class="text-sm text-[#414141] mb-1 block"
-                >First Name</label
-              >
-              <input
-                class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
-                v-model="registerFirstName"
-                placeholder="First Name"
-              />
-            </div>
-            <div class="mb-3">
-              <label class="text-sm text-[#414141] mb-1 block">Last Name</label>
-              <input
-                class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
-                v-model="registerLastName"
-                placeholder="Last Name"
-              />
-            </div>
-            <div class="mb-3">
-              <label class="text-sm text-[#414141] mb-1 block"
-                >Display Name</label
-              >
-              <input
-                class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
-                v-model="registerDisplayName"
-                placeholder="Display Name"
-              />
-            </div>
-            <div class="mb-3">
-              <label class="text-sm text-[#414141] mb-1 block">Country</label>
-              <input
-                class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
-                v-model="registerCountry"
-                placeholder="Country"
-              />
-            </div>
-            <div class="mb-12">
               <label class="text-sm text-[#414141] mb-1 block">Password</label>
               <input
                 class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
@@ -94,6 +58,15 @@
                 placeholder="Password"
               />
             </div>
+              <div class="mb-12">
+                  <label class="text-sm text-[#414141] mb-1 block">Confirm password</label>
+                  <input
+                      class="w-full bg-white rounded-md border border-[#EADFD8] py-2.5 px-3 placeholder:text-[#414141] focus:outline-none"
+                      v-model="confirmedPassword"
+                      type="password"
+                      placeholder="Confirm Password"
+                  />
+              </div>
             <button
               id="register-user-button"
               class="w-full bg-[#4F80E1] rounded-lg text-center text-white py-4 mb-4"
@@ -209,10 +182,7 @@
       const { createApp, computed, ref } = Vue;
       const registerUsername = ref("");
       const registerPassword = ref("");
-      const registerFirstName = ref("");
-      const registerLastName = ref("");
-      const registerDisplayName = ref("");
-      const registerCountry = ref("");
+      const confirmedPassword = ref("");
       const showToast = ref(false);
       const toastMessage = ref("");
       const currMnemonic = ref("");
@@ -234,16 +204,14 @@
 
       const registerUser = async () => {
         try {
-          if (
-            registerUsername.value === "" ||
-            registerPassword.value === "" ||
-            registerFirstName.value === "" ||
-            registerLastName.value === "" ||
-            registerDisplayName.value === "" ||
-            registerCountry.value === ""
-          ) {
+          if (registerUsername.value === "" || registerPassword.value === "" || confirmedPassword.value === "") {
             showToastMessage("Please enter all details!", "error");
             return;
+          }
+
+          if (registerPassword.value !== confirmedPassword.value) {
+              showToastMessage("Passwords do not match");
+              return;
           }
 
           currMnemonic.value = mnemonic.generateBip39Mnemonic();
@@ -283,10 +251,6 @@
               },
               body: JSON.stringify({
                 username: registerUsername.value,
-                first_name: registerFirstName.value,
-                last_name: registerLastName.value,
-                display_name: registerDisplayName.value,
-                country: registerCountry.value,
                 public_key: Array.from(keyPair.publicKey),
                 stored_key: data.storedKey,
                 server_key: data.serverKey,
@@ -323,11 +287,8 @@
             copyToClipboard,
             backToLogin,
             registerUsername,
-            registerFirstName,
-            registerLastName,
-            registerDisplayName,
-            registerCountry,
             registerPassword,
+            confirmedPassword,
             toastMessage,
             showToast,
             modalWindowActive,
