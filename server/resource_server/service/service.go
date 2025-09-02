@@ -221,22 +221,15 @@ func (s *service) ProfileUser(userID uint) (models.ProfileResponseOutput, error)
 	if err != nil {
 		return models.ProfileResponseOutput{}, err
 	}
-	profileResp := models.ProfileResponseOutput{
-		Username:  user.Username,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-	}
-	for _, data := range metadata {
-		switch data.Key {
-		case "display_name":
-			profileResp.DisplayName = data.Value
-		case "country":
-			profileResp.Country = data.Value
-		case "email_verified":
-			profileResp.EmailVerified = data.Value == "true"
-		}
-	}
-	return profileResp, nil
+
+	return models.ProfileResponseOutput{
+		Username:            user.Username,
+		DisplayName:         metadata.DisplayName,
+		Bio:                 metadata.Bio,
+		Color:               metadata.Color,
+		EmailVerified:       metadata.IsEmailVerified,
+		PhoneNumberVerified: metadata.IsPhoneNumberVerified,
+	}, nil
 }
 
 func (s *service) ProfileClient(username string) (models.ClientResponseOutput, error) {
@@ -310,8 +303,8 @@ func (s *service) SaveProofOfEmailVerification(
 	return s.repository.SaveProofOfEmailVerification(userId, verificationCode, zkProof, zkKeyPairId)
 }
 
-func (s *service) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
-	return s.repository.UpdateDisplayName(userID, req)
+func (s *service) UpdateUserMetadata(userID uint, req dto.UpdateUserMetadataDTO) error {
+	return s.repository.UpdateUserMetadata(userID, req)
 }
 
 func (s *service) CheckBackendURI(backendURL string) (bool, error) {

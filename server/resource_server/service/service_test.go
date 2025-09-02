@@ -26,10 +26,9 @@ const adminEmail = "admin@email.com"
 const username = "test_user"
 const password = "1234"
 const userEmail = "user@email.com"
-const firstName = "first_name"
-const lastName = "second_name"
 const displayName = "display_name"
-const country = "country"
+const color = "color"
+const bio = "bio"
 const verificationCode = "123456"
 const publicKey = "0xaaaaa"
 const cNonce = "1a7fa8e9dc2a68049358a08349cdde50"
@@ -71,6 +70,7 @@ var defaultMockSenderService = &mocks.MockEmailSenderService{
 
 type mockRepository struct {
 	findUser                     func(userId uint) (models.User, error)
+	profileUser                  func(userID uint) (models.User, models.UserMetadata, error)
 	saveEmailVerificationData    func(data models.EmailVerificationData) error
 	getEmailVerificationData     func(userId uint) (models.EmailVerificationData, error)
 	saveProofOfEmailVerification func(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error
@@ -81,6 +81,8 @@ type mockRepository struct {
 	getUserForUsername           func(username string) (models.User, error)
 	profileClient                func(username string) (models.Client, error)
 	updateUserPassword           func(username string, storedKey string, serverKey string) error
+	getUserMetadata              func(userID int64, key string) (*serverModels.UserMetadata, error)
+	updateUserMetadata           func(userID uint, req dto.UpdateUserMetadataDTO) error
 }
 
 func (m *mockRepository) FindUser(userId uint) (models.User, error) {
@@ -98,32 +100,8 @@ func (m *mockRepository) RegisterUser(req dto.RegisterUserDTO) error {
 	return m.registerUser(req)
 }
 
-func (m *mockRepository) ProfileUser(userID uint) (models.User, []models.UserMetadata, error) {
-	if userID == 1 {
-		return models.User{
-				Username:  "test_user",
-				FirstName: "Test",
-				LastName:  "User",
-				Salt:      "312c4a2c46405ba4f70f7be070f4d4f7cdede09d4b218bf77c01f9706d7505c9",
-			}, []models.UserMetadata{
-				{
-					UserID: 1,
-					Key:    "email_verified",
-					Value:  "true",
-				},
-				{
-					UserID: 1,
-					Key:    "display_name",
-					Value:  "user",
-				},
-				{
-					UserID: 1,
-					Key:    "country",
-					Value:  "Unknown",
-				},
-			}, nil
-	}
-	return models.User{}, []models.UserMetadata{}, fmt.Errorf("User not found")
+func (m *mockRepository) ProfileUser(userID uint) (models.User, models.UserMetadata, error) {
+	return m.profileUser(userID)
 }
 
 func (m *mockRepository) SaveProofOfEmailVerification(
@@ -140,8 +118,8 @@ func (m *mockRepository) GetEmailVerificationData(userId uint) (models.EmailVeri
 	return m.getEmailVerificationData(userId)
 }
 
-func (m *mockRepository) UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error {
-	return nil
+func (m *mockRepository) UpdateUserMetadata(userID uint, req dto.UpdateUserMetadataDTO) error {
+	return m.updateUserMetadata(userID, req)
 }
 
 func (m *mockRepository) RegisterPrecheckClient(req dto.RegisterClientPrecheckDTO, salt string, iterCount int) error {
@@ -177,7 +155,7 @@ func (m *mockRepository) GetUserByID(id int64) (*serverModels.User, error) {
 }
 
 func (m *mockRepository) GetUserMetadata(userID int64, key string) (*serverModels.UserMetadata, error) {
-	return &serverModels.UserMetadata{}, nil
+	return m.getUserMetadata(userID, key)
 }
 
 func (m *mockRepository) SetClient(client *serverModels.Client) error {
@@ -465,36 +443,72 @@ func TestLoginUser_Success(t *testing.T) {
 
 func TestProfileUser(t *testing.T) {
 	// Create a new mock repository
-	mockRepo := new(mockRepository)
+	mockRepo := &mockRepository{
+		profileUser: func(userID uint) (models.User, models.UserMetadata, error) {
+			if userID != userId {
+				t.Fatalf("userID mismatch, expected %d, got %d", userId, userID)
+			}
+
+			return models.User{
+					ID:       userID,
+					Username: username,
+				}, models.UserMetadata{
+					ID:          userID,
+					DisplayName: displayName,
+					Color:       color,
+					Bio:         bio,
+				}, nil
+		},
+	}
 
 	// Create a new service by passing the mock repository
 	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	// Call the ProfileUser method of the mock service
-	userDetails, err := mockService.ProfileUser(1)
+	userDetails, err := mockService.ProfileUser(userId)
 	if err != nil {
 		t.Error("Expected nil, got", err)
 	}
 
 	// Use assert to check if the error is nil
 	assert.Nil(t, err)
-	assert.Equal(t, userDetails.Username, username)
+	assert.Equal(t, username, userDetails.Username)
+	assert.Equal(t, displayName, userDetails.DisplayName)
+	assert.Equal(t, bio, userDetails.Bio)
+	assert.Equal(t, color, userDetails.Color)
 }
 
-func TestUpdateDisplayName(t *testing.T) {
-	// Create a new mock repository
-	mockRepo := new(mockRepository)
+func TestUpdateUserMetadata(t *testing.T) {
+	mockRepo := &mockRepository{
+		updateUserMetadata: func(userID uint, req dto.UpdateUserMetadataDTO) error {
+			if userID != userId {
+				t.Fatalf("userID mismatch, expected %d, got %d", userId, userID)
+			}
+			if req.DisplayName != displayName {
+				t.Fatalf("displayName mismatch, expected %s, got %s", displayName, req.DisplayName)
+			}
+			if req.Color != color {
+				t.Fatalf("color mismatch, expected %s, got %s", color, req.Color)
+			}
+			if req.Bio != bio {
+				t.Fatalf("bio mismatch, expected %s, got %s", bio, req.Bio)
+			}
+			return nil
+		},
+	}
 
 	// Create a new service by passing the mock repository
 	mockService := service.NewService(mockRepo, &verification.EmailVerifier{}, &mocks.MockProofGenerator{})
 
 	// Create a new mock request
-	req := dto.UpdateDisplayNameDTO{
-		DisplayName: "user",
+	req := dto.UpdateUserMetadataDTO{
+		DisplayName: displayName,
+		Color:       color,
+		Bio:         bio,
 	}
 
-	// Call the UpdateDisplayName method of the mock service
-	err := mockService.UpdateDisplayName(1, req)
+	// Call the UpdateUserMetadata method of the mock service
+	err := mockService.UpdateUserMetadata(userId, req)
 	if err != nil {
 		t.Error("Expected nil, got", err)
 	}
@@ -891,10 +905,8 @@ func TestGetUserForUsername_Success(t *testing.T) {
 			}
 
 			return models.User{
-				ID:        userId,
-				Username:  username,
-				FirstName: firstName,
-				LastName:  lastName,
+				ID:       userId,
+				Username: username,
 			}, nil
 		},
 	}
@@ -905,8 +917,6 @@ func TestGetUserForUsername_Success(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, userId, user.ID)
 	assert.Equal(t, username, user.Username)
-	assert.Equal(t, firstName, user.FirstName)
-	assert.Equal(t, lastName, user.LastName)
 }
 
 func TestValidateSignature_SignatureIsInvalid(t *testing.T) {
@@ -1021,10 +1031,6 @@ func TestRegisterUser_RepositoryFailedToStoreUserData(t *testing.T) {
 	mockRepo := &mockRepository{
 		registerUser: func(req dto.RegisterUserDTO) error {
 			assert.Equal(t, username, req.Username)
-			assert.Equal(t, firstName, req.FirstName)
-			assert.Equal(t, lastName, req.LastName)
-			assert.Equal(t, displayName, req.DisplayName)
-			assert.Equal(t, country, req.Country)
 			assert.Equal(t, []byte(publicKey), req.PublicKey)
 			assert.Equal(t, storedKey, req.StoredKey)
 			assert.Equal(t, serverKey, req.ServerKey)
@@ -1036,14 +1042,10 @@ func TestRegisterUser_RepositoryFailedToStoreUserData(t *testing.T) {
 
 	err := currService.RegisterUser(
 		dto.RegisterUserDTO{
-			Username:    username,
-			FirstName:   firstName,
-			LastName:    lastName,
-			DisplayName: displayName,
-			Country:     country,
-			PublicKey:   []byte(publicKey),
-			StoredKey:   storedKey,
-			ServerKey:   serverKey,
+			Username:  username,
+			PublicKey: []byte(publicKey),
+			StoredKey: storedKey,
+			ServerKey: serverKey,
 		},
 	)
 
@@ -1054,11 +1056,8 @@ func TestRegisterUser_Success(t *testing.T) {
 	mockRepo := &mockRepository{
 		registerUser: func(req dto.RegisterUserDTO) error {
 			assert.Equal(t, username, req.Username)
-			assert.Equal(t, firstName, req.FirstName)
-			assert.Equal(t, lastName, req.LastName)
-			assert.Equal(t, displayName, req.DisplayName)
-			assert.Equal(t, country, req.Country)
-
+			assert.Equal(t, storedKey, req.StoredKey)
+			assert.Equal(t, serverKey, req.ServerKey)
 			return nil
 		},
 	}
@@ -1066,14 +1065,10 @@ func TestRegisterUser_Success(t *testing.T) {
 
 	err := currService.RegisterUser(
 		dto.RegisterUserDTO{
-			Username:    username,
-			FirstName:   firstName,
-			LastName:    lastName,
-			DisplayName: displayName,
-			Country:     country,
-			PublicKey:   []byte(publicKey),
-			StoredKey:   storedKey,
-			ServerKey:   serverKey,
+			Username:  username,
+			PublicKey: []byte(publicKey),
+			StoredKey: storedKey,
+			ServerKey: serverKey,
 		},
 	)
 

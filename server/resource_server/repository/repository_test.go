@@ -26,7 +26,8 @@ const userFirstName = "first_name"
 const userLastName = "last_name"
 const userSalt = "user_salt"
 const userDisplayName = "display_name"
-const userCountry = "country"
+const userColor = "color"
+const userBio = "bio"
 
 const verificationCode = "123456"
 
@@ -170,18 +171,14 @@ func TestProfileUser_Success(t *testing.T) {
 	)
 
 	mock.ExpectQuery(
-		regexp.QuoteMeta(`SELECT * FROM "user_metadata" WHERE user_id = $1`),
+		regexp.QuoteMeta(`SELECT * FROM "user_metadata" WHERE id = $1`),
 	).WithArgs(
 		userId,
 	).WillReturnRows(
 		sqlmock.NewRows(
-			[]string{"id", "user_id", "key", "value"},
+			[]string{"id", "is_email_verified", "is_phone_number_verified", "display_name", "color", "bio"},
 		).AddRow(
-			1, userId, "email_verified", "true",
-		).AddRow(
-			2, userId, "display_name", "user",
-		).AddRow(
-			3, userId, "country", "Unknown",
+			userId, true, true, userDisplayName, userColor, userBio,
 		),
 	)
 
@@ -190,39 +187,37 @@ func TestProfileUser_Success(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, userId, user.ID)
 	assert.Equal(t, username, user.Username)
-	assert.Equal(t, userFirstName, user.FirstName)
-	assert.Equal(t, userLastName, user.LastName)
-	assert.Equal(t, userSalt, user.Salt)
-
-	for _, metadata := range userMetadata {
-		assert.Equal(t, userId, metadata.UserID)
-	}
+	assert.Equal(t, userDisplayName, userMetadata.DisplayName)
+	assert.Equal(t, userColor, userMetadata.Color)
+	assert.Equal(t, userBio, userMetadata.Bio)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("There were unfulfilled expectations: %s", err)
 	}
 }
 
-func TestUpdateDisplayName_TableUpdateFails(t *testing.T) {
+func TestUpdateUserMetadata_TableUpdateFails(t *testing.T) {
 	SetUp(t)
 	defer mockDB.Close()
 
 	mock.ExpectBegin()
 
 	mock.ExpectExec(
-		regexp.QuoteMeta(`UPDATE "user_metadata" SET "value"=$1,"updated_at"=$2 WHERE user_id = $3 AND key = $4`),
+		regexp.QuoteMeta(`UPDATE "user_metadata" SET "display_name"=$1,"color"=$2,"bio"=$3,"updated_at"=$4 WHERE id = $5`),
 	).WithArgs(
-		userDisplayName, sqlmock.AnyArg(), userId, "display_name",
+		userDisplayName, userColor, userBio, sqlmock.AnyArg(), userId,
 	).WillReturnError(
-		fmt.Errorf("failed to update display name"),
+		fmt.Errorf("failed to update user's metadata"),
 	)
 
 	mock.ExpectRollback()
 
-	err := repository.UpdateDisplayName(
+	err := repository.UpdateUserMetadata(
 		userId,
-		dto.UpdateDisplayNameDTO{
+		dto.UpdateUserMetadataDTO{
 			DisplayName: userDisplayName,
+			Color:       userColor,
+			Bio:         userBio,
 		},
 	)
 
@@ -233,26 +228,59 @@ func TestUpdateDisplayName_TableUpdateFails(t *testing.T) {
 	}
 }
 
-func TestUpdateDisplayName_Success(t *testing.T) {
+func TestUpdateUserMetadata_AllFieldsPopulated_Success(t *testing.T) {
 	SetUp(t)
 	defer mockDB.Close()
 
 	mock.ExpectBegin()
 
 	mock.ExpectExec(
-		regexp.QuoteMeta(`UPDATE "user_metadata" SET "value"=$1,"updated_at"=$2 WHERE user_id = $3 AND key = $4`),
+		regexp.QuoteMeta(`UPDATE "user_metadata" SET "display_name"=$1,"color"=$2,"bio"=$3,"updated_at"=$4 WHERE id = $5`),
 	).WithArgs(
-		userDisplayName, sqlmock.AnyArg(), userId, "display_name",
+		userDisplayName, userColor, userBio, sqlmock.AnyArg(), userId,
 	).WillReturnResult(
 		sqlmock.NewResult(1, 1),
 	)
 
 	mock.ExpectCommit()
 
-	err := repository.UpdateDisplayName(
+	err := repository.UpdateUserMetadata(
 		userId,
-		dto.UpdateDisplayNameDTO{
+		dto.UpdateUserMetadataDTO{
 			DisplayName: userDisplayName,
+			Color:       userColor,
+			Bio:         userBio,
+		},
+	)
+
+	assert.Nil(t, err)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestUpdateUserMetadata_MetadataUpdatedPartially_Success(t *testing.T) {
+	SetUp(t)
+	defer mockDB.Close()
+
+	mock.ExpectBegin()
+
+	mock.ExpectExec(
+		regexp.QuoteMeta(`UPDATE "user_metadata" SET "display_name"=$1,"color"=$2,"updated_at"=$3 WHERE id = $4`),
+	).WithArgs(
+		userDisplayName, userColor, sqlmock.AnyArg(), userId,
+	).WillReturnResult(
+		sqlmock.NewResult(1, 1),
+	)
+
+	mock.ExpectCommit()
+
+	err := repository.UpdateUserMetadata(
+		userId,
+		dto.UpdateUserMetadataDTO{
+			DisplayName: userDisplayName,
+			Color:       userColor,
 		},
 	)
 
@@ -604,12 +632,9 @@ func TestSaveProofOfEmailVerification_SettingUserStatusAsVerifiedFails(t *testin
 	)
 
 	mock.ExpectExec(
-		regexp.QuoteMeta(`UPDATE "user_metadata" SET "value"=$1,"updated_at"=$2 WHERE user_id = $3 AND key = $4`),
+		regexp.QuoteMeta(`UPDATE "user_metadata" SET "is_email_verified"=$1,"updated_at"=$2 WHERE id = $3`),
 	).WithArgs(
-		"true",
-		sqlmock.AnyArg(),
-		userId,
-		"email_verified",
+		true, sqlmock.AnyArg(), userId,
 	).WillReturnError(
 		fmt.Errorf(""),
 	)
@@ -648,12 +673,9 @@ func TestSaveProofOfEmailVerification_Success(t *testing.T) {
 	)
 
 	mock.ExpectExec(
-		regexp.QuoteMeta(`UPDATE "user_metadata" SET "value"=$1,"updated_at"=$2 WHERE user_id = $3 AND key = $4`),
+		regexp.QuoteMeta(`UPDATE "user_metadata" SET "is_email_verified"=$1,"updated_at"=$2 WHERE id = $3`),
 	).WithArgs(
-		"true",
-		sqlmock.AnyArg(),
-		userId,
-		"email_verified",
+		true, sqlmock.AnyArg(), userId,
 	).WillReturnResult(
 		sqlmock.NewResult(0, 1),
 	)
@@ -806,9 +828,9 @@ func TestGetUserForUsername_Success(t *testing.T) {
 		username, 1,
 	).WillReturnRows(
 		sqlmock.NewRows(
-			[]string{"id", "username", "first_name", "last_name", "salt"},
+			[]string{"id", "username", "salt", "stored_key", "server_key"},
 		).AddRow(
-			userId, username, userFirstName, userLastName, userSalt,
+			userId, username, userSalt, storedKey, serverKey,
 		),
 	)
 
@@ -817,9 +839,9 @@ func TestGetUserForUsername_Success(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, userId, user.ID)
 	assert.Equal(t, username, user.Username)
-	assert.Equal(t, userFirstName, user.FirstName)
-	assert.Equal(t, userLastName, user.LastName)
 	assert.Equal(t, userSalt, user.Salt)
+	assert.Equal(t, storedKey, user.StoredKey)
+	assert.Equal(t, serverKey, user.ServerKey)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("There were unfulfilled expectations: %s", err)
@@ -840,10 +862,10 @@ func TestRegisterPrecheckUser_Success(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`INSERT INTO "users" ("username","first_name","last_name","salt","email_proof","verification_code","zk_key_pair_id","public_key","iteration_count","server_key","stored_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING "id"`,
+			`INSERT INTO "users" ("username","salt","email_proof","verification_code","zk_key_pair_id","public_key","iteration_count","server_key","stored_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING "id"`,
 		),
 	).WithArgs(
-		req.Username, "", "", salt, sqlmock.AnyArg(), "", 0, sqlmock.AnyArg(), iterCount, sqlmock.AnyArg(), sqlmock.AnyArg(),
+		req.Username, salt, sqlmock.AnyArg(), "", 0, sqlmock.AnyArg(), iterCount, sqlmock.AnyArg(), sqlmock.AnyArg(),
 	).WillReturnRows(
 		sqlmock.NewRows([]string{"id"}).AddRow(1),
 	)
@@ -870,10 +892,10 @@ func TestRegisterPrecheckUser_RepositoryError(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`INSERT INTO "users" ("username","first_name","last_name","salt","email_proof","verification_code","zk_key_pair_id","public_key","iteration_count","server_key","stored_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING "id"`,
+			`INSERT INTO "users" ("username","salt","email_proof","verification_code","zk_key_pair_id","public_key","iteration_count","server_key","stored_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING "id"`,
 		),
 	).WithArgs(
-		req.Username, "", "", salt, sqlmock.AnyArg(), "", 0, sqlmock.AnyArg(), iterCount, sqlmock.AnyArg(), sqlmock.AnyArg(),
+		req.Username, salt, sqlmock.AnyArg(), "", 0, sqlmock.AnyArg(), iterCount, sqlmock.AnyArg(), sqlmock.AnyArg(),
 	).WillReturnError(fmt.Errorf("failed to create user"))
 
 	mock.ExpectRollback()
@@ -925,14 +947,10 @@ func TestRegisterUser_FailToGetUserRecord(t *testing.T) {
 	mock.ExpectRollback()
 
 	userDto := dto.RegisterUserDTO{
-		Username:    username,
-		FirstName:   userFirstName,
-		LastName:    userLastName,
-		Country:     userCountry,
-		DisplayName: userDisplayName,
-		PublicKey:   publicKey,
-		StoredKey:   storedKey,
-		ServerKey:   serverKey,
+		Username:  username,
+		PublicKey: publicKey,
+		StoredKey: storedKey,
+		ServerKey: serverKey,
 	}
 	err = repository.RegisterUser(userDto)
 
@@ -955,19 +973,19 @@ func TestRegisterUser_FailToUpdateUserRecord(t *testing.T) {
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{
-				"id", "username", "first_name", "last_name", "salt", "email_proof", "verification_code", "zk_key_pair_id", "public_key", "iteration_count", "server_key", "stored_key",
+				"id", "username", "salt", "email_proof", "verification_code", "zk_key_pair_id", "public_key", "iteration_count", "server_key", "stored_key",
 			},
 		).AddRow(
-			userId, username, userFirstName, userLastName, userSalt, emailProof, verificationCode, 0, publicKey, 4096, serverKey, storedKey,
+			userId, username, userSalt, emailProof, verificationCode, 0, publicKey, 4096, serverKey, storedKey,
 		),
 	)
 
 	mock.ExpectExec(
 		regexp.QuoteMeta(
-			`UPDATE "users" SET "first_name"=$1,"last_name"=$2,"public_key"=$3,"server_key"=$4,"stored_key"=$5 WHERE "id" = $6`,
+			`UPDATE "users" SET "public_key"=$1,"server_key"=$2,"stored_key"=$3 WHERE "id" = $4`,
 		),
 	).WithArgs(
-		userFirstName, userLastName, publicKey, serverKey, storedKey, userId,
+		publicKey, serverKey, storedKey, userId,
 	).WillReturnError(
 		fmt.Errorf("could not update user record"),
 	)
@@ -975,14 +993,10 @@ func TestRegisterUser_FailToUpdateUserRecord(t *testing.T) {
 	mock.ExpectRollback()
 
 	userDto := dto.RegisterUserDTO{
-		Username:    username,
-		FirstName:   userFirstName,
-		LastName:    userLastName,
-		Country:     userCountry,
-		DisplayName: userDisplayName,
-		PublicKey:   publicKey,
-		StoredKey:   storedKey,
-		ServerKey:   serverKey,
+		Username:  username,
+		PublicKey: publicKey,
+		StoredKey: storedKey,
+		ServerKey: serverKey,
 	}
 	err = repository.RegisterUser(userDto)
 
@@ -1005,44 +1019,40 @@ func TestRegisterUser_FailToInsertANewUserMetadataRecord(t *testing.T) {
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{
-				"id", "username", "first_name", "last_name", "salt", "email_proof", "verification_code", "zk_key_pair_id", "public_key", "iteration_count", "server_key", "stored_key",
+				"id", "username", "salt", "email_proof", "verification_code", "zk_key_pair_id", "public_key", "iteration_count", "server_key", "stored_key",
 			},
 		).AddRow(
-			userId, username, userFirstName, userLastName, userSalt, emailProof, verificationCode, 0, publicKey, 4096, serverKey, storedKey,
+			userId, username, userSalt, emailProof, verificationCode, 0, publicKey, 4096, serverKey, storedKey,
 		),
 	)
 
 	mock.ExpectExec(
 		regexp.QuoteMeta(
-			`UPDATE "users" SET "first_name"=$1,"last_name"=$2,"public_key"=$3,"server_key"=$4,"stored_key"=$5 WHERE "id" = $6`,
+			`UPDATE "users" SET "public_key"=$1,"server_key"=$2,"stored_key"=$3 WHERE "id" = $4`,
 		),
 	).WithArgs(
-		userFirstName, userLastName, publicKey, serverKey, storedKey, userId,
+		publicKey, serverKey, storedKey, userId,
 	).WillReturnResult(
 		sqlmock.NewResult(1, 1),
 	)
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`INSERT INTO "user_metadata" ("user_id","key","value") VALUES ($1,$2,$3),($4,$5,$6),($7,$8,$9) RETURNING "id","created_at","updated_at"`,
+			`INSERT INTO "user_metadata" ("display_name","color","bio","is_email_verified","is_phone_number_verified","id") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "created_at","updated_at","id"`,
 		),
 	).WithArgs(
-		userId, "email_verified", "false", userId, "country", userCountry, userId, "display_name", userDisplayName,
+		"", "", "", false, false, userId,
 	).WillReturnError(
-		fmt.Errorf("failed to insert a new user metadata record"),
+		fmt.Errorf(""),
 	)
 
 	mock.ExpectRollback()
 
 	userDto := dto.RegisterUserDTO{
-		Username:    username,
-		FirstName:   userFirstName,
-		LastName:    userLastName,
-		Country:     userCountry,
-		DisplayName: userDisplayName,
-		PublicKey:   publicKey,
-		StoredKey:   storedKey,
-		ServerKey:   serverKey,
+		Username:  username,
+		PublicKey: publicKey,
+		StoredKey: storedKey,
+		ServerKey: serverKey,
 	}
 	err = repository.RegisterUser(userDto)
 
@@ -1065,52 +1075,44 @@ func TestRegisterUser_Success(t *testing.T) {
 	).WillReturnRows(
 		sqlmock.NewRows(
 			[]string{
-				"id", "username", "first_name", "last_name", "salt", "email_proof", "verification_code", "zk_key_pair_id", "public_key", "iteration_count", "server_key", "stored_key",
+				"id", "username", "salt", "email_proof", "verification_code", "zk_key_pair_id", "public_key", "iteration_count", "server_key", "stored_key",
 			},
 		).AddRow(
-			userId, username, userFirstName, userLastName, userSalt, emailProof, verificationCode, 0, publicKey, 4096, serverKey, storedKey,
+			userId, username, userSalt, emailProof, verificationCode, 0, publicKey, 4096, serverKey, storedKey,
 		),
 	)
 
 	mock.ExpectExec(
 		regexp.QuoteMeta(
-			`UPDATE "users" SET "first_name"=$1,"last_name"=$2,"public_key"=$3,"server_key"=$4,"stored_key"=$5 WHERE "id" = $6`,
+			`UPDATE "users" SET "public_key"=$1,"server_key"=$2,"stored_key"=$3 WHERE "id" = $4`,
 		),
 	).WithArgs(
-		userFirstName, userLastName, publicKey, serverKey, storedKey, userId,
+		publicKey, serverKey, storedKey, userId,
 	).WillReturnResult(
 		sqlmock.NewResult(1, 1),
 	)
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`INSERT INTO "user_metadata" ("user_id","key","value") VALUES ($1,$2,$3),($4,$5,$6),($7,$8,$9) RETURNING "id","created_at","updated_at"`,
+			`INSERT INTO "user_metadata" ("display_name","color","bio","is_email_verified","is_phone_number_verified","id") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "created_at","updated_at","id"`,
 		),
 	).WithArgs(
-		userId, "email_verified", "false", userId, "country", userCountry, userId, "display_name", userDisplayName,
+		"", "", "", false, false, userId,
 	).WillReturnRows(
 		sqlmock.NewRows(
-			[]string{"user_id", "key", "value"},
+			[]string{"created_at", "updated_at", "id"},
 		).AddRow(
-			userId, "email_verified", "false",
-		).AddRow(
-			userId, "country", userCountry,
-		).AddRow(
-			userId, "display_name", userDisplayName,
+			time.Time{}, time.Time{}, userId,
 		),
 	)
 
 	mock.ExpectCommit()
 
 	userDto := dto.RegisterUserDTO{
-		Username:    username,
-		FirstName:   userFirstName,
-		LastName:    userLastName,
-		Country:     userCountry,
-		DisplayName: userDisplayName,
-		PublicKey:   publicKey,
-		StoredKey:   storedKey,
-		ServerKey:   serverKey,
+		Username:  username,
+		PublicKey: publicKey,
+		StoredKey: storedKey,
+		ServerKey: serverKey,
 	}
 	err = repository.RegisterUser(userDto)
 

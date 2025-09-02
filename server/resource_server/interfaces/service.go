@@ -20,7 +20,7 @@ type IService interface {
 		user models.User, request dto.CheckEmailVerificationCodeDTO,
 	) ([]byte, uint, error)
 	SaveProofOfEmailVerification(userID uint, verificationCode string, zkProof []byte, zkKeyPairId uint) error
-	UpdateDisplayName(userID uint, req dto.UpdateDisplayNameDTO) error
+	UpdateUserMetadata(userID uint, req dto.UpdateUserMetadataDTO) error
 	RegisterClient(req dto.RegisterClientDTO) error
 	GetClientData(clientName string) (models.ClientResponseOutput, error)
 	GetClientDataByBackendURL(backendURL string) (models.ClientResponseOutput, error)

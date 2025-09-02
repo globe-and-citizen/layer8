@@ -17,9 +17,10 @@ const clientUUID = "test_uuid"
 const clientSecret = "test_secret"
 const authorizationCode = "test_authorization_code"
 const accessToken = "test_access_token"
-const scopes = "country,email_verified"
+const scopes = "color,email_verified"
 const userID = 25
-const userCountry = "test_country"
+const displayName = "test_display_name"
+const color = "test_color"
 
 func TestTokenHandler_InvalidHttpMethod(t *testing.T) {
 	req, err := http.NewRequest(http.MethodGet, "/api/token", nil)
@@ -582,7 +583,8 @@ func TestZkMetadataHandler_UserZkMetadataServedSuccessfully(t *testing.T) {
 			}
 
 			return &entities.ZkMetadataResponse{
-				Country:         userCountry,
+				DisplayName:     displayName,
+				Color:           color,
 				IsEmailVerified: true,
 			}, nil
 		},
@@ -605,6 +607,7 @@ func TestZkMetadataHandler_UserZkMetadataServedSuccessfully(t *testing.T) {
 
 	resp := response.Data.(map[string]interface{})
 
-	assert.Equal(t, userCountry, resp["country"])
 	assert.Equal(t, true, resp["is_email_verified"])
+	assert.Equal(t, displayName, resp["display_name"])
+	assert.Equal(t, color, resp["color"])
 }
