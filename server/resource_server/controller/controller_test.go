@@ -73,7 +73,7 @@ type MockService struct {
 	verifyEmail                        func(userID uint, userEmail string) error
 	checkEmailVerificationCode         func(userID uint, code string) error
 	findUser                           func(userID uint) (models.User, error)
-	generateZkProofOfEmailVerification func(user models.User, request dto.CheckEmailVerificationCodeDTO) ([]byte, uint, error)
+	generateZkProofOfEmailVerification func(user models.User, input string, verificationCode string) ([]byte, uint, error)
 	saveProofOfEmailVerification       func(userID uint, verificationCode string, zkProof []byte, zkKeyPairId uint) error
 	profileUser                        func(userID uint) (models.ProfileResponseOutput, error)
 	getUserForUsername                 func(username string) (models.User, error)
@@ -114,11 +114,10 @@ func (ms *MockService) CheckEmailVerificationCode(userID uint, code string) erro
 	return ms.checkEmailVerificationCode(userID, code)
 }
 
-func (ms *MockService) GenerateZkProofOfEmailVerification(
-	user models.User,
-	request dto.CheckEmailVerificationCodeDTO,
+func (ms *MockService) GenerateZkProof(
+	user models.User, input string, verificationCode string,
 ) ([]byte, uint, error) {
-	return ms.generateZkProofOfEmailVerification(user, request)
+	return ms.generateZkProofOfEmailVerification(user, input, verificationCode)
 }
 
 func (ms *MockService) SaveProofOfEmailVerification(
@@ -193,6 +192,42 @@ func (m *MockService) RegisterUser(req dto.RegisterUserDTO) error {
 
 func (m *MockService) GetClientUnpaidAmount(_ string) (int, error) {
 	return 0, nil
+}
+
+func (m *MockService) RefreshTelegramMessages(baseURL string, offset int64) ([]dto.MessageUpdateDTO, error) {
+	return nil, nil
+}
+
+func (m *MockService) SendTelegramBotMessage(baseURL string, request dto.SendMessageRequestDTO) error {
+	return nil
+}
+
+func (m *MockService) GeneratePhoneNumberVerificationCode(user *models.User, phoneNumber string) (string, error) {
+	return "", nil
+}
+
+func (m *MockService) SavePhoneNumberVerificationData(userID uint, verificationCode string, zkProof []byte, zkPairID uint) error {
+	return nil
+}
+
+func (m *MockService) GetPhoneNumberVerificationData(userID uint) (models.PhoneNumberVerificationData, error) {
+	return models.PhoneNumberVerificationData{}, nil
+}
+
+func (m *MockService) CheckPhoneNumberVerificationCode(verificationCode string, verificationData models.PhoneNumberVerificationData) error {
+	return nil
+}
+
+func (m *MockService) SaveProofOfPhoneNumberVerification(verificationData models.PhoneNumberVerificationData) error {
+	return nil
+}
+
+func (m *MockService) GenerateTelegramSessionID() ([]byte, error) {
+	return nil, nil
+}
+
+func (m *MockService) SaveTelegramSessionID(userID uint, sessionID []byte) error {
+	return nil
 }
 
 func TestLoginPrecheckHandler_InvalidHttpRequestMethod(t *testing.T) {
@@ -1047,10 +1082,7 @@ func TestCheckEmailVerificationCode_ZkEmailProofFailedToBeGenerated(t *testing.T
 				Salt: userSalt,
 			}, nil
 		},
-		generateZkProofOfEmailVerification: func(
-			user models.User,
-			request dto.CheckEmailVerificationCodeDTO,
-		) ([]byte, uint, error) {
+		generateZkProofOfEmailVerification: func(user models.User, input string, verificationCode string) ([]byte, uint, error) {
 			return []byte{}, zkKeyPairId, fmt.Errorf("failed to generate the zk email proof")
 		},
 	}
@@ -1096,10 +1128,7 @@ func TestCheckEmailVerificationCode_FailedToSaveProofOfEmailVerification(t *test
 				Salt: userSalt,
 			}, nil
 		},
-		generateZkProofOfEmailVerification: func(
-			user models.User,
-			request dto.CheckEmailVerificationCodeDTO,
-		) ([]byte, uint, error) {
+		generateZkProofOfEmailVerification: func(user models.User, input string, verificationCode string) ([]byte, uint, error) {
 			return emailProof, zkKeyPairId, nil
 		},
 		saveProofOfEmailVerification: func(
@@ -1156,10 +1185,7 @@ func TestCheckEmailVerificationCode_Success(t *testing.T) {
 				Salt: userSalt,
 			}, nil
 		},
-		generateZkProofOfEmailVerification: func(
-			user models.User,
-			request dto.CheckEmailVerificationCodeDTO,
-		) ([]byte, uint, error) {
+		generateZkProofOfEmailVerification: func(user models.User, input string, verificationCode string) ([]byte, uint, error) {
 			return emailProof, zkKeyPairId, nil
 		},
 		saveProofOfEmailVerification: func(

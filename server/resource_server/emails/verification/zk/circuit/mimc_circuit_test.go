@@ -33,7 +33,7 @@ func TestMimcCircuit_ProverSucceeded(t *testing.T) {
 	test.NewAssert(t).ProverSucceeded(
 		circuit,
 		&MimcCircuit{
-			EmailAsVariables: emailAsVariables,
+			InputAsVariables: emailAsVariables,
 			SaltAsVariables:  saltAsVariables,
 			VerificationCode: codeAsVariables,
 		},
@@ -64,7 +64,7 @@ func TestMimcCircuit_ProverFailed(t *testing.T) {
 	test.NewAssert(t).ProverFailed(
 		circuit,
 		&MimcCircuit{
-			EmailAsVariables: emailAsVariables,
+			InputAsVariables: emailAsVariables,
 			SaltAsVariables:  saltAsVariables,
 			VerificationCode: codeAsVariables,
 		},

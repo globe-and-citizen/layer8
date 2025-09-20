@@ -76,3 +76,11 @@ type ResetPasswordDTO struct {
 type ClientUnpaidAmountDTO struct {
 	ClientId string `json:"client_id" validate:"required"`
 }
+
+type CheckPhoneNumberVerificationCodeDTO struct {
+	VerificationCode string `json:"verification_code"`
+}
+
+type TelegramSessionIdDTO struct {
+	SessionID string `json:"session_id"`
+}

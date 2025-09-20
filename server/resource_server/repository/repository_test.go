@@ -862,10 +862,10 @@ func TestRegisterPrecheckUser_Success(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`INSERT INTO "users" ("username","salt","email_proof","verification_code","zk_key_pair_id","public_key","iteration_count","server_key","stored_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING "id"`,
+			`INSERT INTO "users" ("username","verification_code","email_proof","zk_key_pair_id","phone_number_verification_code","phone_number_zk_proof","phone_number_zk_pair_id","public_key","salt","iteration_count","server_key","stored_key","telegram_session_id_hash") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING "id"`,
 		),
 	).WithArgs(
-		req.Username, salt, sqlmock.AnyArg(), "", 0, sqlmock.AnyArg(), iterCount, sqlmock.AnyArg(), sqlmock.AnyArg(),
+		req.Username, "", sqlmock.AnyArg(), 0, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), salt, iterCount, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
 	).WillReturnRows(
 		sqlmock.NewRows([]string{"id"}).AddRow(1),
 	)
@@ -892,10 +892,10 @@ func TestRegisterPrecheckUser_RepositoryError(t *testing.T) {
 
 	mock.ExpectQuery(
 		regexp.QuoteMeta(
-			`INSERT INTO "users" ("username","salt","email_proof","verification_code","zk_key_pair_id","public_key","iteration_count","server_key","stored_key") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING "id"`,
+			`INSERT INTO "users" ("username","verification_code","email_proof","zk_key_pair_id","phone_number_verification_code","phone_number_zk_proof","phone_number_zk_pair_id","public_key","salt","iteration_count","server_key","stored_key","telegram_session_id_hash") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING "id"`,
 		),
 	).WithArgs(
-		req.Username, salt, sqlmock.AnyArg(), "", 0, sqlmock.AnyArg(), iterCount, sqlmock.AnyArg(), sqlmock.AnyArg(),
+		req.Username, "", sqlmock.AnyArg(), 0, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), salt, iterCount, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
 	).WillReturnError(fmt.Errorf("failed to create user"))
 
 	mock.ExpectRollback()

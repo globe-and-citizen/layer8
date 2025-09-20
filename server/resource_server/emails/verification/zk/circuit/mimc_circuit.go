@@ -8,8 +8,8 @@ import (
 )
 
 type MimcCircuit struct {
-	SaltAsVariables  [utils.EmailFrRepresentationSize]frontend.Variable `gnark:",public"`
-	EmailAsVariables [utils.EmailFrRepresentationSize]frontend.Variable `gnark:",secret"`
+	SaltAsVariables  [utils.InputFrRepresentationSize]frontend.Variable `gnark:",public"`
+	InputAsVariables [utils.InputFrRepresentationSize]frontend.Variable `gnark:",secret"`
 
 	VerificationCode [utils.VerificationCodeSize]frontend.Variable `gnark:",public"`
 }
@@ -21,14 +21,14 @@ func NewMimcCircuit() *MimcCircuit {
 func (c *MimcCircuit) Define(api frontend.API) error {
 	mimcInstance, _ := mimc.NewMiMC(api)
 
-	for i := 0; i < utils.EmailFrRepresentationSize; i++ {
-		emailFrVariableBits := bits.ToBinary(api, c.EmailAsVariables[i])
+	for i := 0; i < utils.InputFrRepresentationSize; i++ {
+		inputFrVariableBits := bits.ToBinary(api, c.InputAsVariables[i])
 		saltFrVariableBits := bits.ToBinary(api, c.SaltAsVariables[i])
 
 		currentVariable := frontend.Variable(0)
 		powerOfTwo := frontend.Variable(1)
-		for j := 0; j < len(emailFrVariableBits); j++ {
-			xoredBit := api.Xor(emailFrVariableBits[j], saltFrVariableBits[j])
+		for j := 0; j < len(inputFrVariableBits); j++ {
+			xoredBit := api.Xor(inputFrVariableBits[j], saltFrVariableBits[j])
 			currentVariable = api.Add(currentVariable, api.Mul(xoredBit, powerOfTwo))
 			powerOfTwo = api.Mul(powerOfTwo, 2)
 		}

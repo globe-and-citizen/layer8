@@ -1,12 +1,18 @@
 package controller
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"globe-and-citizen/layer8/server/resource_server/db"
@@ -62,6 +68,14 @@ func InputVerificationCodePage(w http.ResponseWriter, r *http.Request) {
 
 func ResetPasswordPage(w http.ResponseWriter, r *http.Request) {
 	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/password_reset/reset-password-page.html")
+}
+
+func VerifyPhoneNumberPage(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/cellphone/verify-phone-number.html")
+}
+
+func InputPhoneNumberVerificationCodePage(w http.ResponseWriter, r *http.Request) {
+	ServeFileHandler(w, r, "assets-v1/templates/src/pages/user_portal/cellphone/input-verification-code.html")
 }
 
 func ServeFileHandler(w http.ResponseWriter, r *http.Request, filePath string) {
@@ -416,7 +430,7 @@ func CheckEmailVerificationCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	zkProof, zkKeyPairId, err := service.GenerateZkProofOfEmailVerification(user, request)
+	zkProof, zkKeyPairId, err := service.GenerateZkProof(user, request.Email, request.Code)
 	if err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Failed to generate zk proof of email verification", err)
 		return
@@ -562,21 +576,6 @@ func CheckBackendURI(w http.ResponseWriter, r *http.Request) {
 			err,
 		)
 	}
-}
-
-func validateHttpMethod(w http.ResponseWriter, actualMethod string, expectedMethod string) bool {
-	if actualMethod != expectedMethod {
-		errorMessage := fmt.Sprintf("Invalid http method. Expected %s", expectedMethod)
-		utils.HandleError(
-			w,
-			http.StatusMethodNotAllowed,
-			errorMessage,
-			fmt.Errorf(errorMessage),
-		)
-		return false
-	}
-
-	return true
 }
 
 func RegisterUserPrecheck(w http.ResponseWriter, r *http.Request) {
@@ -755,4 +754,288 @@ func ClientUnpaidAmountHandler(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Failed to encode the response", err)
 	}
+}
+
+func GenerateTelegramSessionIDHandler(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	tokenString := r.Header.Get("Authorization")
+	tokenString = tokenString[7:] // Remove the "Bearer " prefix
+	userID, err := utils.ValidateToken(tokenString)
+	if err != nil {
+		utils.HandleError(w, http.StatusUnauthorized, "Authentication error: invalid token", err)
+		return
+	}
+
+	sessionID, err := newService.GenerateTelegramSessionID()
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "failed to generate session id", err)
+		return
+	}
+
+	err = newService.SaveTelegramSessionID(userID, sessionID)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "failed to save the Telegram session id", err)
+		return
+	}
+
+	sessionIdDTO := dto.TelegramSessionIdDTO{
+		SessionID: base64.RawURLEncoding.EncodeToString(sessionID),
+	}
+
+	response := utils.BuildResponse(w, http.StatusOK, "session id generated", sessionIdDTO)
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		utils.HandleError(
+			w,
+			http.StatusInternalServerError,
+			"Internal error: could not encode response into json",
+			err,
+		)
+	}
+}
+
+func VerifyPhoneNumberViaTelegramBotHandler(w http.ResponseWriter, r *http.Request) {
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	tokenString := r.Header.Get("Authorization")
+	tokenString = tokenString[7:] // Remove the "Bearer " prefix
+	userID, err := utils.ValidateToken(tokenString)
+	if err != nil {
+		utils.HandleError(w, http.StatusUnauthorized, "Authentication error: invalid token", err)
+		return
+	}
+
+	user, err := newService.FindUser(userID)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "User not found for ID", err)
+	}
+
+	telegramAPIToken := os.Getenv("TELEGRAM_API_KEY")
+	if telegramAPIToken == "" {
+		log.Fatal("No Telegram API token provided")
+	}
+
+	baseURL := fmt.Sprintf(
+		"https://api.telegram.org/bot%s",
+		url.PathEscape(telegramAPIToken),
+	)
+
+	var offset int64 = 0
+	var telegramUserID int64 = 0
+
+	for {
+		updates, err := newService.RefreshTelegramMessages(baseURL, offset)
+		if err != nil {
+			log.Printf("failed to refresh messages from Telegram: %v\n", err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		foundStartMessage := false
+
+		for _, u := range updates {
+			offset = u.UpdateID + 1
+
+			if u.Message == nil || u.Message.Chat.Type != "private" {
+				continue
+			}
+
+			msg := u.Message
+
+			if !strings.HasPrefix(msg.Text, "/start ") {
+				continue
+			}
+
+			sessionID := msg.Text[7:]
+			if sessionID == "" {
+				continue
+			}
+
+			sessionIDBytes, err := base64.RawURLEncoding.DecodeString(sessionID)
+			if err != nil {
+				log.Printf("failed to decode session id %s, skipping\n", sessionID)
+				continue
+			}
+
+			sessionIDHash := sha256.Sum256(sessionIDBytes)
+
+			if bytes.Equal(user.TelegramSessionIDHash, sessionIDHash[:]) {
+				log.Printf("Found matching session id\n")
+
+				// Send a reply keyboard that *requests contact*.
+				kb := dto.ReplyKeyboardMarkup{
+					Keyboard: [][]dto.KeyboardButton{
+						{
+							{Text: "Share my phone", RequestContact: true},
+						},
+					},
+					ResizeKeyboard:  true,
+					OneTimeKeyboard: true,
+				}
+				text := "Hi! In order for us to verify your phone number, please tap the button below to allow Telegram sharing your phone number with us."
+
+				err := newService.SendTelegramBotMessage(baseURL, dto.SendMessageRequestDTO{
+					ChatID:      msg.Chat.ID,
+					Text:        text,
+					ParseMode:   "Markdown",
+					ReplyMarkup: kb,
+				})
+				if err != nil {
+					log.Printf("sendMessage error: %v", err)
+				}
+
+				foundStartMessage = true
+				telegramUserID = msg.From.ID
+				break
+			}
+		}
+
+		if foundStartMessage {
+			break
+		}
+	}
+
+	for {
+		updates, err := newService.RefreshTelegramMessages(baseURL, offset)
+		if err != nil {
+			log.Printf("failed to refresh messages from Telegram: %v\n", err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		for _, u := range updates {
+			offset = u.UpdateID + 1
+
+			if u.Message == nil || u.Message.Chat.Type != "private" {
+				continue
+			}
+
+			msg := u.Message
+
+			if msg.Contact == nil {
+				continue
+			}
+
+			// Validate the contact belongs to the sender.
+			if msg.From == nil || msg.Contact.UserID != msg.From.ID || msg.From.ID != telegramUserID {
+				continue
+			}
+
+			phoneNumber := strings.TrimSpace(msg.Contact.PhoneNumber)
+			fmt.Println(phoneNumber)
+
+			verificationCode, err := newService.GeneratePhoneNumberVerificationCode(&user, phoneNumber)
+			if err != nil {
+				utils.HandleError(w, http.StatusInternalServerError, "failed to generate the verification code", err)
+				return
+			}
+
+			// Remove keyboard after success.
+			err = newService.SendTelegramBotMessage(baseURL, dto.SendMessageRequestDTO{
+				ChatID: msg.Chat.ID,
+				Text: fmt.Sprintf(
+					"Thanks! Your verification code is: %s. You can go back to the Layer8 user portal now.",
+					verificationCode,
+				),
+				ReplyMarkup: dto.ReplyKeyboardRemove{
+					RemoveKeyboard: true,
+				},
+			})
+			if err != nil {
+				log.Printf("failed to send message from the Telegram bot: %v", err)
+				continue
+			}
+
+			zkProof, zkPairID, err := newService.GenerateZkProof(user, phoneNumber, verificationCode)
+			if err != nil {
+				utils.HandleError(w, http.StatusInternalServerError, "failed to generate the zk proof of phone number verification", err)
+				return
+			}
+
+			err = newService.SavePhoneNumberVerificationData(user.ID, verificationCode, zkProof, zkPairID)
+			if err != nil {
+				utils.HandleError(w, http.StatusInternalServerError, "failed to save proof of the phone number verification into the db", err)
+				return
+			}
+
+			log.Println("Phone number successfully verified, exiting")
+
+			apiResponse := utils.BuildResponseWithNoBody(w, http.StatusOK, "phone number is verified")
+
+			if err := json.NewEncoder(w).Encode(apiResponse); err != nil {
+				utils.HandleError(
+					w,
+					http.StatusInternalServerError,
+					"Internal error: could not encode response into json",
+					err,
+				)
+			}
+			return
+		}
+	}
+}
+
+func CheckPhoneNumberVerificationCode(w http.ResponseWriter, r *http.Request) {
+	if !validateHttpMethod(w, r.Method, http.MethodPost) {
+		return
+	}
+
+	newService := r.Context().Value("service").(interfaces.IService)
+
+	tokenString := r.Header.Get("Authorization")
+	tokenString = tokenString[7:] // Remove the "Bearer " prefix
+	userID, err := utils.ValidateToken(tokenString)
+	if err != nil {
+		utils.HandleError(w, http.StatusUnauthorized, "Authentication error: invalid token", err)
+		return
+	}
+
+	request, err := utils.DecodeJsonFromRequest[dto.CheckPhoneNumberVerificationCodeDTO](w, r.Body)
+	if err != nil {
+		return
+	}
+
+	verificationData, err := newService.GetPhoneNumberVerificationData(userID)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "user's verification data not found", err)
+		return
+	}
+
+	err = newService.CheckPhoneNumberVerificationCode(request.VerificationCode, verificationData)
+	if err != nil {
+		utils.HandleError(w, http.StatusBadRequest, "failed to validate the provided verification code", err)
+		return
+	}
+
+	err = newService.SaveProofOfPhoneNumberVerification(verificationData)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "failed to update phone number verification metadata in the db", err)
+		return
+	}
+
+	response := utils.BuildResponseWithNoBody(w, http.StatusOK, "Your phone number is verified successfully! Congratulations!")
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "failed to encode response into json", err)
+	}
+}
+
+func validateHttpMethod(w http.ResponseWriter, actualMethod string, expectedMethod string) bool {
+	if actualMethod != expectedMethod {
+		errorMessage := fmt.Sprintf("Invalid http method. Expected %s", expectedMethod)
+		utils.HandleError(
+			w,
+			http.StatusMethodNotAllowed,
+			errorMessage,
+			fmt.Errorf(errorMessage),
+		)
+		return false
+	}
+
+	return true
 }

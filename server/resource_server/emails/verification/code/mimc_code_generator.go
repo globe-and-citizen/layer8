@@ -15,10 +15,10 @@ func NewMIMCCodeGenerator() *MIMCCodeGenerator {
 	return new(MIMCCodeGenerator)
 }
 
-func (g *MIMCCodeGenerator) GenerateCode(user *models.User, emailAddress string) (string, error) {
+func (g *MIMCCodeGenerator) GenerateCode(user *models.User, input string) (string, error) {
 	mimcInstance := mimc.NewMiMC()
 
-	frEmail, err := utils.StringToFrElements(emailAddress)
+	frInput, err := utils.StringToFrElements(input)
 	if err != nil {
 		return "", err
 	}
@@ -28,17 +28,17 @@ func (g *MIMCCodeGenerator) GenerateCode(user *models.User, emailAddress string)
 		return "", err
 	}
 
-	encryptedEmail := make([]byte, utils.EmailFrRepresentationSize*mimc.BlockSize)
+	encryptedInput := make([]byte, utils.InputFrRepresentationSize*mimc.BlockSize)
 
-	for i := 0; i < utils.EmailFrRepresentationSize; i++ {
-		emailElementBytes := frEmail[i].Bytes()
+	for i := 0; i < utils.InputFrRepresentationSize; i++ {
+		inputElementBytes := frInput[i].Bytes()
 		saltElementBytes := frSalt[i].Bytes()
 		for j := 0; j < fr.Bytes; j++ {
-			encryptedEmail[i*fr.Bytes+j] = emailElementBytes[j] ^ saltElementBytes[j]
+			encryptedInput[i*fr.Bytes+j] = inputElementBytes[j] ^ saltElementBytes[j]
 		}
 	}
 
-	_, err = mimcInstance.Write(encryptedEmail)
+	_, err = mimcInstance.Write(encryptedInput)
 	if err != nil {
 		return "", fmt.Errorf("error while writing data into the hmac instance: %e", err)
 	}
