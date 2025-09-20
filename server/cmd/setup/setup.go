@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
 	"io"
 	"log"
 	"os"
@@ -132,6 +133,7 @@ func SetupPG() {
 		repository.NewRepository(config.DB),
 		&verification.EmailVerifier{},
 		&zk.ProofProcessor{},
+		code.NewMIMCCodeGenerator(),
 	)
 
 	iterCount, err := strconv.Atoi(os.Getenv("SCRAM_ITERATION_COUNT"))

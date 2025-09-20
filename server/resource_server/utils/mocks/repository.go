@@ -10,17 +10,21 @@ import (
 )
 
 type MockRepository struct {
-	RegisterClientMock               func(client models.Client) error
-	FindUserMock                     func(userId uint) (models.User, error)
-	SaveEmailVerificationDataMock    func(data models.EmailVerificationData) error
-	GetEmailVerificationDataMock     func(userId uint) (models.EmailVerificationData, error)
-	SaveProofOfEmailVerificationMock func(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error
-	GetUserForUsernameMock           func(username string) (models.User, error)
-	RegisterUserPrecheckMock         func(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error
-	RegisterUserMock                 func(req dto.RegisterUserDTO) error
-	UpdateUserPasswordMock           func(username string, storedKey string, serverKey string) error
-	DeleteEmailVerificationDataMock  func(userId uint) error
-	SetUserEmailVerifiedMock         func(userID uint) error
+	RegisterClientMock                     func(client models.Client) error
+	FindUserMock                           func(userId uint) (models.User, error)
+	SaveEmailVerificationDataMock          func(data models.EmailVerificationData) error
+	GetEmailVerificationDataMock           func(userId uint) (models.EmailVerificationData, error)
+	SaveProofOfEmailVerificationMock       func(userID uint, verificationCode string, proof []byte, zkKeyPairId uint) error
+	GetUserForUsernameMock                 func(username string) (models.User, error)
+	RegisterUserPrecheckMock               func(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error
+	RegisterUserMock                       func(req dto.RegisterUserDTO) error
+	UpdateUserPasswordMock                 func(username string, storedKey string, serverKey string) error
+	DeleteEmailVerificationDataMock        func(userId uint) error
+	SetUserEmailVerifiedMock               func(userID uint) error
+	SavePhoneNumberVerificationDataMock    func(data models.PhoneNumberVerificationData) error
+	GetPhoneNumberVerificationDataMock     func(userID uint) (models.PhoneNumberVerificationData, error)
+	SaveProofOfPhoneNumberVerificationMock func(userID uint, verificationCode string, zkProof []byte, zkPairID uint) error
+	SaveTelegramSessionIDHashMock          func(userID uint, sessionID []byte) error
 }
 
 func (m *MockRepository) FindUser(userId uint) (models.User, error) {
@@ -81,7 +85,7 @@ func (m *MockRepository) GetClientData(clientName string) (models.Client, error)
 			RedirectURI: "https://gcitizen.com/callback",
 		}, nil
 	}
-	return models.Client{}, fmt.Errorf("Client not found")
+	return models.Client{}, fmt.Errorf("client not found")
 }
 
 func (m *MockRepository) GetUser(username string) (*serverModels.User, error) {
@@ -112,7 +116,7 @@ func (m *MockRepository) GetTTL(key string) ([]byte, error) {
 	return []byte{}, nil
 }
 
-func (m *MockRepository) ProfileClient(userID string) (models.Client, error) {
+func (m *MockRepository) ProfileClient(username string) (models.Client, error) {
 	return models.Client{}, nil
 }
 
@@ -153,5 +157,33 @@ func (m *MockRepository) GetClientTrafficStatistics(string) (*models.ClientTraff
 }
 
 func (m *MockRepository) PayClientTrafficUsage(string, int) error {
+	return nil
+}
+
+func (m *MockRepository) SavePhoneNumberVerificationData(data models.PhoneNumberVerificationData) error {
+	if m.SavePhoneNumberVerificationDataMock != nil {
+		return m.SavePhoneNumberVerificationDataMock(data)
+	}
+	return nil
+}
+
+func (m *MockRepository) GetPhoneNumberVerificationData(userID uint) (models.PhoneNumberVerificationData, error) {
+	if m.GetPhoneNumberVerificationDataMock != nil {
+		return m.GetPhoneNumberVerificationDataMock(userID)
+	}
+	return models.PhoneNumberVerificationData{}, nil
+}
+
+func (m *MockRepository) SaveProofOfPhoneNumberVerification(userID uint, verificationCode string, zkProof []byte, zkPairID uint) error {
+	if m.SaveProofOfPhoneNumberVerificationMock != nil {
+		return m.SaveProofOfPhoneNumberVerificationMock(userID, verificationCode, zkProof, zkPairID)
+	}
+	return nil
+}
+
+func (m *MockRepository) SaveTelegramSessionIDHash(userID uint, sessionID []byte) error {
+	if m.SaveTelegramSessionIDHashMock != nil {
+		return m.SaveTelegramSessionIDHashMock(userID, sessionID)
+	}
 	return nil
 }

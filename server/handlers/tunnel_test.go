@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
 	"globe-and-citizen/layer8/server/resource_server/service"
 	resourceUtils "globe-and-citizen/layer8/server/resource_server/utils"
@@ -102,6 +103,7 @@ func prepareInitTunnelRequest(clientBackendUrl string, mockRepo *mocks.MockRepos
 		mockRepo,
 		&verification.EmailVerifier{},
 		&zk.ProofProcessor{},
+		code.NewMIMCCodeGenerator(),
 	)
 	resourceService.RegisterClient(dto.RegisterClientDTO{
 		Name:        name,

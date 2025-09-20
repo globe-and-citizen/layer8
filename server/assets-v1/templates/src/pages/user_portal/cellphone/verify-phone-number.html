@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+            rel="stylesheet"
+            href="/assets-v1/templates/assets/styles/output.css"
+    />
+    <link
+            rel="stylesheet"
+            href="/assets-v1/templates/assets/styles/base.css"
+    />
+    <title>Let's verify your email</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+</head>
+
+<body>
+<div id="app">
+    <div id="navbar" class="user-container">
+        <div class="bg-white flex justify-center items-center my-4">
+            <img
+                    src="../assets-v1/images/L8Logo.png"
+                    alt="Layer8"
+                    width="250"
+                    height="535"
+            />
+        </div>
+    </div>
+
+    <div id="body" class="bg-[#F6F8FF] md:grid md:grid-cols-2">
+        <div class="self-center py-4 mx-10 lg:mx-36">
+            <div class="mb-6">
+                <label class="text-lg text-[#414141] mb-1 block">
+                    Click the button below to verify your phone number via Telegram:
+                </label>
+            </div>
+
+            <button
+                    class="w-[70%] bg-[#4F80E1] rounded-lg text-center text-white py-4 mb-12"
+                    @click="verifyPhoneNumber"
+            >
+                Verify in Telegram
+            </button>
+        </div>
+
+        <div class="bg-white hidden md:flex items-center">
+            <img src="/assets-v1/templates/assets/images/client-image.png" />
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp, computed, ref } = Vue;
+    const token = ref(localStorage.getItem("token") || null);
+
+    const verifyPhoneNumber = async () => {
+        try {
+            const sessionIDResponse = await window.fetch(
+                    "[[ .ProxyURL ]]/api/v1/generate-telegram-session-id",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token.value}`,
+                        },
+                    },
+            );
+
+            const sessionIDResponseBody = await sessionIDResponse.json();
+
+            if (sessionIDResponse.status !== 200) {
+                alert("Invalid response from the server. Try again later");
+                return
+            }
+
+            const sessionId = sessionIDResponseBody.data.session_id;
+
+            window.open('https://t.me/Layer8PhoneNumberVerifierBot?start=' + sessionId, '_blank', 'noopener');
+
+            const response = await window.fetch(
+                    "[[ .ProxyURL ]]/api/v1/verify-phone-number-via-bot",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token.value}`,
+                        },
+                    },
+            );
+
+            const result = await response.json();
+
+            if (response.status === 200) {
+                window.location.href = "[[ .ProxyURL ]]/input-phone-number-verification-code-page";
+            } else {
+                alert("Error happened: " + result.errors);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const app = createApp({
+        setup() {
+            return {
+                verifyPhoneNumber,
+            };
+        },
+    });
+
+    app.mount("#app");
+</script>
+</body>
+</html>

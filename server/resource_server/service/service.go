@@ -1,17 +1,24 @@
 package service
 
 import (
+	"bytes"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"globe-and-citizen/layer8/server/resource_server/dto"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification"
+	"globe-and-citizen/layer8/server/resource_server/emails/verification/code"
 	"globe-and-citizen/layer8/server/resource_server/emails/verification/zk"
 	"globe-and-citizen/layer8/server/resource_server/interfaces"
 	"globe-and-citizen/layer8/server/resource_server/models"
 	"globe-and-citizen/layer8/server/resource_server/utils"
 	"log"
+	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -21,6 +28,7 @@ type service struct {
 	repository     interfaces.IRepository
 	emailVerifier  *verification.EmailVerifier
 	proofProcessor zk.IProofProcessor
+	codeGenerator  code.Generator
 }
 
 // NewService creates a new instance of service
@@ -28,11 +36,13 @@ func NewService(
 	repo interfaces.IRepository,
 	emailVerifier *verification.EmailVerifier,
 	proofProcessor zk.IProofProcessor,
+	codeGenerator code.Generator,
 ) interfaces.IService {
 	return &service{
 		repository:     repo,
 		emailVerifier:  emailVerifier,
 		proofProcessor: proofProcessor,
+		codeGenerator:  codeGenerator,
 	}
 }
 
@@ -290,11 +300,12 @@ func (s *service) CheckEmailVerificationCode(userId uint, code string) error {
 	return e
 }
 
-func (s *service) GenerateZkProofOfEmailVerification(
+func (s *service) GenerateZkProof(
 	user models.User,
-	request dto.CheckEmailVerificationCodeDTO,
+	input string, // email or phone number
+	verificationCode string,
 ) ([]byte, uint, error) {
-	return s.proofProcessor.GenerateProof(request.Email, user.Salt, request.Code)
+	return s.proofProcessor.GenerateProof(input, user.Salt, verificationCode)
 }
 
 func (s *service) SaveProofOfEmailVerification(
@@ -368,4 +379,137 @@ func (s *service) GetClientUnpaidAmount(clientId string) (int, error) {
 	}
 
 	return stat.UnpaidAmount, nil
+}
+
+func (s *service) RefreshTelegramMessages(baseURL string, offset int64) ([]dto.MessageUpdateDTO, error) {
+	requestUrl := fmt.Sprintf("%s/getUpdates?timeout=2&limit=50", baseURL)
+	if offset > 0 {
+		requestUrl += "&offset=" + strconv.FormatInt(offset, 10)
+	}
+
+	req, err := http.NewRequest(http.MethodGet, requestUrl, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create getUpdates request to the Telegram API")
+	}
+
+	client := &http.Client{Timeout: 3 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var response dto.GetUpdatesResponseDTO
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode getUpdates response from the Telegram API")
+	}
+
+	if !response.Ok {
+		return nil, fmt.Errorf("received not-ok response from the getUpdates endpoint of Telegram API")
+	}
+
+	return response.Result, nil
+}
+
+func (s *service) SendTelegramBotMessage(base string, request dto.SendMessageRequestDTO) error {
+	requestBytes, err := json.Marshal(request)
+	if err != nil {
+		return fmt.Errorf("failed to marshal the send message request: %v", err)
+	}
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("%s/sendMessage", base),
+		bytes.NewReader(requestBytes),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create the sendMessage request: %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 3 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	var response dto.SendMessageResponseDTO
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return err
+	}
+	if !response.Ok {
+		return fmt.Errorf("received not-ok response from the sendMessage endpoint of Telegram API")
+	}
+
+	return nil
+}
+
+func (s *service) GeneratePhoneNumberVerificationCode(user *models.User, phoneNumber string) (string, error) {
+	return s.codeGenerator.GenerateCode(user, phoneNumber)
+}
+
+func (s *service) SavePhoneNumberVerificationData(
+	userID uint,
+	verificationCode string,
+	zkProof []byte,
+	zkPhoneNumberPairID uint,
+) error {
+	verificationCodeValidityDuration, err := time.ParseDuration(os.Getenv("VERIFICATION_CODE_VALIDITY_DURATION"))
+	if err != nil {
+		log.Fatalf("error parsing verification code validity duration: %e", err)
+	}
+
+	return s.repository.SavePhoneNumberVerificationData(models.PhoneNumberVerificationData{
+		UserId:           userID,
+		VerificationCode: verificationCode,
+		ExpiresAt:        time.Now().UTC().Add(verificationCodeValidityDuration),
+		ZkProof:          zkProof,
+		ZkPairID:         zkPhoneNumberPairID,
+	})
+}
+
+func (s *service) GetPhoneNumberVerificationData(userID uint) (models.PhoneNumberVerificationData, error) {
+	return s.repository.GetPhoneNumberVerificationData(userID)
+}
+
+func (s *service) CheckPhoneNumberVerificationCode(
+	verificationCode string,
+	userVerificationData models.PhoneNumberVerificationData,
+) error {
+	if verificationCode != userVerificationData.VerificationCode {
+		return fmt.Errorf("invalid verification code")
+	}
+
+	if userVerificationData.ExpiresAt.Before(time.Now().UTC()) {
+		return fmt.Errorf("verification code is expired. Try to verify your email again")
+	}
+
+	return nil
+}
+
+func (s *service) SaveProofOfPhoneNumberVerification(verificationData models.PhoneNumberVerificationData) error {
+	return s.repository.SaveProofOfPhoneNumberVerification(
+		verificationData.UserId,
+		verificationData.VerificationCode,
+		verificationData.ZkProof,
+		verificationData.ZkPairID,
+	)
+}
+
+func (s *service) GenerateTelegramSessionID() ([]byte, error) {
+	const entropyBytes = 32
+	b := make([]byte, entropyBytes)
+	if _, err := rand.Read(b); err != nil {
+		return []byte{}, fmt.Errorf("read random: %w", err)
+	}
+	return b, nil
+}
+
+func (s *service) SaveTelegramSessionID(userID uint, sessionID []byte) error {
+	// hash sessionID first
+	sessionIDHash := sha256.Sum256(sessionID)
+
+	return s.repository.SaveTelegramSessionIDHash(userID, sessionIDHash[:])
 }

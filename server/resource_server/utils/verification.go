@@ -9,13 +9,13 @@ import (
 )
 
 const VerificationCodeSize = 6
-const EmailFrRepresentationSize = 38
+const InputFrRepresentationSize = 38
 
 const runesPerElement = 7
 const bytes = 4
 const elementByteSize = 32
 
-func StringToFrElements(input string) ([EmailFrRepresentationSize]fr.Element, error) {
+func StringToFrElements(input string) ([InputFrRepresentationSize]fr.Element, error) {
 	runeCount := utf8.RuneCountInString(input)
 
 	runes := make([]rune, runeCount)
@@ -26,7 +26,7 @@ func StringToFrElements(input string) ([EmailFrRepresentationSize]fr.Element, er
 		ind++
 	}
 
-	var elements [EmailFrRepresentationSize]fr.Element
+	var elements [InputFrRepresentationSize]fr.Element
 
 	ind = 0
 
@@ -53,7 +53,7 @@ func StringToFrElements(input string) ([EmailFrRepresentationSize]fr.Element, er
 		ind++
 	}
 
-	for ; ind < EmailFrRepresentationSize; ind++ {
+	for ; ind < InputFrRepresentationSize; ind++ {
 		elements[ind] = fr.NewElement(0)
 	}
 
@@ -62,15 +62,15 @@ func StringToFrElements(input string) ([EmailFrRepresentationSize]fr.Element, er
 
 func StringToCircuitVariables(
 	input string,
-) ([EmailFrRepresentationSize]frontend.Variable, error) {
+) ([InputFrRepresentationSize]frontend.Variable, error) {
 	elements, err := StringToFrElements(input)
 	if err != nil {
-		return [38]frontend.Variable{}, err
+		return [InputFrRepresentationSize]frontend.Variable{}, err
 	}
 
-	var circuitVariables [EmailFrRepresentationSize]frontend.Variable
+	var circuitVariables [InputFrRepresentationSize]frontend.Variable
 
-	for i := 0; i < EmailFrRepresentationSize; i++ {
+	for i := 0; i < InputFrRepresentationSize; i++ {
 		circuitVariables[i] = elements[i]
 	}
 
