@@ -12,7 +12,7 @@ import (
 )
 
 type IProofProcessor interface {
-	GenerateProof(emailAddress string, salt string, verificationCode string) ([]byte, uint, error)
+	GenerateProof(input string, salt string, verificationCode string) ([]byte, uint, error)
 	VerifyProof(verificationCode string, salt string, proofBytes []byte) error
 }
 
@@ -42,11 +42,11 @@ func NewProofProcessor(
 }
 
 func (pv *ProofProcessor) GenerateProof(
-	emailAddress string,
+	input string,
 	salt string,
 	verificationCode string,
 ) ([]byte, uint, error) {
-	emailAsCircuitVariables, err := utils.StringToCircuitVariables(emailAddress)
+	inputAsCircuitVariables, err := utils.StringToCircuitVariables(input)
 	if err != nil {
 		return []byte{}, 0, err
 	}
@@ -61,7 +61,7 @@ func (pv *ProofProcessor) GenerateProof(
 	}
 
 	circ := &circuit.MimcCircuit{
-		EmailAsVariables: emailAsCircuitVariables, /* secret */
+		InputAsVariables: inputAsCircuitVariables, /* secret */
 		SaltAsVariables:  saltAsCircuitVariables,  /* public */
 		VerificationCode: codeAsCircuitVariables,  /* public */
 	}
@@ -100,14 +100,14 @@ func (pv *ProofProcessor) VerifyProof(
 		return fmt.Errorf("error while reading proof bytes: %e", err)
 	}
 
-	emailAsVariables := [utils.EmailFrRepresentationSize]frontend.Variable{}
-	for i := 0; i < utils.EmailFrRepresentationSize; i++ {
-		emailAsVariables[i] = 0
+	inputAsVariables := [utils.InputFrRepresentationSize]frontend.Variable{}
+	for i := 0; i < utils.InputFrRepresentationSize; i++ {
+		inputAsVariables[i] = 0
 	}
 
 	witness, err := frontend.NewWitness(
 		&circuit.MimcCircuit{
-			EmailAsVariables: emailAsVariables,
+			InputAsVariables: inputAsVariables,
 			SaltAsVariables:  saltAsCircuitVariables,
 			VerificationCode: codeAsCircuitVariables,
 		},

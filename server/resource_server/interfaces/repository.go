@@ -32,6 +32,10 @@ type IRepository interface {
 	GetAllClientStatistics() ([]models.ClientTrafficStatistics, error)
 	RegisterPrecheckUser(req dto.RegisterUserPrecheckDTO, salt string, iterCount int) error
 	RegisterPrecheckClient(req dto.RegisterClientPrecheckDTO, salt string, iterCount int) error
+	SavePhoneNumberVerificationData(data models.PhoneNumberVerificationData) error
+	GetPhoneNumberVerificationData(userID uint) (models.PhoneNumberVerificationData, error)
+	SaveProofOfPhoneNumberVerification(userID uint, verificationCode string, zkProof []byte, zkPairID uint) error
+	SaveTelegramSessionIDHash(userID uint, sessionID []byte) error
 
 	// Oauth2 methods
 	GetUser(username string) (*serverModel.User, error)

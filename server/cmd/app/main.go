@@ -87,13 +87,15 @@ func main() {
 		log.Fatalf("error parsing verification code validity duration: %e", e)
 	}
 
+	codeGenerator := code.NewMIMCCodeGenerator()
+
 	emailVerifier := verification.NewEmailVerifier(
 		adminEmailAddress,
 		sender.NewMailerSendService(
 			os.Getenv("MAILER_SEND_API_KEY"),
 			os.Getenv("MAILER_SEND_TEMPLATE_ID"),
 		),
-		code.NewMIMCCodeGenerator(),
+		codeGenerator,
 		verificationCodeValidityDuration,
 		time.Now,
 	)
@@ -168,7 +170,7 @@ func main() {
 
 	// Run server (which never returns)
 	Server(
-		svc.NewService(resourceRepository, emailVerifier, proofProcessor),
+		svc.NewService(resourceRepository, emailVerifier, proofProcessor, codeGenerator),
 		oauthService,
 	)
 }
@@ -261,6 +263,10 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.ClientProfilePage(w, r)
 			case path == "/reset-password-page":
 				Ctl.ResetPasswordPage(w, r)
+			case path == "/verify-phone-number-page":
+				Ctl.VerifyPhoneNumberPage(w, r)
+			case path == "/input-phone-number-verification-code-page":
+				Ctl.InputPhoneNumberVerificationCodePage(w, r)
 			case path == "/api/v1/getClient":
 				Ctl.GetClientData(w, r)
 			case path == "/api/v1/login-precheck":
@@ -297,6 +303,12 @@ func Server(resourceService interfaces.IService, oauthService *oauthSvc.Service)
 				Ctl.RegisterUserHandler(w, r)
 			case path == "/api/v1/client-unpaid-amount":
 				Ctl.ClientUnpaidAmountHandler(w, r)
+			case path == "/api/v1/verify-phone-number-via-bot":
+				Ctl.VerifyPhoneNumberViaTelegramBotHandler(w, r)
+			case path == "/api/v1/check-phone-number-verification-code":
+				Ctl.CheckPhoneNumberVerificationCode(w, r)
+			case path == "/api/v1/generate-telegram-session-id":
+				Ctl.GenerateTelegramSessionIDHandler(w, r)
 			case path == "/favicon.ico":
 				faviconPath := workingDirectory + "/dist/favicon.ico"
 				http.ServeFile(w, r, faviconPath)

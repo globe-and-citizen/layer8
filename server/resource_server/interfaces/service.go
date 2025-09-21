@@ -16,8 +16,8 @@ type IService interface {
 	FindUser(userID uint) (models.User, error)
 	VerifyEmail(userID uint, userEmail string) error
 	CheckEmailVerificationCode(userID uint, code string) error
-	GenerateZkProofOfEmailVerification(
-		user models.User, request dto.CheckEmailVerificationCodeDTO,
+	GenerateZkProof(
+		user models.User, input string, verificationCode string,
 	) ([]byte, uint, error)
 	SaveProofOfEmailVerification(userID uint, verificationCode string, zkProof []byte, zkKeyPairId uint) error
 	UpdateUserMetadata(userID uint, req dto.UpdateUserMetadataDTO) error
@@ -31,4 +31,13 @@ type IService interface {
 	RegisterUserPrecheck(req dto.RegisterUserPrecheckDTO, iterCount int) (string, error)
 	RegisterClientPrecheck(req dto.RegisterClientPrecheckDTO, iterCount int) (string, error)
 	GetClientUnpaidAmount(clientId string) (int, error)
+	RefreshTelegramMessages(baseURL string, offset int64) ([]dto.MessageUpdateDTO, error)
+	SendTelegramBotMessage(baseURL string, request dto.SendMessageRequestDTO) error
+	GeneratePhoneNumberVerificationCode(user *models.User, phoneNumber string) (string, error)
+	SavePhoneNumberVerificationData(userID uint, verificationCode string, zkProof []byte, zkPairID uint) error
+	GetPhoneNumberVerificationData(userID uint) (models.PhoneNumberVerificationData, error)
+	CheckPhoneNumberVerificationCode(verificationCode string, verificationData models.PhoneNumberVerificationData) error
+	SaveProofOfPhoneNumberVerification(verificationData models.PhoneNumberVerificationData) error
+	GenerateTelegramSessionID() ([]byte, error)
+	SaveTelegramSessionID(userID uint, sessionID []byte) error
 }

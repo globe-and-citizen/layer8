@@ -427,3 +427,88 @@ func (r *Repository) GetAllClientStatistics() ([]models.ClientTrafficStatistics,
 
 	return allClientStatistics, nil
 }
+
+func (r *Repository) SavePhoneNumberVerificationData(
+	data models.PhoneNumberVerificationData,
+) error {
+	tx := r.connection.Begin(&sql.TxOptions{Isolation: sql.LevelReadCommitted})
+
+	err := tx.Where(
+		models.PhoneNumberVerificationData{UserId: data.UserId},
+	).Assign(data).FirstOrCreate(&models.PhoneNumberVerificationData{}).Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (r *Repository) GetPhoneNumberVerificationData(userID uint) (models.PhoneNumberVerificationData, error) {
+	var data models.PhoneNumberVerificationData
+	err := r.connection.Where("user_id = ?", userID).First(&data).Error
+	if err != nil {
+		return models.PhoneNumberVerificationData{}, err
+	}
+
+	return data, nil
+}
+
+func (r *Repository) SaveProofOfPhoneNumberVerification(
+	userID uint,
+	phoneNumberVerificationCode string,
+	phoneNumberZkProof []byte,
+	phoneNumberZkPairID uint,
+) error {
+	tx := r.connection.Begin(&sql.TxOptions{Isolation: sql.LevelReadCommitted})
+
+	err := tx.Model(
+		&models.User{},
+	).Where(
+		"id = ?", userID,
+	).Updates(map[string]interface{}{
+		"phone_number_verification_code": phoneNumberVerificationCode,
+		"phone_number_zk_proof":          phoneNumberZkProof,
+		"phone_number_zk_pair_id":        phoneNumberZkPairID,
+	}).Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Where(
+		"user_id = ?", userID,
+	).Delete(
+		&models.PhoneNumberVerificationData{},
+	).Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Model(
+		&models.UserMetadata{},
+	).Where(
+		"id = ?", userID,
+	).Update("is_phone_number_verified", true).Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (r *Repository) SaveTelegramSessionIDHash(userID uint, sessionID []byte) error {
+	return r.connection.Model(
+		&models.User{},
+	).Where(
+		"id = ?", userID,
+	).Update("telegram_session_id_hash", sessionID).Error
+}
