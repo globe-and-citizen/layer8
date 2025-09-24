@@ -828,7 +828,11 @@ func VerifyPhoneNumberViaTelegramBotHandler(w http.ResponseWriter, r *http.Reque
 	var offset int64 = 0
 	var telegramUserID int64 = 0
 
-	for {
+	for i := 0; i < 500; i++ {
+		if i > 0 {
+			time.Sleep(500 * time.Millisecond)
+		}
+
 		updates, err := newService.RefreshTelegramMessages(baseURL, offset)
 		if err != nil {
 			log.Printf("failed to refresh messages from Telegram: %v\n", err)
@@ -900,7 +904,11 @@ func VerifyPhoneNumberViaTelegramBotHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	for {
+	for i := 0; i < 500; i++ {
+		if i > 0 {
+			time.Sleep(400 * time.Millisecond)
+		}
+
 		updates, err := newService.RefreshTelegramMessages(baseURL, offset)
 		if err != nil {
 			log.Printf("failed to refresh messages from Telegram: %v\n", err)
@@ -927,7 +935,6 @@ func VerifyPhoneNumberViaTelegramBotHandler(w http.ResponseWriter, r *http.Reque
 			}
 
 			phoneNumber := strings.TrimSpace(msg.Contact.PhoneNumber)
-			fmt.Println(phoneNumber)
 
 			verificationCode, err := newService.GeneratePhoneNumberVerificationCode(&user, phoneNumber)
 			if err != nil {
@@ -947,8 +954,9 @@ func VerifyPhoneNumberViaTelegramBotHandler(w http.ResponseWriter, r *http.Reque
 				},
 			})
 			if err != nil {
+				utils.HandleError(w, http.StatusInternalServerError, "failed to send message from the Telegram bot", err)
 				log.Printf("failed to send message from the Telegram bot: %v", err)
-				continue
+				return
 			}
 
 			zkProof, zkPairID, err := newService.GenerateZkProof(user, phoneNumber, verificationCode)
