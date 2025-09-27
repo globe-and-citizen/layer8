@@ -405,7 +405,7 @@ func (s *service) RefreshTelegramMessages(baseURL string, offset int64) ([]dto.M
 	}
 
 	if !response.Ok {
-		return nil, fmt.Errorf("received not-ok response from the getUpdates endpoint of Telegram API")
+		return nil, fmt.Errorf("received not-ok response from the getUpdates endpoint of Telegram API, result: %v", response.Result)
 	}
 
 	return response.Result, nil
