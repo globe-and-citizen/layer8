@@ -6,6 +6,7 @@ type X509CertificateRequest struct {
 
 type X509CertificateResponse struct {
 	X509Certificate string `json:"x509_certificate"`
+	ClientID        string `json:"client_id"`
 }
 
 type OauthTokenRequest struct {
