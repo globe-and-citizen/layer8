@@ -113,6 +113,7 @@ func GetSPPubKey(w http.ResponseWriter, r *http.Request) {
 
 		response := entities.X509CertificateResponse{
 			X509Certificate: string(client.X509CertificateBytes),
+			ClientID:        client.ID,
 		}
 
 		w.WriteHeader(http.StatusOK)
